@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenida - API FastAPI</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Resumidor de Noticias</h1>
+        <p class="subtitle">Powered by Groq AI</p>
+        
+        <div class="info-box">
+            <h2>¿Qué es esto?</h2>
+            <p>Ingresa el título y contenido de una noticia y nuestro sistema de IA generará un resumen conciso junto con los puntos clave más importantes.</p>
+            <p>No importa que la noticia esté en otro idioma!</p>
+        </div>
+        
+        <div class="info-box">
+            <h2>📰 Resumen de Noticias</h2>
+            <p>Ingresa el título y contenido de una noticia para obtener un resumen y puntos clave.</p>
+            
+            <div class="form-group">
+                <label for="newsTitle">Título de la noticia:</label>
+                <input type="text" id="newsTitle" placeholder="Ej: Cambios en el pronóstico del tiempo" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="newsContent">Contenido de la noticia:</label>
+                <textarea id="newsContent" placeholder="Ej: El pronóstico del tiempo prevé..." class="form-textarea" rows="5"></textarea>
+            </div>
+            
+            <button class="btn-primary" onclick="callSummarizeEndpoint()">Resumir Noticia</button>
+        </div>
+        
+        <div class="button-container">
+            <button class="btn-secondary" onclick="clearResponse()">Limpiar respuesta</button>
+        </div>
+        
+        <div class="response-box" id="responseBox">
+            <h3>📋 Resultado:</h3>
+            <span class="loading" id="loading">Cargando...</span>
+            <div id="responseContent" class="response-content"></div>
+        </div>
+    </div>
+    
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
