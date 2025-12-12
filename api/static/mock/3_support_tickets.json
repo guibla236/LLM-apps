@@ -1,0 +1,29 @@
+[
+    {
+        "ticketId": "SOFT-20251211-001",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Ana Torres (Contabilidad)",
+        "description": "Al intentar acceder a la aplicación web de Gestión de Proyectos (Asana) desde mi navegador (Google Chrome), la pantalla se queda en blanco después de iniciar sesión. El problema persiste en otros navegadores (Firefox). Otros sitios web parecen cargar correctamente.",
+        "impact": "Bloqueo en la actualización de proyectos y tareas críticas.",
+        "actions": "Borrado de caché y cookies; reinicio del navegador."
+    },
+    {
+        "ticketId": "HARD-20251211-002",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Carlos Ruiz (Marketing)",
+        "description": "Mi monitor principal (Dell UltraSharp U2720Q) ha dejado de encenderse. El LED de estado está apagado y no muestra ninguna imagen. Probé a desconectar y reconectar el cable de alimentación y el cable HDMI/DisplayPort tanto del monitor como de la torre del PC.",
+        "impact": "Pérdida de espacio de trabajo esencial, limitando gravemente la productividad en tareas de diseño.",
+        "actions": "Verificación de cables de alimentación y video."
+    },
+    {
+        "ticketId": "NETW-20251211-003",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Laura Gómez (Ventas)",
+        "description": "Desde esta mañana, la conexión Wi-Fi en mi área (ala oeste, segundo piso) está extremadamente lenta, incluso para tareas básicas como la navegación web. Además, experimento desconexiones intermitentes cada 15-20 minutos.",
+        "impact": "Dificultad para mantener llamadas de ventas y para acceder a recursos compartidos en la red.",
+        "actions": "Reinicio del portátil."
+    }
+]
