@@ -1,24 +1,30 @@
-# Sistema de Gestión de Tickets de Soporte
+# Sistema de Soporte Técnico Potenciado por GenAI
 
-Este repositorio contiene un sistema inteligente para la gestión, búsqueda y mejora de tickets de soporte técnico utilizando técnicas de RAG (Retrieval-Augmented Generation) y modelos de lenguaje (LLMs).
+Este repositorio alberga una solución integral para la gestión y resolución automatizada de tickets de soporte técnico. El proyecto combina una API robusta para la gestión de datos con un agente autónomo inteligente capaz de proponer soluciones.
 
-## Descripción del Proyecto
+## Estructura del Proyecto
 
-El objetivo principal de esta aplicación es optimizar el flujo de trabajo de los equipos de soporte mediante:
+El sistema está dividido en dos componente principales:
 
-*   **Ingesta de Tickets**: Carga de tickets individuales o masiva mediante archivos JSON.
-*   **Búsqueda Semántica**: Recuperación de tickets similares basada en vectores (Pinecone) para encontrar soluciones previas a problemas recurrentes.
-*   **Asistente IA**: Enriquecimiento de la información de los tickets, generando resúmenes automáticos y sugiriendo contactos relevantes dentro de la organización.
+### 1. API de Gestión de Tickets (`api/`)
+El núcleo del sistema de gestión. Provee las funcionalidades base para el equipo de soporte:
+*   **Base de Conocimiento RAG**: Ingesta y vectorización de tickets históricos.
+*   **Búsqueda Semántica**: Encuentra problemas similares ocurridos en el pasado.
+*   **Asistente de Enriquecimiento**: Utiliza LLMs para resumir incidencias y sugerir expertos internos.
 
-## Estructura
+👉 **[Ver documentación e instalación del API](api/README.md)**
 
-El núcleo de la aplicación se encuentra en la carpeta `api/`, que contiene:
-*   Una API REST construida con **FastAPI**.
-*   Una interfaz de usuario web ligera.
-*   Módulos para la ingesta, vectorización (embeddings) y recuperación de datos.
+### 2. Agente de Resolución Autónoma (`agent_app/`)
+Un agente inteligente diseñado para actuar sobre los tickets. Construido con LangGraph y Streamlit:
+*   **Investigación**: Consulta la API principal para obtener contexto histórico.
+*   **Búsqueda Web**: Utiliza herramientas de búsqueda (Tavily) para encontrar documentación pública y soluciones externas.
+*   **Síntesis**: Genera una propuesta de solución paso a paso lista para el usuario.
 
-## Comienza Aquí
+👉 **[Ver documentación e instalación del Agente](agent_app/README.md)**
 
-Toda la documentación técnica, los requisitos de instalación y los pasos para ejecutar la aplicación se encuentran detallados en el directorio de la API.
+## Flujo de Trabajo Recomendado
 
-� **[Ver instrucciones de instalación y uso en api/README.md](api/README.md)**
+1.  **Levantar el API (Parte 1)**: Es necesario que la API esté corriendo en el puerto 8000 para proveer contexto histórico.
+2.  **Iniciar el Agente (Parte 2)**: Levantar el backend del agente y su interfaz gráfica para comenzar a resolver tickets.
+
+Para detalles técnicos específicos, dependencias y configuración de variables de entorno, por favor consulta el `README.md` respectivo de cada módulo.

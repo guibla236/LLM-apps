@@ -7,3 +7,4 @@ venv/
 ENV/
 .venv/
 tarea2/
+agente_venv
