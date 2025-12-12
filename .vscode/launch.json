@@ -14,7 +14,8 @@
                 "--reload"
             ],
             "jinja": true,
-            "cwd": "${workspaceFolder}/api"
+            "cwd": "${workspaceFolder}/api",
+            "python": "${workspaceFolder}/api/tarea2/bin/python"
         }
     ]
 }
