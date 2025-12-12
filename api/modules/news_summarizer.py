@@ -4,18 +4,17 @@ Este archivo contiene la estructura mock para que implementes la funcionalidad.
 """
 
 from pydantic import BaseModel, field_validator, ConfigDict
-from typing import Optional
-from dotenv import load_dotenv
+from .third_party_clients import groq_llm_client as groq_llm_client
 from groq import Groq
 import os
 import sys
 import re
 import json
 
-load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL_NAME = "llama-3.1-8b-instant"
-SYSTEM_MESSAGE = """
+groq_llm_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+NEWS_SUMMARIZER_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+NEWS_SUMMARIZER_SYSTEM_MESSAGE = """
     Eres un asistente que ayuda a resumir noticias de manera concisa y clara usando el idioma español.
     Debes proporcionar un resumen en 100 caracteres o menos y una lista de conceptos o tags clave que la noticia menciona.
     Tu respuesta tiene que ser SIEMPRE en formato JSON como el siguiente:
@@ -110,12 +109,12 @@ def summarize_news(news: NewsInput) -> NewsSummary:
         if not news.content or len(news.content.strip()) == 0:
             raise ValueError("El contenido no puede estar vacío")
 
-        message = client.chat.completions.create(
-            model=MODEL_NAME,
+        message = groq_llm_client.chat.completions.create(
+            model=NEWS_SUMMARIZER_MODEL_NAME,
             messages=[
                 {
                     "role": "system",
-                    "content": SYSTEM_MESSAGE
+                    "content": NEWS_SUMMARIZER_SYSTEM_MESSAGE
                 },
                 {
                     "role": "user",

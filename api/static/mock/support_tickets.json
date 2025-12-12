@@ -1,0 +1,902 @@
+[
+    {
+        "ticketId": "SOFT-20251211-001",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Ana Torres (Contabilidad)",
+        "description": "Al intentar acceder a la aplicación web de Gestión de Proyectos (Asana) desde mi navegador (Google Chrome), la pantalla se queda en blanco después de iniciar sesión. El problema persiste en otros navegadores (Firefox). Otros sitios web parecen cargar correctamente.",
+        "impact": "Bloqueo en la actualización de proyectos y tareas críticas.",
+        "actions": "Borrado de caché y cookies; reinicio del navegador."
+    },
+    {
+        "ticketId": "HARD-20251211-002",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Carlos Ruiz (Marketing)",
+        "description": "Mi monitor principal (Dell UltraSharp U2720Q) ha dejado de encenderse. El LED de estado está apagado y no muestra ninguna imagen. Probé a desconectar y reconectar el cable de alimentación y el cable HDMI/DisplayPort tanto del monitor como de la torre del PC.",
+        "impact": "Pérdida de espacio de trabajo esencial, limitando gravemente la productividad en tareas de diseño.",
+        "actions": "Verificación de cables de alimentación y video."
+    },
+    {
+        "ticketId": "NETW-20251211-003",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Laura Gómez (Ventas)",
+        "description": "Desde esta mañana, la conexión Wi-Fi en mi área (ala oeste, segundo piso) está extremadamente lenta, incluso para tareas básicas como la navegación web. Además, experimento desconexiones intermitentes cada 15-20 minutos.",
+        "impact": "Dificultad para mantener llamadas de ventas y para acceder a recursos compartidos en la red.",
+        "actions": "Reinicio del portátil."
+    },
+    {
+        "ticketId": "PRNT-20251211-004",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Roberto Nieto (Recursos Humanos)",
+        "description": "La impresora del piso 3 (HP LaserJet 4000) está imprimiendo documentos con una mancha negra vertical en el centro de la página. Intenté limpiar la bandeja de papel, pero el problema persiste. Es urgente para imprimir contratos.",
+        "impact": "Imposibilidad de utilizar la impresora departamental para documentos oficiales legibles.",
+        "actions": "Reinicio de la impresora; limpieza superficial de la bandeja de papel."
+    },
+    {
+        "ticketId": "PASS-20251211-005",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Elena Sáez (Ventas)",
+        "description": "Acabo de olvidar mi contraseña de Windows para iniciar sesión en mi equipo. Después de tres intentos fallidos, mi cuenta ha sido bloqueada. Necesito acceso inmediato para unirme a una reunión con un cliente en 5 minutos.",
+        "impact": "Bloqueo total del acceso al sistema operativo y a los recursos de la red. Detención de tareas.",
+        "actions": "Tres intentos fallidos de inicio de sesión."
+    },
+    {
+        "ticketId": "VDI-20251211-006",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Javier Pérez (I+D)",
+        "description": "La conexión al entorno de Escritorio Virtual (VDI) de desarrollo está fallando intermitentemente. Cuando se conecta, la latencia es muy alta, haciendo imposible trabajar con el software de simulación.",
+        "impact": "Lentitud extrema que impide el uso de herramientas específicas de I+D.",
+        "actions": "Reinicio del cliente VDI; prueba de velocidad de conexión a Internet local."
+    },
+    {
+        "ticketId": "MAIL-20251211-007",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Marta Díez (Administración)",
+        "description": "Mi buzón de correo electrónico de Outlook muestra una advertencia de que está 'casi lleno'. Necesito asistencia para archivar los correos antiguos o aumentar el límite de mi buzón, ya que no quiero eliminar información.",
+        "impact": "Riesgo de dejar de recibir correos importantes al exceder el límite de almacenamiento.",
+        "actions": "Revisión manual de los correos más pesados."
+    },
+    {
+        "ticketId": "LIC-20251211-008",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Fernando Cruz (Diseño)",
+        "description": "Al iniciar Adobe Photoshop, aparece un error de que mi licencia ha caducado o no se puede verificar con el servidor. No puedo abrir el software ni trabajar en los activos gráficos del proyecto 'Titan'.",
+        "impact": "Imposibilidad total de usar una herramienta de trabajo esencial. Detención del proyecto.",
+        "actions": "Reinicio del software; comprobación de la conexión a Internet."
+    },
+    {
+        "ticketId": "DB-20251211-009",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Operaciones",
+        "description": "Se ha detectado que el servidor de base de datos SQL (Producción-DB01) está utilizando el 98% de la memoria RAM, lo que provoca que las consultas sean lentas o que se agoten los tiempos de espera de la aplicación principal. Esto afecta a todos los usuarios.",
+        "impact": "Fallo o lentitud crítica de la aplicación de negocio principal que afecta a toda la compañía.",
+        "actions": "Monitoreo del rendimiento del servidor; reinicio de la aplicación."
+    },
+    {
+        "ticketId": "DISK-20251211-010",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Pablo García (Finanzas)",
+        "description": "Mi portátil está extremadamente lento desde hace dos días. Al revisar el explorador de archivos, veo que el disco duro C: está lleno (99%). Necesito ayuda para liberar espacio o mover archivos a la unidad de red.",
+        "impact": "Rendimiento del equipo inutilizable, dificultando la realización de informes financieros.",
+        "actions": "Eliminación de archivos temporales básicos; revisión del tamaño de la papelera de reciclaje."
+    },
+    {
+        "ticketId": "SWS-20251211-011",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Diana López (Ventas)",
+        "description": "Necesito instalar la nueva versión del software de videollamadas (Zoom v6.0) en mi portátil corporativo. El sistema me pide credenciales de administrador que no poseo.",
+        "impact": "Uso limitado de nuevas funciones de la herramienta de comunicación.",
+        "actions": "Intento de instalación."
+    },
+    {
+        "ticketId": "MIG-20251211-012",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Gerardo Montes (RRHH)",
+        "description": "Mi nuevo ordenador portátil ha llegado hoy. Necesito que se realice la migración de mis archivos del equipo antiguo al nuevo, incluyendo la configuración de Outlook y los accesos a red compartidos.",
+        "impact": "Imposibilidad de comenzar a trabajar en el nuevo equipo hasta que se transfieran los datos.",
+        "actions": "Encendido y conexión inicial del nuevo equipo."
+    },
+    {
+        "ticketId": "NETW-20251211-013",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Silvia Ramos (Directiva)",
+        "description": "El acceso a la unidad compartida de red (Unidad Z:) que contiene todos los documentos de dirección ha desaparecido. Al intentar acceder, aparece el mensaje 'La ubicación de red no está disponible'.",
+        "impact": "Imposibilidad de acceder a documentos y recursos críticos de la dirección de la empresa.",
+        "actions": "Reinicio del equipo; reintento de mapeo de la unidad Z:."
+    },
+    {
+        "ticketId": "VOIP-20251211-014",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Miguel Ángel Ríos (Marketing)",
+        "description": "El teléfono IP de mi escritorio (modelo Cisco 7841) no tiene tono. La pantalla muestra 'Registración Fallida' y no puedo hacer ni recibir llamadas. Mi conexión de red parece funcionar bien en el PC.",
+        "impact": "Imposibilidad de realizar comunicación telefónica externa, afectando el seguimiento de campañas.",
+        "actions": "Reinicio del teléfono IP; verificación de la conexión del cable de red."
+    },
+    {
+        "ticketId": "VPN-20251211-015",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Andrea Castro (Finanzas)",
+        "description": "No puedo conectarme a la VPN corporativa desde casa. Después de ingresar mis credenciales, aparece el error 'Error 800: No se puede establecer la conexión VPN'. Esto me impide acceder a los sistemas internos para cerrar las cuentas de hoy.",
+        "impact": "Bloqueo del trabajo remoto y del acceso a datos sensibles. Impacto directo en los cierres contables diarios.",
+        "actions": "Reinicio del portátil; reintento de conexión a la VPN."
+    },
+    {
+        "ticketId": "FILE-20251211-016",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Héctor Soto (Legal)",
+        "description": "Un documento legal importante (contrato_A14.docx) guardado en la unidad compartida de la red (Unidad L:) ahora aparece como corrupto o ilegible. El mensaje de error es 'El archivo no se puede abrir porque hay problemas con el contenido'.",
+        "impact": "Pérdida potencial de un documento crucial, requiriendo recuperación desde una copia de seguridad.",
+        "actions": "Intento de abrir el archivo en diferentes versiones de Microsoft Word."
+    },
+    {
+        "ticketId": "HW-20251211-017",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Irene Navarro (Administración)",
+        "description": "El ratón inalámbrico de mi puesto de trabajo está fallando. El cursor se mueve de forma errática o se congela por unos segundos. He cambiado las pilas dos veces, pero el problema persiste.",
+        "impact": "Molestia y dificultad para realizar tareas precisas, pero no impide el trabajo por completo.",
+        "actions": "Cambio de pilas; limpieza del sensor óptico."
+    },
+    {
+        "ticketId": "UPDATE-20251211-018",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Sergio Ramos (Operaciones)",
+        "description": "Recibí un mensaje emergente que me pide reiniciar el equipo para completar la instalación de una actualización de Windows, pero no quiero perder el trabajo que tengo abierto. ¿Puedo posponer esto indefinidamente o es obligatorio?",
+        "impact": "Interrupción potencial del flujo de trabajo si el reinicio es forzado o necesario para la seguridad.",
+        "actions": "Posponer la actualización varias veces."
+    },
+    {
+        "ticketId": "CONF-20251211-019",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Patricia Vega (Recursos Humanos)",
+        "description": "Mi proyector de la sala de reuniones pequeña no detecta la señal de mi portátil a través del cable HDMI. Probé con otro cable y otro portátil y el problema sigue siendo el mismo en el proyector.",
+        "impact": "Dificultad para realizar presentaciones y reuniones planificadas en esa sala.",
+        "actions": "Cambio de cables; prueba con diferentes fuentes (portátiles)."
+    },
+    {
+        "ticketId": "PERM-20251211-020",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Guillermo Sanz (Ventas)",
+        "description": "Necesito acceso de lectura/escritura a la carpeta compartida 'Informes Q4'. Actualmente solo tengo acceso de lectura, lo que me impide subir mis informes de ventas.",
+        "impact": "Bloqueo en la entrega de documentación vital del departamento de Ventas.",
+        "actions": "Reintento de subir el archivo; verificación de las propiedades de la carpeta."
+    },
+    {
+        "ticketId": "SEC-20251211-021",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Seguridad",
+        "description": "Se ha detectado un intento de acceso no autorizado al servidor de archivos (FS-PROD) desde una dirección IP externa. Necesitamos un análisis forense inmediato y el bloqueo de dicha IP a nivel de firewall.",
+        "impact": "Riesgo de brecha de seguridad y acceso a datos confidenciales de la empresa.",
+        "actions": "Aislamiento de la conexión del servidor sospechoso; registro de la IP."
+    },
+    {
+        "ticketId": "OS-20251211-022",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Felipe Navarro (Desarrollo)",
+        "description": "El sistema operativo Windows 11 en mi portátil se congela completamente (pantalla azul o 'Blue Screen of Death') de forma aleatoria, al menos 3 o 4 veces al día, sin un patrón claro. Esto ocurre especialmente cuando uso Docker.",
+        "impact": "Pérdida de trabajo no guardado y grave disminución de la productividad diaria.",
+        "actions": "Actualización de controladores de video; revisión del registro de eventos de Windows."
+    },
+    {
+        "ticketId": "MON-20251211-023",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Beatriz Romero (RRHH)",
+        "description": "Necesito un cable HDMI adicional para conectar un tercer monitor a mi estación de trabajo. El cable debe tener al menos 3 metros de longitud para alcanzar el soporte del escritorio.",
+        "impact": "Uso limitado del espacio de trabajo visual, pero no detiene las tareas.",
+        "actions": "Revisión de inventario de cables."
+    },
+    {
+        "ticketId": "SASS-20251211-024",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Daniel Vera (Marketing)",
+        "description": "La herramienta de automatización de correo (Mailchimp) no está sincronizando correctamente la lista de contactos actualizada desde nuestro CRM. Los nuevos contactos no aparecen en Mailchimp.",
+        "impact": "Retraso en el envío de campañas de correo electrónico a nuevos leads.",
+        "actions": "Verificación de la configuración de la API entre CRM y Mailchimp."
+    },
+    {
+        "ticketId": "TEL-20251211-025",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Sala de Juntas Principal",
+        "description": "El sistema de videoconferencia de la Sala de Juntas Principal (cámara y micrófono) no está siendo reconocido por el software de Zoom. La reunión de la Junta Directiva comienza en 15 minutos.",
+        "impact": "Imposibilidad de realizar una reunión ejecutiva crítica por videoconferencia.",
+        "actions": "Reinicio de la consola de la sala; prueba de los cables USB."
+    },
+    {
+        "ticketId": "DB-20251211-026",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Bases de Datos",
+        "description": "La réplica de la base de datos de contingencia (DR-DB02) ha fallado. La base de datos está desincronizada con el servidor principal, poniendo en riesgo la continuidad del negocio ante un fallo primario.",
+        "impact": "Riesgo crítico de pérdida de datos y tiempo de inactividad si el servidor principal falla.",
+        "actions": "Revisión de logs de replicación de SQL Server."
+    },
+    {
+        "ticketId": "PERF-20251211-027",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Natalia Gil (Operaciones)",
+        "description": "Mi ordenador de sobremesa se está quedando sin memoria RAM utilizable. El gestor de tareas muestra que un proceso llamado 'servicehost.exe' consume una cantidad excesiva de memoria (más del 80%).",
+        "impact": "Lentitud generalizada del sistema, haciendo las aplicaciones multi-tarea lentas.",
+        "actions": "Reinicio del sistema; búsqueda de malware."
+    },
+    {
+        "ticketId": "WIFI-20251211-028",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Visitante Externo",
+        "description": "Necesito las credenciales para acceder a la red Wi-Fi de invitados (GUEST-NET) para una reunión de 2 horas. Las credenciales de la pizarra no funcionan.",
+        "impact": "Dificultad para el acceso a internet para un usuario temporal, afectando su participación en la reunión.",
+        "actions": "Intento de conexión con la contraseña visible."
+    },
+    {
+        "ticketId": "DEV-20251211-029",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Ricardo Montes (Desarrollo)",
+        "description": "Mi entorno de desarrollo local (IDE VS Code) no reconoce la conexión al repositorio Git remoto después de un cambio de contraseña. Necesito ayuda para reconfigurar el acceso SSH/HTTPS.",
+        "impact": "Bloqueo de la subida y descarga de código, deteniendo el desarrollo individual.",
+        "actions": "Actualización de credenciales en el gestor de credenciales de Windows/Mac."
+    },
+    {
+        "ticketId": "WEB-20251211-030",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Sistemas",
+        "description": "El sitio web público de la empresa está caído y muestra un error 503 (Servicio no disponible) al intentar acceder desde cualquier ubicación. Esto afecta la imagen y las ventas en línea.",
+        "impact": "Pérdida de ingresos y daño a la reputación de la empresa.",
+        "actions": "Verificación del estado del servidor web (Apache/Nginx); revisión de logs de errores."
+    },
+    {
+        "ticketId": "USER-20251211-031",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Clara López (Administración)",
+        "description": "Acabo de regresar de vacaciones y mi cuenta de usuario de dominio ha caducado. El sistema me pide contactar a IT. Necesito restablecerla para empezar a trabajar.",
+        "impact": "Bloqueo temporal del acceso al sistema, pero fácil de resolver.",
+        "actions": "Intento de inicio de sesión fallido."
+    },
+    {
+        "ticketId": "HW-20251211-032",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Vicente Ruiz (Legal)",
+        "description": "El lector de huellas dactilares integrado en mi portátil dejó de funcionar. No puedo iniciar sesión con mi huella y tengo que escribir la contraseña manualmente. Ya intenté reinstalar el driver.",
+        "impact": "Pérdida de la comodidad de inicio de sesión rápido, pero tiene un método alternativo.",
+        "actions": "Reinstalación del driver biométrico."
+    },
+    {
+        "ticketId": "CLOUD-20251211-033",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Gerencia de Proyectos",
+        "description": "El servicio de almacenamiento en la nube (AWS S3) que contiene los backups de fin de mes no es accesible. La consola de AWS muestra un error de permisos 403. Esto afecta la estrategia de backup.",
+        "impact": "Fallo en la verificación del backup crítico. Riesgo de incumplimiento normativo.",
+        "actions": "Revisión de las políticas de acceso (IAM) en la consola de AWS."
+    },
+    {
+        "ticketId": "SWS-20251211-034",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Laura Fernández (Ventas)",
+        "description": "Necesito instalar Microsoft Project Professional en mi portátil. No sé dónde descargar la versión correcta ni tengo la clave de licencia.",
+        "impact": "Imposibilidad de gestionar el nuevo proyecto del cliente 'Alfa'.",
+        "actions": "Búsqueda de instaladores en la red compartida."
+    },
+    {
+        "ticketId": "SEC-20251211-035",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Isabel García (Ventas)",
+        "description": "Recibí un correo sospechoso pidiendo mis credenciales de correo. Hice clic en el enlace, pero cerré la página inmediatamente. Necesito verificar si mi cuenta ha sido comprometida y cambiar mi contraseña.",
+        "impact": "Riesgo de suplantación de identidad y acceso a datos de clientes.",
+        "actions": "Cambio de contraseña de correo."
+    },
+    {
+        "ticketId": "CONF-20251211-036",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Jorge Sanz (RRHH)",
+        "description": "El teclado de mi portátil tiene el diseño en inglés (QWERTY) y necesito configurarlo al diseño en español (QWERTY-ES). No sé cómo cambiar el idioma de entrada en Windows.",
+        "impact": "Molestia menor al teclear caracteres especiales como 'ñ' o acentos.",
+        "actions": "Intento de cambio de idioma en la configuración regional."
+    },
+    {
+        "ticketId": "MON-20251211-037",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de QA",
+        "description": "El sistema de monitoreo de producción (Zabbix) ha dejado de enviar alertas por SMS y correo electrónico. Parece que el servicio de mensajería (módulo de notificaciones) ha fallado.",
+        "impact": "Los técnicos no están siendo notificados de los fallos críticos del sistema de producción.",
+        "actions": "Revisión del log del servidor de Zabbix."
+    },
+    {
+        "ticketId": "AUD-20251211-038",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Juan Torres (Operaciones)",
+        "description": "El sonido de mi ordenador portátil no funciona. Los altavoces internos y los auriculares (conectados por jack 3.5mm) no emiten sonido. El mezclador de volumen de Windows no muestra barras de actividad.",
+        "impact": "Imposibilidad de participar en videollamadas o escuchar grabaciones importantes.",
+        "actions": "Reinicio del equipo; reinstalación del driver de audio."
+    },
+    {
+        "ticketId": "PERM-20251211-039",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Director de Finanzas",
+        "description": "No puedo acceder a mi carpeta personal en la red compartida. Aparece un mensaje de 'Acceso Denegado'. La necesito urgentemente para recuperar documentos de auditoría.",
+        "impact": "Bloqueo total del acceso a archivos personales y documentos sensibles de alta dirección.",
+        "actions": "Verificación de la conexión de red; intento de mapeo de la unidad."
+    },
+    {
+        "ticketId": "SWS-20251211-040",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Paula Martínez (Ventas)",
+        "description": "La función de exportación a PDF dentro de la aplicación de gestión de clientes (CRM) no está funcionando. Al presionar el botón, no ocurre nada.",
+        "impact": "Necesidad de utilizar métodos alternativos (imprimir a PDF) para generar documentos.",
+        "actions": "Borrado de caché del navegador."
+    },
+    {
+        "ticketId": "OS-20251211-041",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Elena Gil (Legal)",
+        "description": "El icono del 'Centro de Notificaciones' en Windows no funciona al hacer clic. No puedo ver las notificaciones ni acceder a las configuraciones rápidas (Wi-Fi, brillo, etc.). Ya reinicié el equipo.",
+        "impact": "Pérdida de acceso a funciones clave del sistema operativo y dificultad para ver alertas.",
+        "actions": "Reinicio del sistema operativo; intento de hacer clic en el icono."
+    },
+    {
+        "ticketId": "SWS-20251211-042",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Rubén Sanz (Marketing)",
+        "description": "Necesito un acceso a la cuenta de Google Analytics para revisar las métricas de la última campaña. Mi cuenta anterior fue eliminada tras un cambio de rol.",
+        "impact": "Imposibilidad de realizar análisis de rendimiento de campañas de marketing.",
+        "actions": "Contacto con el administrador de la cuenta anterior."
+    },
+    {
+        "ticketId": "HW-20251211-043",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Director de TI",
+        "description": "Uno de los servidores de almacenamiento NAS (NAS-BACKUP-02) emite un sonido de alarma constante y la luz de estado de un disco duro está en rojo. Posible fallo inminente del disco (RAID degradado).",
+        "impact": "Riesgo de pérdida de redundancia de almacenamiento y potencial fallo del sistema de backup.",
+        "actions": "Monitoreo del estado del RAID a través de la consola de administración."
+    },
+    {
+        "ticketId": "VOIP-20251211-044",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Lucía Pérez (Ventas)",
+        "description": "El auricular de mi diadema (headset) Jabra USB no funciona, no escucho nada. El micrófono sí funciona. Probé en otro USB y el problema persiste. Necesito hacer llamadas de ventas.",
+        "impact": "Dificultad para mantener llamadas de trabajo, requiriendo usar el altavoz del portátil.",
+        "actions": "Prueba de la diadema en diferentes puertos USB."
+    },
+    {
+        "ticketId": "DB-20251211-045",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Operaciones",
+        "description": "Una tabla crítica en la base de datos de clientes (Clients_Prod) ha sido bloqueada debido a una transacción de larga duración. Las aplicaciones de negocio no pueden escribir datos.",
+        "impact": "Detención de la operativa de negocio que requiere escritura de datos de clientes.",
+        "actions": "Identificación de la sesión de bloqueo (SPID)."
+    },
+    {
+        "ticketId": "LIC-20251211-046",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Adrián Cruz (Finanzas)",
+        "description": "El software de análisis financiero que utilizamos (SAP BusinessObjects) me da un error de 'Licencia no encontrada' al iniciar. Esto ocurre solo hoy, ayer funcionaba.",
+        "impact": "Impedimento para realizar análisis específicos, pero no bloquea tareas diarias.",
+        "actions": "Reinicio del software."
+    },
+    {
+        "ticketId": "EMAIL-20251211-047",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Marketing",
+        "description": "Los correos electrónicos enviados a un dominio específico (ej. @competencia.com) están siendo devueltos con un error de '550 Relay Access Denied'. Parece ser un problema de configuración de retransmisión.",
+        "impact": "Imposibilidad de comunicación con un grupo importante de contactos externos.",
+        "actions": "Verificación de las listas negras de correo; prueba de envío a otros dominios."
+    },
+    {
+        "ticketId": "PRNT-20251211-048",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Javier Montes (Administración)",
+        "description": "La impresora de color del primer piso (Xerox 7800) ha estado imprimiendo solo en blanco y negro desde esta mañana. No hay opción de color disponible en el panel de control o en las propiedades de la impresora.",
+        "impact": "Documentos internos que requieren codificación de color se imprimen incorrectamente.",
+        "actions": "Reinicio de la impresora; verificación de niveles de tóner de color."
+    },
+    {
+        "ticketId": "SEC-20251211-049",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "CEO",
+        "description": "Mi cuenta de OneDrive/SharePoint ha sido suspendida sin previo aviso. Necesito acceso inmediato a mis documentos alojados en la nube para una presentación con inversores.",
+        "impact": "Bloqueo total del acceso a documentos ejecutivos críticos. Impacto de alto nivel.",
+        "actions": "Intento de inicio de sesión fallido; contacto con IT."
+    },
+    {
+        "ticketId": "PERF-20251211-050",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Desarrollo",
+        "description": "El servidor de integración continua (Jenkins) está tardando más de una hora en construir proyectos que antes tardaban 10 minutos. Parece haber un cuello de botella de CPU o red.",
+        "impact": "Retraso significativo en el ciclo de desarrollo y despliegue de software.",
+        "actions": "Monitoreo de recursos de CPU y RAM en el servidor Jenkins."
+    },
+    {
+        "ticketId": "SWS-20251211-051",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Nuria López (Contabilidad)",
+        "description": "Necesito configurar un 'autocontestado' o respuesta automática en mi correo de Outlook para informar que estaré fuera de la oficina la próxima semana. No encuentro la opción en el menú.",
+        "impact": "Comunicación limitada de la ausencia de la usuaria, pero no es un problema técnico crítico.",
+        "actions": "Búsqueda en el menú 'Archivo' de Outlook."
+    },
+    {
+        "ticketId": "NETW-20251211-052",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Todos los Usuarios",
+        "description": "La conexión a Internet en la oficina central ha caído. Los usuarios no pueden navegar ni acceder a servicios externos (Google, SaaS, etc.). El router principal parece estar offline.",
+        "impact": "Cese de todas las operaciones que requieren conexión a Internet. Impacto masivo.",
+        "actions": "Reinicio de equipos locales; verificación del estado de los indicadores del router principal."
+    },
+    {
+        "ticketId": "HW-20251211-053",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Mario Díaz (I+D)",
+        "description": "El puerto USB-C de mi portátil (necesario para la estación de acoplamiento) funciona de forma intermitente. A veces reconoce los dispositivos conectados, otras veces no. El resto de puertos USB funcionan bien.",
+        "impact": "Dificultad para conectar periféricos esenciales a través del dock.",
+        "actions": "Prueba con diferentes dispositivos USB-C."
+    },
+    {
+        "ticketId": "CONF-20251211-054",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Sara Romero (Ventas)",
+        "description": "Necesito cambiar el fondo de pantalla de mi escritorio por la imagen corporativa. No tengo permisos para cambiar la configuración de 'Personalización' de Windows.",
+        "impact": "Problema estético y de cumplimiento de branding, sin impacto funcional.",
+        "actions": "Intento fallido de cambiar el fondo de pantalla."
+    },
+    {
+        "ticketId": "VDI-20251211-055",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Teresa Gil (Contabilidad)",
+        "description": "Mi sesión de Escritorio Remoto (RDP) se desconecta automáticamente después de 10 minutos de inactividad, incluso cuando estoy trabajando activamente. Es muy frustrante.",
+        "impact": "Pérdida de concentración y tiempo debido a la reconexión constante.",
+        "actions": "Reinicio del cliente RDP."
+    },
+    {
+        "ticketId": "FILE-20251211-056",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Carlos Vivas (Legal)",
+        "description": "Accidentalmente eliminé la carpeta 'Contratos_2024' de la unidad compartida G:. Necesito que se restaure inmediatamente desde el backup de anoche.",
+        "impact": "Pérdida de archivos legales importantes que requiere restauración urgente.",
+        "actions": "Revisión de la Papelera de Reciclaje de la red."
+    },
+    {
+        "ticketId": "EMAIL-20251211-057",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Sistemas",
+        "description": "El servidor de correo electrónico interno está experimentando una sobrecarga de CPU y está rechazando la conexión de nuevos clientes. Esto afecta la comunicación de todos los usuarios.",
+        "impact": "Fallo en la comunicación interna y externa por correo electrónico. Impacto masivo.",
+        "actions": "Monitoreo del rendimiento del servidor de correo."
+    },
+    {
+        "ticketId": "AUD-20251211-058",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Roberto Sanz (Marketing)",
+        "description": "El micrófono de mi portátil no funciona en ninguna aplicación (Zoom, Teams, Grabadora de voz). El icono de micrófono aparece silenciado y no puedo activarlo.",
+        "impact": "Imposibilidad de participar en reuniones virtuales y conferencias.",
+        "actions": "Revisión de la configuración de privacidad del micrófono en Windows."
+    },
+    {
+        "ticketId": "PASS-20251211-059",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Mónica Ruiz (RRHH)",
+        "description": "Necesito que me recuerden o me restablezcan la contraseña de acceso a nuestro portal de RRHH externo (SAAS-RRHH). La olvidé hace tiempo.",
+        "impact": "Imposibilidad de acceder a documentos personales o información de nómina en el portal externo.",
+        "actions": "Intento de usar la función 'Olvidé mi contraseña'."
+    },
+    {
+        "ticketId": "WEB-20251211-060",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Desarrollo",
+        "description": "El certificado SSL del entorno de prueba (test.empresa.com) ha caducado. Los desarrolladores reciben advertencias de seguridad al acceder y no podemos probar ciertas funcionalidades.",
+        "impact": "Bloqueo de las pruebas de desarrollo debido a errores de seguridad en el navegador.",
+        "actions": "Verificación de la fecha de caducidad del certificado."
+    },
+    {
+        "ticketId": "MON-20251211-061",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Juan Pablo Cortés (Ventas)",
+        "description": "Mi teclado de escritorio tiene varias teclas (ej. 'F' y 'G') que se pegan o repiten al teclear. Esto interfiere con la escritura de documentos.",
+        "impact": "Molestia al teclear que ralentiza la producción de documentos.",
+        "actions": "Limpieza de las teclas; verificación de la conexión USB."
+    },
+    {
+        "ticketId": "DEV-20251211-062",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de QA",
+        "description": "El entorno de staging (pre-producción) ha desplegado una versión incorrecta del software. Necesitamos revertir la última implementación al estado anterior inmediatamente para poder seguir probando.",
+        "impact": "Detención de las pruebas de calidad y riesgo de desplegar una versión defectuosa en producción.",
+        "actions": "Revisión del historial de despliegue en el servidor."
+    },
+    {
+        "ticketId": "WIFI-20251211-063",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Área de Marketing",
+        "description": "El punto de acceso Wi-Fi 'AP-Marketing-01' parece estar saturado. Los dispositivos en el área se desconectan constantemente y la velocidad es nula.",
+        "impact": "Múltiples usuarios de un área no pueden utilizar la red inalámbrica de manera efectiva.",
+        "actions": "Reinicio del punto de acceso; prueba de conexión con cable."
+    },
+    {
+        "ticketId": "USER-20251211-064",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "David Herrera (Administración)",
+        "description": "Necesito que se cree una cuenta de usuario temporal para un consultor externo que trabajará con nosotros durante una semana. Necesita acceso a la red de invitados y a la carpeta compartida de su proyecto.",
+        "impact": "El consultor no puede iniciar su trabajo hasta que se le dé acceso.",
+        "actions": "Envío de la solicitud de cuenta a IT."
+    },
+    {
+        "ticketId": "HW-20251211-065",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Supervisor de Almacén",
+        "description": "La PDA/Terminal de mano utilizada para el inventario no se enciende. No carga la batería al conectarla. El inventario de fin de mes está programado para hoy.",
+        "impact": "Detención del proceso de inventario crucial para la logística del almacén.",
+        "actions": "Prueba de la PDA con otro cargador."
+    },
+    {
+        "ticketId": "CONF-20251211-066",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Sofía Nieto (RRHH)",
+        "description": "Necesito ayuda para configurar mi firma de correo electrónico en Outlook. Quiero incluir el logo corporativo, pero no puedo hacerlo correctamente.",
+        "impact": "Problema estético en la comunicación externa, sin impacto funcional.",
+        "actions": "Intento de copiar y pegar el logo en la firma."
+    },
+    {
+        "ticketId": "NETW-20251211-067",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Sistemas",
+        "description": "El servidor DNS primario corporativo (DNS-PDC01) está inactivo. La resolución de nombres internos y externos ha fallado para todos los usuarios.",
+        "impact": "Bloqueo total del acceso a recursos internos y a Internet para toda la red.",
+        "actions": "Verificación del estado del servicio DNS; intento de ping al servidor."
+    },
+    {
+        "ticketId": "LIC-20251211-068",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Producción",
+        "description": "Se ha alcanzado el límite de usuarios concurrentes de nuestra licencia de software CAD (Autodesk Inventor). Un nuevo ingeniero no puede iniciar el programa.",
+        "impact": "Un nuevo empleado clave no puede comenzar sus tareas de diseño de producto.",
+        "actions": "Verificación de las sesiones de licencia activas en el servidor de licencias."
+    },
+    {
+        "ticketId": "SWS-20251211-069",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Eva Torres (Ventas)",
+        "description": "La aplicación móvil del CRM (Salesforce) no me permite subir fotos de los clientes a mi perfil. Aparece un error de 'Fallo en la carga de archivos' en Android.",
+        "impact": "Imposibilidad de actualizar la documentación de clientes en la aplicación móvil.",
+        "actions": "Reinstalación de la aplicación móvil; borrado de caché de la aplicación."
+    },
+    {
+        "ticketId": "PRNT-20251211-070",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Fernando Herrera (Finanzas)",
+        "description": "La impresora de mi oficina me pide un código PIN de usuario para imprimir, pero yo nunca configuré uno. Necesito que se desactive o se me proporcione un PIN genérico.",
+        "impact": "Dificultad menor para imprimir, ya que requiere pasos extra en la cola de impresión.",
+        "actions": "Intento de impresión sin PIN."
+    },
+    {
+        "ticketId": "SWS-20251211-071",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Andrea Ramos (Finanzas)",
+        "description": "La aplicación de contabilidad (QuickBooks) se cierra automáticamente sin guardar al intentar generar el reporte trimestral. Sucede repetidamente solo con ese reporte.",
+        "impact": "Imposibilidad de finalizar y entregar el reporte financiero trimestral en la fecha límite.",
+        "actions": "Reinicio de la aplicación; intento de generar otros reportes (funcionan)."
+    },
+    {
+        "ticketId": "HW-20251211-072",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Pedro Jiménez (Marketing)",
+        "description": "La cámara web integrada de mi portátil no funciona. Al abrir la aplicación de la cámara aparece un mensaje de 'No se encontró la cámara'. El portátil es relativamente nuevo.",
+        "impact": "Imposibilidad de utilizar la cámara en reuniones virtuales. El micrófono sí funciona.",
+        "actions": "Verificación de la configuración de privacidad de la cámara en Windows."
+    },
+    {
+        "ticketId": "VOIP-20251211-073",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Recepción",
+        "description": "La línea telefónica principal de recepción está enviando a los llamantes directamente al buzón de voz sin sonar. Es una línea crítica para el negocio.",
+        "impact": "Pérdida de llamadas de clientes y proveedores que intentan contactar a la empresa.",
+        "actions": "Reinicio del teléfono de recepción; prueba de marcación interna (funciona)."
+    },
+    {
+        "ticketId": "NETW-20251211-074",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Sistemas",
+        "description": "El ancho de banda de Internet ha disminuido drásticamente en las últimas 4 horas. La herramienta de monitoreo muestra un consumo inusual en un puerto desconocido del switch principal.",
+        "impact": "Lentitud generalizada para todos los usuarios, afectando la navegación y servicios en la nube.",
+        "actions": "Monitoreo del switch principal; intento de identificar el origen del tráfico."
+    },
+    {
+        "ticketId": "PERM-20251211-075",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Natalia Soto (Ventas)",
+        "description": "Necesito que me den acceso a la carpeta de 'Datos Históricos' en la unidad F: para analizar tendencias pasadas. Actualmente me aparece 'Acceso Denegado'.",
+        "impact": "Bloqueo del análisis de datos cruciales para la planificación de ventas.",
+        "actions": "Intento de acceso a la carpeta."
+    },
+    {
+        "ticketId": "OS-20251211-076",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Javier Rivas (Desarrollo)",
+        "description": "El menú de inicio de Windows 10 no se abre al hacer clic. No puedo buscar aplicaciones ni apagar el equipo correctamente. El administrador de tareas sí funciona.",
+        "impact": "Dificultad para usar las funciones básicas del sistema operativo, afectando el flujo de trabajo.",
+        "actions": "Reinicio del equipo; ejecución del comando 'sfc /scannow' sin éxito."
+    },
+    {
+        "ticketId": "PRNT-20251211-077",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Gerencia",
+        "description": "La impresora multifunción de la Gerencia (modelo Canon 600) está encendida pero no aparece en la lista de impresoras disponibles en ningún equipo. Es una impresora de uso exclusivo de alta dirección.",
+        "impact": "Imposibilidad de imprimir documentos confidenciales de la Gerencia.",
+        "actions": "Reinicio de la impresora; intento de añadir la impresora por IP."
+    },
+    {
+        "ticketId": "CLOUD-20251211-078",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Infraestructura",
+        "description": "Uno de los servidores virtuales en Azure (VM-Web-PROD03) ha entrado en estado de 'desconexión'. No se puede acceder a través de SSH ni la consola de Azure.",
+        "impact": "Reducción de la capacidad de procesamiento web y potencial inestabilidad de la aplicación de producción.",
+        "actions": "Intento de reinicio a través de la consola de Azure (fallido)."
+    },
+    {
+        "ticketId": "SWS-20251211-079",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Marta Hernández (RRHH)",
+        "description": "Necesito ayuda para configurar los filtros de spam en mi Outlook. Estoy recibiendo demasiados correos no deseados en la bandeja de entrada.",
+        "impact": "Molestia y pérdida de tiempo revisando correos no deseados.",
+        "actions": "Marcado de correos como spam."
+    },
+    {
+        "ticketId": "HW-20251211-080",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Carlos Díez (I+D)",
+        "description": "Mi teclado numérico externo (USB) no responde. El LED de 'Num Lock' no se enciende. Probé con otros teclados en el mismo puerto y funcionan. Parece ser el dispositivo en sí.",
+        "impact": "Ralentización en la entrada de datos numéricos en hojas de cálculo y códigos.",
+        "actions": "Prueba del dispositivo en otro puerto USB."
+    },
+    {
+        "ticketId": "SEC-20251211-081",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Todos los Usuarios",
+        "description": "El software Antivirus ha lanzado una alerta masiva indicando que se ha detectado un archivo sospechoso de ransomware en el directorio compartido T: (Público).",
+        "impact": "Riesgo de infección masiva y cifrado de archivos de la empresa. Alerta de seguridad crítica.",
+        "actions": "Aislamiento inmediato de la unidad T:."
+    },
+    {
+        "ticketId": "AUD-20251211-082",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Laura Fernández (Marketing)",
+        "description": "Necesito ayuda para ajustar el volumen de mi micrófono en Teams, ya que mis compañeros se quejan de que mi voz suena muy baja durante las reuniones.",
+        "impact": "Dificultad de comunicación en reuniones virtuales.",
+        "actions": "Intento de ajuste de volumen en la configuración de Teams."
+    },
+    {
+        "ticketId": "DEV-20251211-083",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Desarrollo",
+        "description": "El servidor de base de datos de desarrollo (Dev-DB01) se está quedando sin espacio en disco. Necesitamos ampliar el almacenamiento del volumen D: urgentemente para continuar las pruebas.",
+        "impact": "Bloqueo de las operaciones de desarrollo que requieren la creación de datos de prueba.",
+        "actions": "Limpieza de archivos temporales de la base de datos."
+    },
+    {
+        "ticketId": "USER-20251211-084",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Sofía Torres (Administración)",
+        "description": "Mi tarjeta de identificación de acceso a la oficina ha dejado de funcionar en el lector de la puerta. Necesito una nueva o reactivar la actual.",
+        "impact": "Molestia para acceder al edificio, requiriendo asistencia de seguridad en la entrada.",
+        "actions": "Prueba en múltiples lectores de tarjetas."
+    },
+    {
+        "ticketId": "VDI-20251211-085",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Todos los Usuarios VDI",
+        "description": "El pool de escritorios virtuales (VDI-General-Pool) está experimentando fallas al iniciar sesión. Los usuarios reciben el error 'No hay recursos disponibles'.",
+        "impact": "Bloqueo masivo del trabajo para todos los usuarios que dependen del entorno VDI.",
+        "actions": "Revisión de los logs del Connection Broker."
+    },
+    {
+        "ticketId": "EMAIL-20251211-086",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Director de Marketing",
+        "description": "Necesito acceso delegado a la bandeja de entrada del 'Jefe de Publicidad' mientras está de baja. Requiero permisos para enviar y recibir correos en su nombre.",
+        "impact": "Imposibilidad de gestionar las comunicaciones críticas del departamento de Publicidad.",
+        "actions": "Revisión de la política de delegación de buzones."
+    },
+    {
+        "ticketId": "PRNT-20251211-087",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Manuel Gómez (RRHH)",
+        "description": "Al imprimir desde la aplicación de Recursos Humanos, el pie de página del documento siempre se corta. Parece ser un problema de configuración de márgenes de la impresora por defecto.",
+        "impact": "Los documentos impresos no son perfectamente legibles, pero la información principal está intacta.",
+        "actions": "Ajuste de márgenes en la configuración de la impresión."
+    },
+    {
+        "ticketId": "WIFI-20251211-088",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Sala de Reuniones B",
+        "description": "La red Wi-Fi de la Sala de Reuniones B requiere que ingrese la contraseña cada 5 minutos. El portátil no la guarda y es muy inconveniente durante las presentaciones.",
+        "impact": "Interrupción constante de reuniones y videollamadas en esa sala.",
+        "actions": "Eliminación del perfil de red Wi-Fi y reconexión."
+    },
+    {
+        "ticketId": "DB-20251211-089",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Equipo de Bases de Datos",
+        "description": "Se ha detectado una corrupción en el índice principal de la base de datos de transacciones (TRX-DB01). La integridad de la información podría estar en riesgo.",
+        "impact": "Potencial pérdida de integridad de los datos transaccionales, afectando la operatividad crítica.",
+        "actions": "Ejecución de un CHECKDB con opción de reparación."
+    },
+    {
+        "ticketId": "LIC-20251211-090",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Sara Ramos (Administración)",
+        "description": "La licencia de mi software de edición PDF (Adobe Acrobat Pro) ha expirado. Necesito renovar mi suscripción para poder seguir editando documentos.",
+        "impact": "Imposibilidad de realizar ediciones avanzadas de PDF.",
+        "actions": "Uso de un lector PDF gratuito temporal."
+    },
+    {
+        "ticketId": "PERF-20251211-091",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Pablo Gil (Legal)",
+        "description": "El escaneo de documentos a través del multifuncional del segundo piso es extremadamente lento. Tarda más de 5 minutos en escanear un documento de 10 páginas.",
+        "impact": "Retraso en el procesamiento de grandes volúmenes de documentos legales.",
+        "actions": "Reinicio del multifuncional; prueba de escaneo a diferentes destinos (USB vs Red)."
+    },
+    {
+        "ticketId": "HW-20251211-092",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Cristina Soto (Marketing)",
+        "description": "El soporte de mi monitor de escritorio está roto y no mantiene la altura. El monitor se desliza hacia abajo constantemente, causando problemas ergonómicos.",
+        "impact": "Problema de comodidad y ergonomía, no funcional.",
+        "actions": "Intento de apretar los tornillos del soporte."
+    },
+    {
+        "ticketId": "DEV-20251211-093",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Jefe de Desarrollo",
+        "description": "El entorno de producción de la API principal (API-CORE-PROD) ha comenzado a devolver errores 500 para todas las llamadas. Esto afecta a la aplicación principal y a varios clientes externos.",
+        "impact": "Fallo total de la aplicación principal de negocio y servicios externos. Crítico.",
+        "actions": "Revisión de logs de la API; intento de 'rollback' de la última actualización."
+    },
+    {
+        "ticketId": "FILE-20251211-094",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Ricardo Montes (Finanzas)",
+        "description": "El software de cifrado de archivos (BitLocker) en mi portátil está pidiendo la clave de recuperación cada vez que reinicio el equipo. Esto no debería ocurrir.",
+        "impact": "Retraso en el inicio de sesión y posible indicación de fallo de hardware (TPM).",
+        "actions": "Ingreso de la clave de recuperación; verificación del estado del TPM."
+    },
+    {
+        "ticketId": "CONF-20251211-095",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Elena Vera (RRHH)",
+        "description": "Necesito que me ayuden a configurar mi VPN para que se conecte automáticamente al iniciar Windows, ya que siempre tengo que iniciarla manualmente.",
+        "impact": "Molestia menor al requerir un paso extra para el trabajo remoto.",
+        "actions": "Activación de la casilla 'Conectar automáticamente'."
+    },
+    {
+        "ticketId": "SWS-20251211-096",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Marketing",
+        "description": "La herramienta de gestión de redes sociales (Buffer) ya no puede publicar contenido en la cuenta de Instagram corporativa. La API de conexión parece haber fallado.",
+        "impact": "Detención de las publicaciones programadas en una plataforma social clave.",
+        "actions": "Desconexión y reconexión de la cuenta de Instagram en Buffer."
+    },
+    {
+        "ticketId": "EMAIL-20251211-097",
+        "creationDate": "2025-12-11",
+        "priority": "Low",
+        "owner": "Guillermo Sanz (Ventas)",
+        "description": "Necesito que se cambie el alias de mi correo electrónico de 'g.sanz' a 'guillermo.sanz'. El alias actual causa confusión con otro compañero.",
+        "impact": "Confusión menor en la comunicación interna, sin impacto en la funcionalidad.",
+        "actions": "Envío de correo explicando la solicitud."
+    },
+    {
+        "ticketId": "SEC-20251211-098",
+        "creationDate": "2025-12-11",
+        "priority": "High",
+        "owner": "Jefe de Sistemas",
+        "description": "El firewall perimetral (FW-EDGE-01) ha registrado una caída de servicio (failover a la unidad secundaria) debido a un fallo de hardware. Necesita reemplazo urgente de la unidad principal.",
+        "impact": "Riesgo de seguridad al operar solo con la unidad secundaria. Fallo de redundancia crítico.",
+        "actions": "Revisión del log del firewall; notificación a mantenimiento."
+    },
+    {
+        "ticketId": "USER-20251211-099",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Nuevo Empleado",
+        "description": "Soy un nuevo empleado en el departamento de Finanzas. Necesito que se me proporcione un portátil corporativo configurado y los accesos iniciales al dominio y correo electrónico.",
+        "impact": "El nuevo empleado no puede comenzar su trabajo productivo.",
+        "actions": "Presentación en la oficina de IT."
+    },
+    {
+        "ticketId": "VOIP-20251211-100",
+        "creationDate": "2025-12-11",
+        "priority": "Medium",
+        "owner": "Equipo de Soporte",
+        "description": "La consola de administración de la PBX (centralita IP) muestra que 5 extensiones (205, 206, 210, 301, 302) han perdido su registro. Necesitan ser registradas nuevamente para funcionar.",
+        "impact": "Cinco empleados no pueden realizar ni recibir llamadas de negocios.",
+        "actions": "Revisión de las extensiones afectadas en la consola PBX."
+    }
+]

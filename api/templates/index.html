@@ -1,50 +1,161 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenida - API FastAPI</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
     <div class="container">
         <h1>🚀 Resumidor de Noticias</h1>
         <p class="subtitle">Powered by Groq AI</p>
-        
-        <div class="info-box">
-            <h2>¿Qué es esto?</h2>
-            <p>Ingresa el título y contenido de una noticia y nuestro sistema de IA generará un resumen conciso junto con los puntos clave más importantes.</p>
-            <p>No importa que la noticia esté en otro idioma!</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('summarizer')">📰 Resumidor de Noticias</button>
+            <button class="tab-btn" onclick="switchTab('ingestor')">📥 Ingestión de Tickets</button>
+            <button class="tab-btn" onclick="switchTab('bulk')">📂 Carga Masiva</button>
+            <button class="tab-btn" onclick="switchTab('search')">🔍 Buscar Similares</button>
+            <button class="tab-btn" onclick="switchTab('augment')">✨ Asistente IA</button>
         </div>
-        
-        <div class="info-box">
-            <h2>📰 Resumen de Noticias</h2>
-            <p>Ingresa el título y contenido de una noticia para obtener un resumen y puntos clave.</p>
-            
-            <div class="form-group">
-                <label for="newsTitle">Título de la noticia:</label>
-                <input type="text" id="newsTitle" placeholder="Ej: Cambios en el pronóstico del tiempo" class="form-input">
+
+
+        <div id="summarizer-section" class="section active">
+            <div class="info-box">
+                <h2>¿Qué es esto?</h2>
+                <p>Ingresa el título y contenido de una noticia y nuestro sistema de IA generará un resumen conciso
+                    junto con los puntos clave más importantes.</p>
+                <p>No importa que la noticia esté en otro idioma!</p>
             </div>
-            
-            <div class="form-group">
-                <label for="newsContent">Contenido de la noticia:</label>
-                <textarea id="newsContent" placeholder="Ej: El pronóstico del tiempo prevé..." class="form-textarea" rows="5"></textarea>
+
+            <div class="info-box">
+                <h2>📰 Resumen de Noticias</h2>
+                <p>Ingresa el título y contenido de una noticia para obtener un resumen y puntos clave.</p>
+
+                <div class="form-group">
+                    <label for="newsTitle">Título de la noticia:</label>
+                    <input type="text" id="newsTitle" placeholder="Ej: Cambios en el pronóstico del tiempo"
+                        class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="newsContent">Contenido de la noticia:</label>
+                    <textarea id="newsContent" placeholder="Ej: El pronóstico del tiempo prevé..." class="form-textarea"
+                        rows="5"></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="callSummarizeEndpoint()">Resumir Noticia</button>
             </div>
-            
-            <button class="btn-primary" onclick="callSummarizeEndpoint()">Resumir Noticia</button>
         </div>
-        
+
+        <div id="ingestor-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>¿Qué es esto?</h2>
+                <p>Ingresa un objeto JSON con la información del ticket para almacenarlo en la base de datos vectorial.
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h2>📥 Ingestión de Tickets</h2>
+                <p>Pega aquí el JSON del ticket que deseas procesar.</p>
+
+                <div class="form-group">
+                    <label for="ticketJson">JSON del Ticket:</label>
+                    <textarea id="ticketJson" placeholder='{
+      "ticketId": "12345",
+      "title": "Problema con la impresora",
+      "priority": "HIGH",
+      "owner": "Juan Pérez - IT",
+      "description": "La impresora no responde y muestra un error de conexión.",
+      "impact": "Alto",
+      "actions": "Reinicié la impresora y verifiqué los cables."
+    }' class="form-textarea" rows="10"></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="callIngestEndpoint()">Ingestar Ticket</button>
+            </div>
+        </div>
+
+        <div id="bulk-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>¿Qué es esto?</h2>
+                <p>Sube un archivo JSON que contenga una lista de tickets para ser procesados masivamente.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>📂 Carga Masiva de Tickets</h2>
+                <p>Selecciona un archivo .json con el array de tickets.</p>
+
+                <div class="form-group">
+                    <label for="jsonFile">Archivo JSON:</label>
+                    <input type="file" id="jsonFile" accept=".json" class="form-input">
+                </div>
+
+                <button class="btn-primary" onclick="callBulkIngestEndpoint()">Subir y Procesar</button>
+            </div>
+        </div>
+
+        <div id="search-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>¿Qué es esto?</h2>
+                <p>Ingresa la información de un ticket para encontrar otros tickets similares en la base de datos.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>🔍 Búsqueda de Tickets Similares</h2>
+                <p>Pega aquí el JSON del ticket referencia.</p>
+
+                <div class="form-group">
+                    <label for="ticketJsonSearch">JSON del Ticket:</label>
+                    <textarea id="ticketJsonSearch" placeholder='{
+      "ticketId": "12345",
+      "title": "Problema referencia...",
+      ...
+    }' class="form-textarea" rows="10"></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="callGetSimilarTicketsEndpoint()">Buscar Similares</button>
+            </div>
+        </div>
+
+        <div id="augment-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>¿Qué es esto?</h2>
+                <p>El asistente utilizará IA para analizar tickets similares y proponerte una solución resumida y contactos clave.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>✨ Asistente de Resolución</h2>
+                <p>Pega aquí el JSON del ticket a resolver.</p>
+
+                <div class="form-group">
+                    <label for="ticketJsonAugment">JSON del Ticket:</label>
+                    <textarea id="ticketJsonAugment" placeholder='{
+      "ticketId": "12345",
+      "title": "Problema...",
+      ...
+    }' class="form-textarea" rows="10"></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="callAugmentEndpoint()">Consultar Asistente</button>
+            </div>
+        </div>
+
+
         <div class="button-container">
             <button class="btn-secondary" onclick="clearResponse()">Limpiar respuesta</button>
         </div>
-        
+
         <div class="response-box" id="responseBox">
             <h3>📋 Resultado:</h3>
             <span class="loading" id="loading">Cargando...</span>
             <div id="responseContent" class="response-content"></div>
         </div>
     </div>
-    
+
     <script src="/static/js/script.js"></script>
 </body>
+
 </html>
