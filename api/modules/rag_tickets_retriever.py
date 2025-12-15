@@ -19,11 +19,13 @@ TICKET_SUMMARIZER_SYSTEM_MESSAGE = """
     Tu deberás proveer en lenguaje natural una descripción que resuma los problemas más similares que han habido en otros tickets.
     Para eso cuentas con una lista de tickets antiguos. Indaga en su campo description para realizar el resumen.
     Además, debes brindar una lista de contactos que pueden ayudar a resolver el ticket de entrada, para lo cual has de usar los campos owner de los tickets antiguos.
-    Tu respuesta final debe tener el siguiente formato:
+    Tu respuesta debe estar contenida en el siguiente formato JSON (bajo ningún concepto podrás colocar texto por fuera del JSON):
+    ```json
     {
         "resumen": <contenido del resumen que realizaste>,
         "contactos": <array de contactos>
     }
+    ```
 """
 
 class TicketPriority(str, Enum):
@@ -136,12 +138,18 @@ def augment_similar_tickets(inputTicket: TicketModel) -> str:
 
     choice = message.choices[0]
     
-    summary_text = choice.message.content
+    summary_text = choice.message.content.split("```json")[1].split("```")[0]
 
     try:
         # Intentar parsear la respuesta como JSON
         response_data = json.loads(summary_text)
-        return response_data
+        resumen = response_data.get("resumen", "")
+        if (not resumen or len(resumen) == 0 ):
+            resumen = response_data.get("'resumen'", "")
+        return {
+            "resumen": resumen,
+            "contactos": list(set([t.owner for t in relevant_tickets]))
+        }
     except json.JSONDecodeError:
         # Fallback si el LLM no devuelve JSON válido
         sys.stderr.write(f"DEBUG: Error al parsear JSON del LLM. Usando fallback.\n")
