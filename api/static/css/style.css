@@ -18,7 +18,6 @@ body {
     background: white;
     border-radius: 10px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    max-width: 600px;
     padding: 40px;
     text-align: center;
 }
@@ -69,8 +68,15 @@ h1 {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .info-box {
@@ -228,4 +234,3 @@ button {
     resize: vertical;
     font-family: 'Courier New', monospace;
 }
-

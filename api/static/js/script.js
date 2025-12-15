@@ -275,9 +275,9 @@ function showResponse(data, isError = false) {
             data.forEach((ticket, index) => {
                 formattedText += `--- TICKET #${index + 1} ---\n`;
                 formattedText += `🆔 ID: ${ticket.ticketId}\n`;
-                formattedText += `📌 Título: ${ticket.title}\n`;
                 formattedText += `🚨 Prioridad: ${ticket.priority}\n`;
                 formattedText += `📝 Descripción: ${ticket.description}\n`;
+                formattedText += `👤 Owner: ${ticket.owner}\n`;
                 formattedText += `\n`;
             });
             content.textContent = formattedText;

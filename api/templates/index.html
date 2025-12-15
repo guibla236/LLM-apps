@@ -10,14 +10,14 @@
 
 <body>
     <div class="container">
-        <h1>🚀 Resumidor de Noticias</h1>
+        <h1>🚀 Tarea 4</h1>
         <p class="subtitle">Powered by Groq AI</p>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('summarizer')">📰 Resumidor de Noticias</button>
-            <button class="tab-btn" onclick="switchTab('ingestor')">📥 Ingestión de Tickets</button>
-            <button class="tab-btn" onclick="switchTab('bulk')">📂 Carga Masiva</button>
-            <button class="tab-btn" onclick="switchTab('search')">🔍 Buscar Similares</button>
+            <button class="tab-btn" onclick="switchTab('ingestor')">📥 Carga de Ticket</button>
+            <button class="tab-btn" onclick="switchTab('bulk')">📂 Carga Masiva de Tickets</button>
+            <button class="tab-btn" onclick="switchTab('search')">🔍 Búsqueda de Tickets Similares</button>
             <button class="tab-btn" onclick="switchTab('augment')">✨ Asistente IA</button>
         </div>
 
@@ -111,8 +111,12 @@
                     <label for="ticketJsonSearch">JSON del Ticket:</label>
                     <textarea id="ticketJsonSearch" placeholder='{
       "ticketId": "12345",
-      "title": "Problema referencia...",
-      ...
+      "title": "Problema con la impresora",
+      "priority": "HIGH",
+      "owner": "Juan Pérez - IT",
+      "description": "La impresora no responde y muestra un error de conexión.",
+      "impact": "Alto",
+      "actions": "Reinicié la impresora y verifiqué los cables."
     }' class="form-textarea" rows="10"></textarea>
                 </div>
 
@@ -123,7 +127,8 @@
         <div id="augment-section" class="section" style="display: none;">
             <div class="info-box">
                 <h2>¿Qué es esto?</h2>
-                <p>El asistente utilizará IA para analizar tickets similares y proponerte una solución resumida y contactos clave.</p>
+                <p>El asistente utilizará IA para analizar tickets similares y proponerte una solución resumida y
+                    contactos clave.</p>
             </div>
 
             <div class="info-box">
@@ -134,8 +139,12 @@
                     <label for="ticketJsonAugment">JSON del Ticket:</label>
                     <textarea id="ticketJsonAugment" placeholder='{
       "ticketId": "12345",
-      "title": "Problema...",
-      ...
+      "title": "Problema con la impresora",
+      "priority": "HIGH",
+      "owner": "Juan Pérez - IT",
+      "description": "La impresora no responde y muestra un error de conexión.",
+      "impact": "Alto",
+      "actions": "Reinicié la impresora y verifiqué los cables."
     }' class="form-textarea" rows="10"></textarea>
                 </div>
 
