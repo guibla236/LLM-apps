@@ -138,12 +138,18 @@ def augment_similar_tickets(inputTicket: TicketModel) -> str:
 
     choice = message.choices[0]
     
-    summary_text = choice.message.content
+    summary_text = choice.message.content.split("```json")[1].split("```")[0]
 
     try:
         # Intentar parsear la respuesta como JSON
         response_data = json.loads(summary_text)
-        return response_data
+        resumen = response_data.get("resumen", "")
+        if (not resumen or len(resumen) == 0 ):
+            resumen = response_data.get("'resumen'", "")
+        return {
+            "resumen": resumen,
+            "contactos": list(set([t.owner for t in relevant_tickets]))
+        }
     except json.JSONDecodeError:
         # Fallback si el LLM no devuelve JSON válido
         sys.stderr.write(f"DEBUG: Error al parsear JSON del LLM. Usando fallback.\n")
