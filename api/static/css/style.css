@@ -68,8 +68,15 @@ h1 {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .info-box {
@@ -227,4 +234,3 @@ button {
     resize: vertical;
     font-family: 'Courier New', monospace;
 }
-
