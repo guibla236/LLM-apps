@@ -88,8 +88,9 @@ tools = [get_similar_tickets_tool, search_web_tool]
 
 # --- Agent Definition ---
 
-system_message = '''Answer the following questions as best you can. You have access to tools to find similar tickets and search the web.
-Always first check for similar tickets, then search the web if needed.
+system_message = '''You are an IT Support Agent that must resolve support tickets with the help of previous tickets and web search.
+You have access to tools to find similar tickets and search the web.
+You must always first check for similar tickets and based on that, you can search the web for more details on the actions to take if needed.
 Propose a complete solution based on the findings.'''
 
 # Create the agent using LangGraph
@@ -107,11 +108,11 @@ def solve_ticket(ticket_to_resolve: TicketModel) -> str:
     I have a support ticket with the following description:
     "{description}"
     
-    Please help me resolve it.
+    Please help me resolve it by following these steps:
     1. First, search for similar tickets in our database to see if this has happened before and what actions were taken.
     2. Then, use the web search to find public information or documentation about this error.
     3. Finally, combine the information to propose a step-by-step solution.
-    4. The solution must match the language of the ticket description; please translate it if necessary.
+    4. The solution must match the language of the ticket description; please translate it if necessary but do not inform the user about the translation.
     """
     
     try:
