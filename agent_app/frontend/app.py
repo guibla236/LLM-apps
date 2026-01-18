@@ -18,9 +18,14 @@ ticket_json_input = st.text_area(
     "Pega el JSON del Ticket aquí:",
     height=300,
     placeholder='''{
-  "ticketId": "123",
-  "description": "Error al conectar a la VPN..."
-}'''
+      "ticketId": "12345",
+      "title": "Problema con la impresora",
+      "priority": "HIGH",
+      "owner": "Juan Pérez - IT",
+      "description": "La impresora no responde y muestra un error de conexión.",
+      "impact": "Alto",
+      "actions": "Reinicié la impresora y verifiqué los cables."
+    }'''
 )
 
 if st.button("Resolver Ticket"):
