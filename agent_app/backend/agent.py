@@ -75,11 +75,11 @@ def search_web_tool(query: str) -> str:
     Input should be a search query string.
     """
     try:
-        results = tavily_search.invoke({"query": query})
+        response = tavily_search.invoke({"query": query})
         # Parse results to string
         output = []
-        for res in results:
-            output.append(f"Source: {res.get('url')}\nContent: {res.get('content')}")
+        for res in response['results']:
+            output.append(f"Source: {res['url']}\nContent: {res['content']}")
         return "\n\n".join(output)
     except Exception as e:
         return f"Error searching web: {str(e)}"
