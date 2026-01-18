@@ -64,7 +64,8 @@ def ingest_tickets_to_vectorstore(tickets: List[TicketModel]) -> None:
         tickets (List[TicketModel]): Lista de objetos TicketModel a ingresar.
     """
     try:
-        for ticket in tickets:
+        for i, ticket in enumerate(tickets):
+            print(f"\nDEBUG: Procesando ticket {i+1}/{len(tickets)}: {ticket.ticketId}\n")
             splits = [ticket.description]
             if len(ticket.description) < 5:
                 sys.stderr.write(f"\nDEBUG: Ticket {ticket.ticketId} tiene descripción muy corta, se omite.\n")
@@ -82,6 +83,7 @@ def ingest_tickets_to_vectorstore(tickets: List[TicketModel]) -> None:
                 metadatas=[ticket.model_dump() for _ in range(len(splits))],
                 ids=ids
             )
+            print(f"DEBUG: Ticket {ticket.ticketId} ingresado exitosamente.\n")
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR en ingest_tickets_to_vectorstore ==========\n")
         sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
@@ -95,8 +97,11 @@ def run_ingestion_from(file_path: str) -> None:
     Args:
         file_path (str): Ruta al archivo JSON que contiene los tickets.
     """
+    print(f"\n========== DEBUG: Iniciando ingestión masiva ==========\n")
+    print(f"DEBUG: Archivo recibido: {file_path}")
     try: 
         tickets = load_support_tickets(file_path)
+        print(f"\nDEBUG: Cargados {len(tickets)} tickets.\n")
         ingest_tickets_to_vectorstore(tickets)
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR en run_ingestion_from ==========\n")
