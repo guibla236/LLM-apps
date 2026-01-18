@@ -16,7 +16,7 @@ groq_llm_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 NEWS_SUMMARIZER_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 NEWS_SUMMARIZER_SYSTEM_MESSAGE = """
     Eres un asistente que ayuda a resumir noticias de manera concisa y clara usando el idioma español.
-    Debes proporcionar un resumen en 100 caracteres o menos y una lista de conceptos o tags clave que la noticia menciona.
+    Debes proporcionar un resumen en 500 caracteres o menos y una lista de conceptos o tags clave que la noticia menciona.
     Tu respuesta tiene que ser SIEMPRE en formato JSON como el siguiente:
     {
         "resumen": <contenido del resumen que realizaste>,
@@ -163,7 +163,7 @@ def summarize_news(news: NewsInput) -> NewsSummary:
         
         sys.stderr.write(f"\nDEBUG: Creando respuesta de tipo NewsSummary...\n")
         sys.stderr.write(f"  - original_title: {news.title}\n")
-        sys.stderr.write(f"  - summary: {summary_text[:100]}...\n")
+        sys.stderr.write(f"  - summary: {summary_text}\n")
         sys.stderr.write(f"  - summary_length: {len(summary_text.strip())}\n")
         sys.stderr.write(f"  - key_points: {key_points}\n")
         sys.stderr.flush()
