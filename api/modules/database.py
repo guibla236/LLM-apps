@@ -16,7 +16,14 @@ db = Database()
 async def connect_to_mongo():
     db.client = AsyncIOMotorClient(MONGODB_URI)
     db.db = db.client[MONGODB_DB_NAME]
-    print(f"Connected to MongoDB: {MONGODB_DB_NAME}")
+    
+    # Create unique indexes
+    await db.db.users.create_index("username", unique=True)
+    await db.db.users.create_index("email", unique=True)
+    await db.db.feature_flags.create_index("name", unique=True)
+    await db.db.registrations.create_index("timestamp")
+    
+    print(f"Connected to MongoDB: {MONGODB_DB_NAME} (Indexes ensured)")
 
 async def close_mongo_connection():
     db.client.close()
