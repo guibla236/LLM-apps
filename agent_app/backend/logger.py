@@ -19,7 +19,7 @@ class AgentLogger:
             self.client = AsyncIOMotorClient(MONGODB_URI)
             self.db = self.client[MONGODB_DB_NAME]
             
-    async def log_execution(self, ticket_id, user, input_data, solution, status="success", error_message=None):
+    async def log_execution(self, ticket_id, user, input_data, solution, execution_time=None, status="success", error_message=None):
         await self.connect()
         execution_id = str(uuid.uuid4())
         log_entry = {
@@ -29,6 +29,7 @@ class AgentLogger:
             "user": user,
             "input_data": input_data,
             "solution": solution,
+            "execution_time": execution_time,
             "status": status,
             "error_message": error_message
         }

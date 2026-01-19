@@ -12,6 +12,7 @@ from model import TicketModel
 from logger import agent_logger
 import httpx
 from datetime import datetime
+import time
 
 load_dotenv()
 
@@ -139,20 +140,24 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
     """
     
     execution_id = None
+    start_time = time.perf_counter()
     try:
         # LangGraph ainvoke for async execution
         response = await agent_executor.ainvoke({"messages": [HumanMessage(content=query)]})
         solution = response["messages"][-1].content
+        duration = round(time.perf_counter() - start_time, 2)
         
         # Log successful execution
         execution_id = await agent_logger.log_execution(
             ticket_id=ticket_to_resolve.ticketId,
             user=username,
             input_data=description,
-            solution=solution
+            solution=solution,
+            execution_time=duration
         )
         return solution
     except Exception as e:
+        duration = round(time.perf_counter() - start_time, 2)
         error_msg = str(e)
         # Log failed execution
         execution_id = await agent_logger.log_execution(
@@ -160,6 +165,7 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
             user=username,
             input_data=description,
             solution=None,
+            execution_time=duration,
             status="error",
             error_message=error_msg
         )
