@@ -221,6 +221,13 @@ async def update_flag(name: str, data: dict):
     )
     return {"status": "ok"}
 
+@app.get("/api/flags/{name}")
+async def get_flag_status(name: str):
+    """Public endpoint to check if a feature flag is enabled."""
+    from modules.database import is_feature_enabled
+    enabled = await is_feature_enabled(name)
+    return {"name": name, "enabled": enabled}
+
 @app.get("/api/admin/users", dependencies=[Depends(is_admin)])
 async def list_users():
     db = get_database()
