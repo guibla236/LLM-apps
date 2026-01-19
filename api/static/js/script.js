@@ -8,8 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const userDisplay = document.getElementById('user-display');
+    const isAdmin = localStorage.getItem('is_admin') === 'true';
+    const adminBtn = document.getElementById('admin-btn');
+
     if (userDisplay && username) {
         userDisplay.textContent = `👤 ${username}`;
+    }
+    if (adminBtn && isAdmin) {
+        adminBtn.style.display = 'block';
     }
 });
 
@@ -17,6 +23,7 @@ function logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('api_key');
     localStorage.removeItem('username');
+    localStorage.removeItem('is_admin');
     window.location.href = '/auth';
 }
 

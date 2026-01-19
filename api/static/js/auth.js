@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('api_key', data.api_key);
                 localStorage.setItem('username', data.username);
+                localStorage.setItem('is_admin', data.is_admin);
                 showMessage('¡Ingreso exitoso! Redirigiendo...', 'success');
                 setTimeout(() => window.location.href = '/', 1000);
             } else {
