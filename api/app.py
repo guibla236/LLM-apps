@@ -106,9 +106,24 @@ class UserLogin(BaseModel):
 
 # --- Auth Endpoints ---
 @app.post("/api/register")
-async def register(user_in: UserRegister):
+async def register(user_in: UserRegister, request: Request):
     db = get_database()
-    # Check if user already exists
+    ip_address = request.client.host
+    
+    # 1. IP Check (Limit: 3 registrations per IP per 24h)
+    one_day_ago = datetime.utcnow() - timedelta(days=1)
+    reg_count = await db.registrations.count_documents({
+        "ip": ip_address,
+        "timestamp": {"$gte": one_day_ago}
+    })
+    
+    if reg_count >= 3:
+        raise HTTPException(
+            status_code=429, 
+            detail="Has superado el límite de registros permitidos desde esta conexión por hoy."
+        )
+    
+    # 2. Check if user already exists (Atomic check handled by unique index too)
     if await db.users.find_one({"$or": [{"username": user_in.username}, {"email": user_in.email}]}):
         raise HTTPException(status_code=400, detail="Username or email already registered")
     
@@ -122,7 +137,20 @@ async def register(user_in: UserRegister):
         "is_active": True
     }
     
-    await db.users.insert_one(new_user)
+    try:
+        await db.users.insert_one(new_user)
+        # Log successful registration
+        await db.registrations.insert_one({
+            "ip": ip_address,
+            "username": user_in.username,
+            "timestamp": datetime.utcnow()
+        })
+    except Exception as e:
+        # Check if it's a duplicate key error (if race condition occurred)
+        if "duplicate key error" in str(e):
+             raise HTTPException(status_code=400, detail="Username or email already registered")
+        raise e
+
     return {"message": "User registered successfully", "api_key": new_user["api_key"]}
 
 @app.post("/api/login")
