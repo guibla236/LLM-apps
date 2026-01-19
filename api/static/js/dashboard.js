@@ -169,5 +169,43 @@ async function loadRegistrations() {
     });
 }
 
+// --- Agent Executions ---
+async function loadAgentExecutions() {
+    const response = await fetchAdmin(`${API_BASE}/admin/agent_executions`);
+    const executions = await response.json();
+    const tbody = document.querySelector('#agent-table tbody');
+    tbody.innerHTML = '';
+
+    executions.forEach(ex => {
+        const tr = document.createElement('tr');
+        const statusClass = ex.status === 'success' ? 'color: var(--admin-success)' : 'color: var(--admin-danger)';
+        tr.innerHTML = `
+            <td>${new Date(ex.timestamp).toLocaleString()}</td>
+            <td>${ex.user}</td>
+            <td>${ex.ticket_id}</td>
+            <td style="${statusClass}">${ex.status.toUpperCase()}</td>
+            <td><button class="btn-view-more" onclick="showAgentDetail('${ex._id}')">Ver Solución</button></td>
+        `;
+        tbody.appendChild(tr);
+        // Cache execution for detail view
+        agentCache[ex._id] = ex;
+    });
+}
+
+const agentCache = {};
+function showAgentDetail(id) {
+    const ex = agentCache[id];
+    if (!ex) return;
+
+    document.getElementById('modal-title').textContent = "Solución Propuesta por Agente";
+    document.getElementById('modal-date').textContent = new Date(ex.timestamp).toLocaleString();
+    document.getElementById('modal-user').textContent = ex.user;
+    document.getElementById('modal-path').textContent = `Ticket ID: ${ex.ticket_id}`;
+    document.getElementById('modal-trace').textContent = ex.solution || ex.error_message;
+
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('error-modal').style.display = 'block';
+}
+
 // Initialize
 initDashboard();
