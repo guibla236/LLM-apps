@@ -1,62 +1,64 @@
-# Ticket Management API (Part 1)
+# Ticket Management & News Analysis API
 
-This project contains the core API for managing support tickets, including ingestion, similarity search, and AI-powered data augmentation.
+This project contains a production-ready API for managing support tickets and analyzing news, featuring a RAG (Retrieval-Augmented Generation) architecture, advanced security, and an administrative dashboard.
 
-## Features
-
-- **Ticket Ingestion**: Ingest individual tickets or bulk upload via JSON files.
+## Core Features
+- **Ticket Ingestion**: Ingest individual tickets or bulk upload via JSON files with duplicate detection.
 - **RAG-powered Search**: Retrieve similar past tickets using Pinecone vector database.
-- **AI Augmentation**: Generates summaries and identifies relevant contacts using LLMs (Groq).
-- **Interactive UI**: A simple HTML/JS frontend to interact with the API.
+- **AI Augmentation**: Generates summaries and identifies relevant contacts using Llama 3 models via Groq.
+- **News Summarization**: Specialized endpoint for processing and summarizing technical news.
+- **Hybrid Authentication**: Support for both JWT (for web users) and API Keys (for agents).
+- **Admin Dashboard**: A secure web interface to manage feature flags, monitor error logs, track IP usage, and control registration limits.
+
+## Security & Reliability
+- **Comprehensive Quotas**: Usage limits per individual user and per IP address (Anti Sybil/Multi-account).
+- **Rate Limiting**: Throttling per IP to prevent DoS attacks.
+- **Global Error Handling**: Centralized logging of tracebacks to MongoDB with generic client responses and traceability via `error_id`.
+- **Asynchronous Execution**: Fully refactored to use `async/await` and `AsyncGroq` for high performance.
+
+For detailed information on quotas and safety measures, see [API_LIMITATIONS.md](API_LIMITATIONS.md).
 
 ## Requirements
-
 - Python 3.12+
-- Dependencies listed in `requirements.txt`
+- MongoDB Atlas account
+- Pinecone API Key
+- Groq API Key
 
 ## Setup
 
-1. Navigate to the `api` directory:
-   ```bash
-   cd api
+1. **Environment Variables**: Create a `.env` file in the `api` directory:
+   ```env
+   GROQ_API_KEY=...
+   PINECONE_API_KEY=...
+   PINECONE_INDEX_NAME=...
+   MONGODB_URI=...
+   MONGODB_DB_NAME=ticket_system
+   JWT_SECRET=your_jwt_secret
+   CHAT_MODEL_NAME=llama-3.1-8b-instant
    ```
 
-2. Create and activate a virtual environment (optional but recommended):
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. Install dependencies:
+2. **Installation**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Create a `.env` file in the `api` directory with the following variables:
-   ```env
-   GROQ_API_KEY=your_groq_api_key
-   PINECONE_API_KEY=your_pinecone_api_key
-   PINECONE_ENVIRONMENT=your_pinecone_env
-   PINECONE_INDEX_NAME=your_index_name
+3. **Running**:
+   ```bash
+   uvicorn app:app --reload --port 8000
    ```
 
-## Running the Application
+## Key API Endpoints
 
-Start the FastAPI server:
+### Public / Authenticated
+- `POST /api/register`: New user registration (Limit: 3/day/IP).
+- `POST /api/login`: JWT token acquisition.
+- `POST /api/summarize_news`: AI news summary.
+- `POST /api/get_similar_tickets`: Vector search in previous tickets.
 
-```bash
-uvicorn app:app --reload --port 8000
-```
-Or potentially using the provided `main.py` if preferred:
-```bash
-python3 main.py
-```
-
-The application will be available at `http://localhost:8000`.
-
-## API Endpoints
-
-- `POST /api/ingest_ticket`: Ingest a single ticket.
-- `POST /api/ingest_json_file`: Bulk ingest tickets from an uploaded JSON file.
-- `POST /api/get_similar_tickets`: Find tickets similar to the input.
-- `POST /api/augment_ticket_information`: Enhance ticket data with AI-generated summaries and contacts.
+### Administrative (Protected)
+- `GET /admin`: Dashboard UI.
+- `GET /api/admin/logs`: Audit technical errors.
+- `GET /api/admin/ips`: Monitor daily usage per IP address.
+- `GET /api/admin/registrations`: View account registrations from today.
+- `POST /api/admin/flags/{name}`: Toggle feature flags in real-time.
+- `POST /api/admin/users/{username}/quota`: Update user consumption limits.

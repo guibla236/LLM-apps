@@ -214,7 +214,11 @@
     <div class="dashboard-container">
         <header class="header">
             <h1>Admin Dashboard</h1>
-            <div id="user-info">Administrador: <span id="admin-name">Cargando...</span></div>
+            <div id="user-info">
+                Admin: <span id="admin-name">Cargando...</span>
+                <button onclick="initDashboard()" class="btn-view-more"
+                    style="margin-left: 15px; border-color: rgba(255,255,255,0.2); color: #fff;">🔄 Refrescar</button>
+            </div>
             <a href="/" style="color: #94a3b8; text-decoration: none;">Volver al Inicio</a>
         </header>
 
@@ -255,6 +259,32 @@
             <section class="card">
                 <h2>Logs de Errores Recientes</h2>
                 <div id="logs-container">
+                    <!-- Contenido dinámico -->
+                </div>
+            </section>
+
+            <!-- IP Usage Section -->
+            <section class="card">
+                <h2>Consumo por IP (Hoy)</h2>
+                <div style="overflow-x: auto;">
+                    <table id="ips-table">
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>Consultas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Contenido dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Recent Registrations Section -->
+            <section class="card">
+                <h2>Registros de Hoy</h2>
+                <div id="registrations-container">
                     <!-- Contenido dinámico -->
                 </div>
             </section>

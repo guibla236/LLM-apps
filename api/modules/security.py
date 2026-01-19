@@ -18,6 +18,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
+IP_QUOTA_LIMIT = int(os.getenv("IP_QUOTA_LIMIT", 200))
 
 # --- Security Schemes ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login", auto_error=False)
@@ -67,13 +68,29 @@ def generate_api_key():
 
 # --- Hybrid Dependency ---
 async def get_current_user(
+    request: Request,
     token: Optional[str] = Depends(oauth2_scheme),
     api_key: Optional[str] = Depends(api_key_header)
 ):
     db = get_database()
+    ip_address = request.client.host
     user = None
 
-    # 1. Try JWT validation
+    # 1. IP Quota Check (Global across all accounts from same IP)
+    # Using a simple daily string key to handle resets automatically
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    ip_usage_key = f"{ip_address}:{today}"
+    
+    ip_entry = await db.ip_usage.find_one({"_id": ip_usage_key})
+    current_ip_usage = ip_entry.get("count", 0) if ip_entry else 0
+    
+    if current_ip_usage >= IP_QUOTA_LIMIT:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Límite de cuota diaria para la dirección IP {ip_address} excedido. Intente mañana."
+        )
+
+    # 2. Try JWT validation
     if token:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -83,7 +100,7 @@ async def get_current_user(
         except JWTError:
             pass # Invalid token, try API Key
 
-    # 2. Try API Key validation if no user found yet
+    # 3. Try API Key validation if no user found yet
     if not user and api_key:
         user = await db.users.find_one({"api_key": api_key})
 
@@ -94,14 +111,20 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # 3. Quota Management
+    # 4. User Quota Management
     if user.get("daily_usage", 0) >= user.get("quota_limit", 100):
         raise HTTPException(status_code=403, detail="Daily quota exceeded")
     
-    # 4. Increment usage
+    # 5. Increment usages (Atomic updates)
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$inc": {"daily_usage": 1}}
+    )
+    
+    await db.ip_usage.update_one(
+        {"_id": ip_usage_key},
+        {"$inc": {"count": 1}, "$set": {"last_ip": ip_address, "date": today}},
+        upsert=True
     )
     
     return user
