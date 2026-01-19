@@ -5,11 +5,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
+from modules.database import connect_to_mongo, close_mongo_connection, get_database
 import sys
 import shutil
 import os
 
 app = FastAPI()
+@app.on_event("startup")
+async def startup_db_client():
+    await connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await close_mongo_connection()
 
 # Configurar CORS para permitir solicitudes desde el frontend
 app.add_middleware(
