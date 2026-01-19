@@ -246,6 +246,22 @@ async def get_log_detail(error_id: str):
         raise HTTPException(status_code=404, detail="Log not found")
     log["_id"] = str(log["_id"])
     return log
+
+@app.get("/api/admin/ips", dependencies=[Depends(is_admin)])
+async def list_ip_usage():
+    db = get_database()
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    usage = await db.ip_usage.find({"date": today}).sort("count", -1).to_list(100)
+    for i in usage: i["_id"] = str(i["_id"])
+    return usage
+
+@app.get("/api/admin/registrations", dependencies=[Depends(is_admin)])
+async def list_registrations():
+    db = get_database()
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    regs = await db.registrations.find({"timestamp": {"$gte": today}}).sort("timestamp", -1).to_list(100)
+    for r in regs: r["_id"] = str(r["_id"])
+    return regs
 @app.post("/api/summarize_news", response_model=NewsSummary, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("5/minute")
 async def summarize_news_endpoint(news: NewsInput, request: Request):
