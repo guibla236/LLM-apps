@@ -6,8 +6,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-AGENT_BACKEND_URL = "http://localhost:8001"
+# --- Configuration ---
+# Prioritize Streamlit Secrets (for Streamlit Cloud), then Env Vars, then Localhost
+def get_config(key, default):
+    if key in st.secrets:
+        return st.secrets[key]
+    return os.getenv(key, default)
+
+API_MAIN_URL = get_config("API_MAIN_URL", os.getenv("API_BASE_URL", "http://localhost:8000"))
+AGENT_BACKEND_URL = get_config("API_AGENT_URL", "http://localhost:8001")
 
 st.set_page_config(page_title="Agente de Resolución de Tickets", page_icon="🤖", layout="wide")
 
