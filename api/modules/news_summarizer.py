@@ -5,13 +5,13 @@ Este archivo contiene la estructura mock para que implementes la funcionalidad.
 
 from pydantic import BaseModel, field_validator, ConfigDict, Field
 from .third_party_clients import groq_llm_client as groq_llm_client
-from groq import Groq
+from groq import AsyncGroq
 import os
 import sys
 import re
 import json
 
-groq_llm_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_llm_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 NEWS_SUMMARIZER_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 NEWS_SUMMARIZER_SYSTEM_MESSAGE = """
@@ -80,7 +80,7 @@ class NewsSummary(BaseModel):
     key_points: list[str]
 
 
-def summarize_news(news: NewsInput) -> NewsSummary:
+async def summarize_news(news: NewsInput) -> NewsSummary:
     """
     Resume una noticia usando la estrategia configurada.
     
@@ -109,7 +109,7 @@ def summarize_news(news: NewsInput) -> NewsSummary:
         if not news.content or len(news.content.strip()) == 0:
             raise ValueError("El contenido no puede estar vacío")
 
-        message = groq_llm_client.chat.completions.create(
+        message = await groq_llm_client.chat.completions.create(
             model=NEWS_SUMMARIZER_MODEL_NAME,
             messages=[
                 {

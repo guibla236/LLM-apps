@@ -1,5 +1,5 @@
 import os
-from groq import Groq
+from groq import AsyncGroq
 from pinecone import Pinecone
 from dotenv import load_dotenv
 from typing import Any
@@ -8,7 +8,7 @@ from langchain_pinecone import PineconeVectorStore
 
 
 load_dotenv()
-groq_llm_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_llm_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 TOKENIZER_MODEL_NAME = "all-minilm:22m"
