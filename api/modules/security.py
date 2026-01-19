@@ -109,3 +109,14 @@ async def get_current_user(
 # Backward compatibility for existing endpoint decorations
 async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_current_user)):
     return user
+
+async def is_admin(user: dict = Depends(get_current_user)):
+    """Dependency to verify if a user has administrative privileges."""
+    db = get_database()
+    is_admin_user = await db.admins.find_one({"username": user["username"]})
+    if not is_admin_user:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes privilegios administrativos para acceder a este recurso."
+        )
+    return user
