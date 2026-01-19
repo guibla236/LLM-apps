@@ -159,6 +159,65 @@ async def get_welcome():
 async def get_auth_page():
     return FileResponse("templates/auth.html")
 
+@app.get("/admin")
+async def get_admin_dashboard():
+    """Serves the administrative dashboard."""
+    return FileResponse("templates/dashboard.html")
+
+# --- Admin API Endpoints ---
+
+@app.get("/api/admin/flags", dependencies=[Depends(is_admin)])
+async def list_flags():
+    db = get_database()
+    flags = await db.feature_flags.find().to_list(100)
+    for f in flags: f["_id"] = str(f["_id"])
+    return flags
+
+@app.post("/api/admin/flags/{name}", dependencies=[Depends(is_admin)])
+async def update_flag(name: str, data: dict):
+    db = get_database()
+    await db.feature_flags.update_one(
+        {"name": name},
+        {"$set": {"enabled": data.get("enabled", False)}},
+        upsert=True
+    )
+    return {"status": "ok"}
+
+@app.get("/api/admin/users", dependencies=[Depends(is_admin)])
+async def list_users():
+    db = get_database()
+    users = await db.users.find({}, {"hashed_password": 0}).to_list(100)
+    for u in users: u["_id"] = str(u["_id"])
+    return users
+
+@app.post("/api/admin/users/{username}/quota", dependencies=[Depends(is_admin)])
+async def update_user_quota(username: str, data: dict):
+    db = get_database()
+    new_limit = data.get("quota_limit")
+    if new_limit is None:
+        raise HTTPException(status_code=400, detail="quota_limit is required")
+    
+    await db.users.update_one(
+        {"username": username},
+        {"$set": {"quota_limit": new_limit}}
+    )
+    return {"status": "ok"}
+
+@app.get("/api/admin/logs", dependencies=[Depends(is_admin)])
+async def list_logs():
+    db = get_database()
+    logs = await db.error_logs.find().sort("timestamp", -1).to_list(50)
+    for l in logs: l["_id"] = str(l["_id"])
+    return logs
+
+@app.get("/api/admin/logs/{error_id}", dependencies=[Depends(is_admin)])
+async def get_log_detail(error_id: str):
+    db = get_database()
+    log = await db.error_logs.find_one({"error_id": error_id})
+    if not log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    log["_id"] = str(log["_id"])
+    return log
 @app.post("/api/summarize_news", response_model=NewsSummary, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("5/minute")
 async def summarize_news_endpoint(news: NewsInput, request: Request):
