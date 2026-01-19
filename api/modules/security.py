@@ -111,16 +111,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # 4. User Quota Management
-    if user.get("daily_usage", 0) >= user.get("quota_limit", 100):
-        raise HTTPException(status_code=403, detail="Daily quota exceeded")
-    
-    # 5. Increment usages (Atomic updates)
-    await db.users.update_one(
-        {"_id": user["_id"]},
-        {"$inc": {"daily_usage": 1}}
-    )
-    
+    # 4. Increment IP usage (Atomic updates)
     await db.ip_usage.update_one(
         {"_id": ip_usage_key},
         {"$inc": {"count": 1}, "$set": {"last_ip": ip_address, "date": today}},
@@ -129,8 +120,19 @@ async def get_current_user(
     
     return user
 
-# Backward compatibility for existing endpoint decorations
 async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_current_user)):
+    db = get_database()
+    
+    # User Quota Management (Moved from get_current_user to only apply to API tools)
+    if user.get("daily_usage", 0) >= user.get("quota_limit", 100):
+        raise HTTPException(status_code=403, detail="Daily quota exceeded")
+    
+    # Increment user usage (Atomic update)
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$inc": {"daily_usage": 1}}
+    )
+    
     return user
 
 async def is_admin(user: dict = Depends(get_current_user)):
