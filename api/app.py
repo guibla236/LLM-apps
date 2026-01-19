@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
@@ -10,14 +10,69 @@ from modules.security import get_current_user, limiter, get_password_hash, verif
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
-from datetime import timedelta
+from datetime import datetime, timedelta
 import sys
 import shutil
 import os
+import uuid
+import traceback
 
 app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_id = str(uuid.uuid4())
+    db = get_database()
+    
+    # Try to get user info if possible (might fail if auth fails)
+    user_info = "anonymous"
+    try:
+        # We don't want to trigger Depends here, just try to peek at the header/token
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            from jose import jwt
+            from modules.security import SECRET_KEY, ALGORITHM
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_info = payload.get("sub", "anonymous")
+        else:
+            api_key = request.headers.get("X-API-KEY")
+            if api_key:
+                user_info = f"api_key:{api_key[:8]}..."
+    except Exception:
+        pass
+
+    error_log = {
+        "error_id": error_id,
+        "timestamp": datetime.utcnow(),
+        "user": user_info,
+        "path": request.url.path,
+        "method": request.method,
+        "traceback": traceback.format_exc(),
+        "error_message": str(exc)
+    }
+    
+    # Log to MongoDB if connected
+    if db is not None:
+        try:
+            await db.error_logs.insert_one(error_log)
+        except Exception as e:
+            sys.stderr.write(f"CRITICAL: Failed to log error to MongoDB: {str(e)}\n")
+    
+    # Also log to stderr for safety
+    sys.stderr.write(f"\n[ERROR_ID: {error_id}] Global exception caught:\n")
+    sys.stderr.write(traceback.format_exc())
+    sys.stderr.flush()
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Ha ocurrido un error interno del servidor.",
+            "error_id": error_id
+        }
+    )
 
 @app.on_event("startup")
 async def startup_db_client():
@@ -118,42 +173,7 @@ async def summarize_news_endpoint(news: NewsInput, request: Request):
     }
     ```
     """
-    sys.stderr.write("\n========== DEBUG: Llamada a /api/summarize_news ==========\n")
-    sys.stderr.write(f"DEBUG: Datos recibidos: {news}\n")
-    sys.stderr.flush()
-    
-    try:
-        # Llamar a la función del módulo para resumir la noticia
-        result = summarize_news(news)
-        
-        sys.stderr.write(f"DEBUG: Resultado de summarize_news: {result}\n")
-        sys.stderr.write(f"DEBUG: Validando respuesta para response_model...\n")
-        sys.stderr.flush()
-        
-        # Validar que el resultado cumple con NewsSummary
-        if not isinstance(result, NewsSummary):
-            sys.stderr.write(f"DEBUG: ERROR - El resultado no es NewsSummary, es {type(result)}\n")
-            sys.stderr.flush()
-        else:
-            sys.stderr.write("DEBUG: OK - El resultado es NewsSummary\n")
-            sys.stderr.flush()
-            
-        sys.stderr.write("========== DEBUG: Endpoint finalizado exitosamente ==========\n")
-        sys.stderr.flush()
-        return result
-        
-    except Exception as e:
-        sys.stderr.write(f"\nDEBUG: ERROR en endpoint: {str(e)}\n")
-        sys.stderr.flush()
-        import traceback
-        sys.stderr.write(f"DEBUG: Traceback:\n")
-        sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("========== DEBUG: ERROR en endpoint ==========\n")
-        sys.stderr.flush()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al generar el resumen: {str(e)}"
-        )
+    return await summarize_news(news)
 
 @app.post("/api/ingest_json_ticket", response_model=str, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
@@ -177,33 +197,13 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     }
     ```
     """
-    sys.stderr.write("\n========== DEBUG: Llamada a /api/ingest_json_ticket ==========\n")
-    sys.stderr.write(f"DEBUG: Datos recibidos: {ticket}\n")
-    sys.stderr.flush()
-    
     if await is_feature_enabled("block_ticket_ingestion"):
         raise HTTPException(
             status_code=403, 
             detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
         )
     
-    try:
-        # Llamar a la función para realizar la ingestión de tickets
-        result = ingest_individual_ticket(ticket)
-        return result
-        
-    except Exception as e:
-        sys.stderr.write(f"\nDEBUG: ERROR en endpoint: {str(e)}\n")
-        sys.stderr.flush()
-        import traceback
-        sys.stderr.write(f"DEBUG: Traceback:\n")
-        sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("========== DEBUG: ERROR en ingest_json_ticket ==========\n")
-        sys.stderr.flush()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al generar el resumen: {str(e)}"
-        )
+    return ingest_individual_ticket(ticket)
 
 @app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
 async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
@@ -216,40 +216,17 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Reque
             detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
         )
         
-    sys.stderr.write(f"\n========== DEBUG: Llamada a /api/ingest_json_file ==========\n")
-    sys.stderr.write(f"DEBUG: Archivo recibido: {file.filename}\n")
-    sys.stderr.flush()
-
     temp_file_path = f"temp_{file.filename}"
     
     try:
-        # Guardar el archivo temporalmente
         with open(temp_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        # Ejecutar la ingestión
         run_ingestion_from(temp_file_path)
-        
-        # Eliminar el archivo temporal
+    finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
             
-        sys.stderr.write("DEBUG: Ingestión masiva completada exitosamente.\n")
-        sys.stderr.flush()
-        
-        return {"message": f"Archivo {file.filename} procesado e ingestado exitosamente."}
-        
-    except Exception as e:
-        sys.stderr.write(f"\nDEBUG: ERROR en endpoint de carga masiva: {str(e)}\n")
-        sys.stderr.flush()
-        # Intentar limpiar archivo en caso de error
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-            
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al procesar el archivo: {str(e)}"
-        )
+    return {"message": f"Archivo {file.filename} procesado e ingestado exitosamente."}
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("20/minute")
@@ -273,42 +250,7 @@ async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
     }
     ```
     """
-    sys.stderr.write(f"\n========== DEBUG: Llamada a /api/get_similar_tickets ==========\n")
-    sys.stderr.write(f"DEBUG: Datos recibidos: {ticket}\n")
-    sys.stderr.flush()
-    
-    try:
-        # Llamar a la función del módulo para obtener los tickets similares
-        result = retrieve_relevant_tickets(ticket)
-        
-        sys.stderr.write(f"DEBUG: Resultado de retrieve_relevant_tickets: {result}\n")
-        sys.stderr.write(f"DEBUG: Validando respuesta para response_model...\n")
-        sys.stderr.flush()
-        
-        # Validar que el resultado cumple con list
-        if not isinstance(result, list):
-            sys.stderr.write(f"DEBUG: ERROR - El resultado no es list, es {type(result)}\n")
-            sys.stderr.flush()
-        else:
-            sys.stderr.write("DEBUG: OK - El resultado es list\n")
-            sys.stderr.flush()
-            
-        sys.stderr.write("========== DEBUG: Endpoint finalizado exitosamente ==========\n")
-        sys.stderr.flush()
-        return result
-        
-    except Exception as e:
-        sys.stderr.write(f"\nDEBUG: ERROR en endpoint: {str(e)}\n")
-        sys.stderr.flush()
-        import traceback
-        sys.stderr.write(f"DEBUG: Traceback:\n")
-        sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("========== DEBUG: ERROR en endpoint ==========\n")
-        sys.stderr.flush()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al generar el resumen: {str(e)}"
-        )
+    return await retrieve_relevant_tickets(ticket)
 
 @app.post("/api/augment_ticket_information", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
@@ -332,39 +274,4 @@ async def augment_ticket_information_endpoint(ticket: TicketModel, request: Requ
     }
     ```
     """
-    sys.stderr.write(f"\n========== DEBUG: Llamada a /api/augment_ticket_information ==========\n")
-    sys.stderr.write(f"DEBUG: Datos recibidos: {ticket}\n")
-    sys.stderr.flush()
-    
-    try:
-        # Llamar a la función del módulo para obtener los tickets similares
-        result = augment_similar_tickets(ticket)
-        
-        sys.stderr.write(f"DEBUG: Resultado de augment_similar_tickets: {result}\n")
-        sys.stderr.write(f"DEBUG: Validando respuesta para response_model...\n")
-        sys.stderr.flush()
-        
-        # Validar que el resultado cumple con dict
-        if not isinstance(result, dict):
-            sys.stderr.write(f"DEBUG: ERROR - El resultado no es dict, es {type(result)}\n")
-            sys.stderr.flush()
-        else:
-            sys.stderr.write("DEBUG: OK - El resultado es dict\n")
-            sys.stderr.flush()
-            
-        sys.stderr.write("========== DEBUG: Endpoint finalizado exitosamente ==========\n")
-        sys.stderr.flush()
-        return result
-        
-    except Exception as e:
-        sys.stderr.write(f"\nDEBUG: ERROR en endpoint: {str(e)}\n")
-        sys.stderr.flush()
-        import traceback
-        sys.stderr.write(f"DEBUG: Traceback:\n")
-        sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("========== DEBUG: ERROR en endpoint ==========\n")
-        sys.stderr.flush()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al generar el resumen: {str(e)}"
-        )
+    return await augment_similar_tickets(ticket)
