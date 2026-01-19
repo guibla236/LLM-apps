@@ -184,6 +184,7 @@ async function loadAgentExecutions() {
             <td>${ex.user}</td>
             <td>${ex.ticket_id}</td>
             <td style="${statusClass}">${ex.status.toUpperCase()}</td>
+            <td>${ex.execution_time ? ex.execution_time + 's' : '-'}</td>
             <td><button class="btn-view-more" onclick="showAgentDetail('${ex._id}')">Ver Solución</button></td>
         `;
         tbody.appendChild(tr);
@@ -197,8 +198,9 @@ function showAgentDetail(id) {
     const ex = agentCache[id];
     if (!ex) return;
 
+    const durationText = ex.execution_time ? ` | Duración: ${ex.execution_time}s` : "";
     document.getElementById('modal-title').textContent = "Solución Propuesta por Agente";
-    document.getElementById('modal-date').textContent = new Date(ex.timestamp).toLocaleString();
+    document.getElementById('modal-date').textContent = new Date(ex.timestamp).toLocaleString() + durationText;
     document.getElementById('modal-user').textContent = ex.user;
     document.getElementById('modal-path').textContent = `Ticket ID: ${ex.ticket_id}`;
     document.getElementById('modal-trace').textContent = ex.solution || ex.error_message;
