@@ -279,6 +279,13 @@ async def list_registrations():
     regs = await db.registrations.find({"timestamp": {"$gte": today}}).sort("timestamp", -1).to_list(100)
     for r in regs: r["_id"] = str(r["_id"])
     return regs
+
+@app.get("/api/admin/agent_executions", dependencies=[Depends(is_admin)])
+async def list_agent_executions():
+    db = get_database()
+    executions = await db.agent_executions.find().sort("timestamp", -1).to_list(100)
+    for e in executions: e["_id"] = str(e["_id"])
+    return executions
 @app.post("/api/summarize_news", response_model=NewsSummary, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("5/minute")
 async def summarize_news_endpoint(news: NewsInput, request: Request):
