@@ -6,7 +6,7 @@ from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
-from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota
+from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, is_admin
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
@@ -138,11 +138,15 @@ async def login(user_in: UserLogin):
         data={"sub": user["username"]}, expires_delta=access_token_expires
     )
     
+    # Verificar si es admin
+    admin_record = await db.admins.find_one({"username": user["username"]})
+    
     return {
         "access_token": access_token, 
         "token_type": "bearer", 
         "api_key": user["api_key"],
-        "username": user["username"]
+        "username": user["username"],
+        "is_admin": admin_record is not None
     }
 
 # Endpoint que devuelve la página de bienvenida en HTML
