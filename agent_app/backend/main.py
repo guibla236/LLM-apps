@@ -1,9 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+import traceback
+from logger import agent_logger
 from pydantic import BaseModel
 from agent import solve_ticket
+from dotenv import load_dotenv
 import uvicorn
 import os
-from dotenv import load_dotenv
+import httpx
 
 load_dotenv()
 
@@ -14,14 +18,36 @@ class Item(BaseModel):
 
 from model import TicketModel
 
+API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+
+async def get_authorized_user(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    
+    token = auth_header.split(" ")[1]
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{API_MAIN_URL}/api/me",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Token validation failed")
+            return response.json()
+        except Exception:
+            raise HTTPException(status_code=401, detail="Could not connect to auth service")
+
 @app.post("/solve_ticket")
-async def solve_ticket_endpoint(item: Item):
+async def solve_ticket_endpoint(item: Item, request: Request):
+    user = await get_authorized_user(request)
     try:
         # Convert dict to TicketModel
         ticket_model = TicketModel(**item.ticket)
-        solution = solve_ticket(ticket_model)
+        solution = await solve_ticket(ticket_model, username=user["username"])
         return {"solution": solution}
     except Exception as e:
+        # This will be caught by the global handler if not caught here
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.exception_handler(Exception)
