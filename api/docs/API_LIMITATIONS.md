@@ -49,4 +49,7 @@ Para evitar ataques de denegación de servicio por agotamiento de memoria o proc
 ## 5. Respuestas de Error y Auditoría
 
 - **Errores Técnicos:** En caso de fallos internos (500), la API devuelve un `error_id` único y oculta la traza técnica (traceback) al usuario final.
-- **Auditoría:** Los administradores pueden consultar el detalle técnico completo de cualquier error en el **Panel Administrativo** usando el `error_id`.
+- **Auditoría y Monitoreo:** Los administradores tienen visibilidad total de estos límites a través del **Panel Administrativo**, pudiendo observar en tiempo real:
+    - Consumo acumulado por dirección IP.
+    - Historial de registros recientes por IP.
+    - Detalle técnico completo de errores mediante el `error_id`.
