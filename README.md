@@ -22,6 +22,21 @@ Un agente inteligente diseñado para actuar sobre los tickets. Construido con La
 
 👉 **[Ver documentación e instalación del Agente](agent_app/README.md)**
 
+## Despliegue en Producción (Arquitectura Híbrida)
+
+El sistema está diseñado para un despliegue optimizado en la nube (cero costo) utilizando tres plataformas especializadas:
+
+| Componente | Plataforma | Rol |
+| :--- | :--- | :--- |
+| **API Backend** | **Vercel** | Gestión de datos, búsqueda RAG y Panel Admin. |
+| **Agente Backend** | **Render** | Procesamiento asíncrono del agente (Docker). |
+| **Agente Frontend** | **Streamlit Cloud** | Interfaz de usuario interactiva y segura. |
+
+### Configuración del Monorepo
+Aunque cada servicio reside en una plataforma distinta, el despliegue se realiza directamente desde este repositorio utilizando la funcionalidad de **Root Directory**.
+
+---
+
 ## Flujo de Trabajo Recomendado
 
 1.  **Levantar el API (Parte 1)**: Es necesario que la API esté corriendo en el puerto 8000 para proveer contexto histórico.
