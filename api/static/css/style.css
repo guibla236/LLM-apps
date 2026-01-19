@@ -38,6 +38,22 @@ body {
     font-size: 0.9em;
 }
 
+.btn-admin {
+    padding: 6px 12px;
+    font-size: 0.8em;
+    background: #e0e7ff;
+    color: #4338ca;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-admin:hover {
+    background: #c7d2fe;
+}
+
 .btn-logout {
     padding: 6px 12px;
     font-size: 0.8em;
