@@ -46,7 +46,7 @@ class TicketModel(BaseModel):
     impact: str = Field(..., description="Impacto del problema en la productividad")
     actions: str = Field(..., description="Acciones tomadas por el solicitante antes de reportar")
 
-def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
+async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
     Obtiene una lista de tickets similares que permitan resolver el ticket de entrada.
     
@@ -62,7 +62,7 @@ def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
         - Validación de entrada
     """
     try:
-        raw_results = vector_store.similarity_search(inputTicket.description, k=5)
+        raw_results = await vector_store.asimilarity_search(inputTicket.description, k=5)
         if raw_results is None or len(raw_results) == 0:
             return []
         
@@ -85,7 +85,7 @@ def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
         return []
 
 
-def augment_similar_tickets(inputTicket: TicketModel) -> str:
+async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
     """
     Utilizando un LLM, retorna información sobre tickets similares, contactos y acciones sugeridas.
     
@@ -96,7 +96,7 @@ def augment_similar_tickets(inputTicket: TicketModel) -> str:
         str: Un texto con información sobre tickets similares, contactos y acciones sugeridas.
     """
 
-    relevant_tickets = retrieve_relevant_tickets(inputTicket)
+    relevant_tickets = await retrieve_relevant_tickets(inputTicket)
 
     if (len(relevant_tickets) == 0):
         return {
@@ -115,7 +115,7 @@ def augment_similar_tickets(inputTicket: TicketModel) -> str:
                 """
             }
 
-    message = groq_llm_client.chat.completions.create(
+    message = await groq_llm_client.chat.completions.create(
         model=CHAT_MODEL_NAME,
         messages=[
             {
