@@ -18,6 +18,11 @@ This project contains a production-ready API for managing support tickets and an
 
 For detailed information on quotas and safety measures, see [API_LIMITATIONS.md](API_LIMITATIONS.md).
 
+## Deployment
+This API is configured for deployment on **Vercel** as a series of Serverless Functions.
+*   **Monorepo Support**: Use the `api/` folder as the **Root Directory** in Vercel settings.
+*   **Infrastructure**: Managed via the `api/vercel.json` configuration file.
+
 ## Requirements
 - Python 3.12+
 - MongoDB Atlas account
