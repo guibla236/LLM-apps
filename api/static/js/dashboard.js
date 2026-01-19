@@ -13,6 +13,8 @@ async function initDashboard() {
     await loadFeatureFlags();
     await loadUsers();
     await loadLogs();
+    await loadIPUsage();
+    await loadRegistrations();
 }
 
 async function fetchAdmin(url, options = {}) {
@@ -124,6 +126,46 @@ async function showErrorDetail(errorId) {
 function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
     document.getElementById('error-modal').style.display = 'none';
+}
+
+// --- IP Usage ---
+async function loadIPUsage() {
+    const response = await fetchAdmin(`${API_BASE}/admin/ips`);
+    const ips = await response.json();
+    const tbody = document.querySelector('#ips-table tbody');
+    tbody.innerHTML = '';
+
+    ips.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.last_ip}</td>
+            <td>${item.count}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// --- Registrations ---
+async function loadRegistrations() {
+    const response = await fetchAdmin(`${API_BASE}/admin/registrations`);
+    const regs = await response.json();
+    const container = document.getElementById('registrations-container');
+    container.innerHTML = '';
+
+    regs.forEach(reg => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `
+            <div class="log-header">
+                <span>${new Date(reg.timestamp).toLocaleString()}</span>
+                <span style="color: var(--admin-success)">NUEVO</span>
+            </div>
+            <div>
+                <strong>${reg.username}</strong> desde <small>${reg.ip}</small>
+            </div>
+        `;
+        container.appendChild(div);
+    });
 }
 
 // Initialize
