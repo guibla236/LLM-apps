@@ -29,23 +29,36 @@ llm = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
+async def is_tool_enabled(flag_name: str) -> bool:
+    """Helper to check if a specific tool is enabled via feature flags API."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
+            if response.status_code == 200:
+                return response.json().get("enabled", True)
+    except Exception:
+        pass
+    return True # Default to enabled if API fails
+
 # --- Tools ---
 
 @tool
-def get_similar_tickets_tool(description: str) -> str:
+async def get_similar_tickets_tool(description: str) -> str:
     """
     Useful to find similar support tickets in the database. 
     Input should be a detailed description of the problem.
     Returns a string representation of similar tickets found.
     """
+    if not await is_tool_enabled("enable_rag_tool"):
+        return "El acceso a la base de datos de tickets similares está temporalmente desactivado por el administrador."
+
     url = f"{API_BASE_URL}/api/get_similar_tickets"
     headers = {"X-API-KEY": APP_API_KEY}
     
-    # Construct a dummy ticket dictionary for the API
     payload = {
         "ticketId": "SEARCH-QUERY",
-        "creationDate": "2024-01-01", # Required
-        "priority": "Medium", # Default
+        "creationDate": datetime.utcnow().strftime("%Y-%m-%d"),
+        "priority": "Medium",
         "owner": "Agent",
         "description": description,
         "impact": "Unknown",
@@ -53,14 +66,14 @@ def get_similar_tickets_tool(description: str) -> str:
     }
 
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        tickets = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers, timeout=30.0)
+            response.raise_for_status()
+            tickets = response.json()
         
         if not tickets:
             return "No similar tickets found."
             
-        # Format the output for the LLM
         result_str = "Found similar tickets:\n"
         for i, t in enumerate(tickets):
             result_str += f"{i+1}. ID: {t.get('ticketId')} - Description: {t.get('description')} - Actions: {t.get('actions')}\n"
@@ -75,14 +88,18 @@ def get_similar_tickets_tool(description: str) -> str:
 tavily_search = TavilySearch(max_results=3)
 
 @tool
-def search_web_tool(query: str) -> str:
+async def search_web_tool(query: str) -> str:
     """
     Useful to search the internet for solutions, documentation, and logic.
     Input should be a search query string.
     """
+    if not await is_tool_enabled("enable_web_search"):
+        return "La búsqueda web está temporalmente desactivada por el administrador."
+
     try:
-        response = tavily_search.invoke({"query": query})
-        # Parse results to string
+        # We invoke the async version of the tool if available, or just run it in a thread if not.
+        # TavilySearch from langchain_tavily has ainvoke.
+        response = await tavily_search.ainvoke({"query": query})
         output = []
         for res in response['results']:
             output.append(f"Source: {res['url']}\nContent: {res['content']}")
@@ -102,7 +119,7 @@ Propose a complete solution based on the findings.'''
 # Create the agent using LangGraph
 agent_executor = create_react_agent(llm, tools, prompt=system_message)
 
-def solve_ticket(ticket_to_resolve: TicketModel) -> str:
+async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymous") -> str:
     """
     Main entry point for the agent.
     """
@@ -121,10 +138,29 @@ def solve_ticket(ticket_to_resolve: TicketModel) -> str:
     4. The solution must match the language of the ticket description; please translate it if necessary but do not inform the user about the translation.
     """
     
+    execution_id = None
     try:
-        # LangGraph invoke expects "messages"
-        response = agent_executor.invoke({"messages": [HumanMessage(content=query)]})
-        # The last message is the AI's final answer
-        return response["messages"][-1].content
+        # LangGraph ainvoke for async execution
+        response = await agent_executor.ainvoke({"messages": [HumanMessage(content=query)]})
+        solution = response["messages"][-1].content
+        
+        # Log successful execution
+        execution_id = await agent_logger.log_execution(
+            ticket_id=ticket_to_resolve.ticketId,
+            user=username,
+            input_data=description,
+            solution=solution
+        )
+        return solution
     except Exception as e:
-        return f"Error running agent: {str(e)}"
+        error_msg = str(e)
+        # Log failed execution
+        execution_id = await agent_logger.log_execution(
+            ticket_id=ticket_to_resolve.ticketId,
+            user=username,
+            input_data=description,
+            solution=None,
+            status="error",
+            error_message=error_msg
+        )
+        return f"Error running agent (ID: {execution_id}): {error_msg}"
