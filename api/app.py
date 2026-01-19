@@ -153,6 +153,16 @@ async def register(user_in: UserRegister, request: Request):
 
     return {"message": "User registered successfully", "api_key": new_user["api_key"]}
 
+@app.get("/api/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    """Validates token and returns current user info."""
+    return {
+        "username": user["username"],
+        "email": user["email"],
+        "quota_limit": user["quota_limit"],
+        "daily_usage": user["daily_usage"]
+    }
+
 @app.post("/api/login")
 async def login(user_in: UserLogin):
     db = get_database()
@@ -211,6 +221,13 @@ async def update_flag(name: str, data: dict):
     )
     return {"status": "ok"}
 
+@app.get("/api/flags/{name}")
+async def get_flag_status(name: str):
+    """Public endpoint to check if a feature flag is enabled."""
+    from modules.database import is_feature_enabled
+    enabled = await is_feature_enabled(name)
+    return {"name": name, "enabled": enabled}
+
 @app.get("/api/admin/users", dependencies=[Depends(is_admin)])
 async def list_users():
     db = get_database()
@@ -262,6 +279,13 @@ async def list_registrations():
     regs = await db.registrations.find({"timestamp": {"$gte": today}}).sort("timestamp", -1).to_list(100)
     for r in regs: r["_id"] = str(r["_id"])
     return regs
+
+@app.get("/api/admin/agent_executions", dependencies=[Depends(is_admin)])
+async def list_agent_executions():
+    db = get_database()
+    executions = await db.agent_executions.find().sort("timestamp", -1).to_list(100)
+    for e in executions: e["_id"] = str(e["_id"])
+    return executions
 @app.post("/api/summarize_news", response_model=NewsSummary, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("5/minute")
 async def summarize_news_endpoint(news: NewsInput, request: Request):
