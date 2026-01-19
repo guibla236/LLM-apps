@@ -1,3 +1,33 @@
+// Check authentication on load
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('access_token');
+    const username = localStorage.getItem('username');
+    if (!token && window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
+        return;
+    }
+
+    const userDisplay = document.getElementById('user-display');
+    if (userDisplay && username) {
+        userDisplay.textContent = `👤 ${username}`;
+    }
+});
+
+function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('api_key');
+    localStorage.removeItem('username');
+    window.location.href = '/auth';
+}
+
+function getAuthHeaders() {
+    const token = localStorage.getItem('access_token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
 async function callSummarizeEndpoint() {
     showLoading(true);
     try {
@@ -11,9 +41,7 @@ async function callSummarizeEndpoint() {
 
         const response = await fetch('/api/summarize_news', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 title: title,
                 content: content
@@ -21,6 +49,7 @@ async function callSummarizeEndpoint() {
         });
 
         if (!response.ok) {
+            if (response.status === 401) return logout();
             const errorData = await response.json();
             showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
             return;
@@ -34,16 +63,13 @@ async function callSummarizeEndpoint() {
 }
 
 function switchTab(tabName) {
-    // Buttons
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-    // Sections
     document.getElementById('summarizer-section').style.display = 'none';
     document.getElementById('ingestor-section').style.display = 'none';
     document.getElementById('bulk-section').style.display = 'none';
     document.getElementById('search-section').style.display = 'none';
+    document.getElementById('augment-section').style.display = 'none';
 
-    // Activate
     if (tabName === 'summarizer') {
         document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
         document.getElementById('summarizer-section').style.display = 'block';
@@ -60,8 +86,6 @@ function switchTab(tabName) {
         document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
         document.getElementById('augment-section').style.display = 'block';
     }
-
-    // Clear response box when switching
     clearResponse();
 }
 
@@ -69,38 +93,27 @@ async function callIngestEndpoint() {
     showLoading(true);
     try {
         const jsonText = document.getElementById('ticketJson').value.trim();
-
         if (!jsonText) {
             showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
             return;
         }
 
-        let ticketData;
-        try {
-            ticketData = JSON.parse(jsonText);
-        } catch (e) {
-            showResponse({ error: 'Formato JSON inválido' }, true);
-            return;
-        }
-
+        let ticketData = JSON.parse(jsonText);
         const response = await fetch('/api/ingest_json_ticket', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(ticketData)
         });
 
         if (!response.ok) {
+            if (response.status === 401) return logout();
             const errorData = await response.json();
             showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
             return;
         }
 
         const data = await response.json();
-        // The endpoint returns a string message, wrapping it in object for consistent display
         showResponse({ message: data }, false);
-
     } catch (error) {
         showResponse({ error: error.message }, true);
     }
@@ -120,12 +133,15 @@ async function callBulkIngestEndpoint() {
         const formData = new FormData();
         formData.append('file', file);
 
+        const token = localStorage.getItem('access_token');
         const response = await fetch('/api/ingest_json_file', {
             method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
             body: formData
         });
 
         if (!response.ok) {
+            if (response.status === 401) return logout();
             const errorData = await response.json();
             showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
             return;
@@ -133,7 +149,6 @@ async function callBulkIngestEndpoint() {
 
         const data = await response.json();
         showResponse({ message: data.message }, false);
-
     } catch (error) {
         showResponse({ error: error.message }, true);
     }
@@ -143,29 +158,20 @@ async function callGetSimilarTicketsEndpoint() {
     showLoading(true);
     try {
         const jsonText = document.getElementById('ticketJsonSearch').value.trim();
-
         if (!jsonText) {
             showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
             return;
         }
 
-        let ticketData;
-        try {
-            ticketData = JSON.parse(jsonText);
-        } catch (e) {
-            showResponse({ error: 'Formato JSON inválido' }, true);
-            return;
-        }
-
+        let ticketData = JSON.parse(jsonText);
         const response = await fetch('/api/get_similar_tickets', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(ticketData)
         });
 
         if (!response.ok) {
+            if (response.status === 401) return logout();
             const errorData = await response.json();
             showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
             return;
@@ -173,7 +179,6 @@ async function callGetSimilarTicketsEndpoint() {
 
         const data = await response.json();
         showResponse(data, false);
-
     } catch (error) {
         showResponse({ error: error.message }, true);
     }
@@ -183,29 +188,20 @@ async function callAugmentEndpoint() {
     showLoading(true);
     try {
         const jsonText = document.getElementById('ticketJsonAugment').value.trim();
-
         if (!jsonText) {
             showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
             return;
         }
 
-        let ticketData;
-        try {
-            ticketData = JSON.parse(jsonText);
-        } catch (e) {
-            showResponse({ error: 'Formato JSON inválido' }, true);
-            return;
-        }
-
+        let ticketData = JSON.parse(jsonText);
         const response = await fetch('/api/augment_ticket_information', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(ticketData)
         });
 
         if (!response.ok) {
+            if (response.status === 401) return logout();
             const errorData = await response.json();
             showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
             return;
@@ -213,7 +209,6 @@ async function callAugmentEndpoint() {
 
         const data = await response.json();
         showResponse(data, false);
-
     } catch (error) {
         showResponse({ error: error.message }, true);
     }
@@ -223,50 +218,33 @@ function showResponse(data, isError = false) {
     showLoading(false);
     const box = document.getElementById('responseBox');
     const content = document.getElementById('responseContent');
-
-    // Limpiar clases anteriores
     content.classList.remove('error', 'success');
 
     if (data.error || isError) {
         content.classList.add('error');
         content.textContent = `❌ Error: ${data.error}`;
     } else if (data.original_title) {
-        // News Summary response
         content.classList.add('success');
         let formattedText = `📌 TÍTULO ORIGINAL:\n${data.original_title}\n\n`;
         formattedText += `📝 RESUMEN:\n${data.summary}\n\n`;
-
         if (Array.isArray(data.key_points) && data.key_points.length > 0) {
             formattedText += `🔑 PUNTOS CLAVE:\n`;
-            data.key_points.forEach((point, index) => {
-                formattedText += `   ${index + 1}. ${point}\n`;
-            });
+            data.key_points.forEach((point, index) => { formattedText += `   ${index + 1}. ${point}\n`; });
         }
-
-        formattedText += `\n\n📊 ESTADÍSTICAS:\n`;
-        formattedText += `   • Caracteres en resumen: ${data.summary_length}\n\n`;
-
         content.textContent = formattedText;
     } else if (data.resumen) {
-        // Assistant Response
         content.classList.add('success');
         let formattedText = `✨ CONSULTA AL ASISTENTE:\n\n`;
         formattedText += `📝 RESUMEN DE SOLUCIONES:\n${data.resumen}\n\n`;
-
         if (Array.isArray(data.contactos) && data.contactos.length > 0) {
             formattedText += `👥 CONTACTOS SUGERIDOS:\n`;
-            data.contactos.forEach((contact, index) => {
-                formattedText += `   👤 ${contact}\n`;
-            });
+            data.contactos.forEach(contact => { formattedText += `   👤 ${contact}\n`; });
         }
-
         content.textContent = formattedText;
     } else if (data.message) {
-        // Ingestion success response (assuming strings come back as simple messages)
         content.classList.add('success');
         content.textContent = `✅ Éxito: ${data.message}`;
     } else if (Array.isArray(data)) {
-        // List of tickets (Search result)
         content.classList.add('success');
         if (data.length === 0) {
             content.textContent = "🔍 No se encontraron tickets similares.";
@@ -276,52 +254,24 @@ function showResponse(data, isError = false) {
                 formattedText += `--- TICKET #${index + 1} ---\n`;
                 formattedText += `🆔 ID: ${ticket.ticketId}\n`;
                 formattedText += `🚨 Prioridad: ${ticket.priority}\n`;
-                formattedText += `📝 Descripción: ${ticket.description}\n`;
-                formattedText += `👤 Owner: ${ticket.owner}\n`;
-                formattedText += `\n`;
+                formattedText += `📝 Descripción: ${ticket.description}\n\n`;
             });
             content.textContent = formattedText;
         }
     } else {
-        // Fallback or generic JSON
         content.classList.add('success');
         content.textContent = JSON.stringify(data, null, 2);
     }
-
     box.classList.add('active');
 }
 
 function showLoading(isLoading) {
     const loading = document.getElementById('loading');
-    if (isLoading) {
-        loading.classList.add('active');
-    } else {
-        loading.classList.remove('active');
-    }
+    if (loading) isLoading ? loading.classList.add('active') : loading.classList.remove('active');
 }
 
 function clearResponse() {
     document.getElementById('responseBox').classList.remove('active');
     document.getElementById('responseContent').textContent = '';
-    document.getElementById('responseContent').classList.remove('error', 'success');
-
-    // Clear inputs based on active section could be nice, but simple clear is fine
-    const newsTitle = document.getElementById('newsTitle');
-    const newsContent = document.getElementById('newsContent');
-    const ticketJson = document.getElementById('ticketJson');
-
-    if (newsTitle) newsTitle.value = '';
-    if (newsContent) newsContent.value = '';
-    if (ticketJson) ticketJson.value = '';
-
-    const ticketJsonSearch = document.getElementById('ticketJsonSearch');
-    if (ticketJsonSearch) ticketJsonSearch.value = '';
-
-    const ticketJsonAugment = document.getElementById('ticketJsonAugment');
-    if (ticketJsonAugment) ticketJsonAugment.value = '';
-
-    const jsonFile = document.getElementById('jsonFile');
-    if (jsonFile) jsonFile.value = '';
-
     showLoading(false);
 }

@@ -16,6 +16,8 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME", "llama-3.1-8b-instant")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+APP_API_KEY = os.getenv("APP_API_KEY")
 
 # Initialize LLM
 llm = ChatGroq(
@@ -33,7 +35,8 @@ def get_similar_tickets_tool(description: str) -> str:
     Input should be a detailed description of the problem.
     Returns a string representation of similar tickets found.
     """
-    url = "http://localhost:8000/api/get_similar_tickets"
+    url = f"{API_BASE_URL}/api/get_similar_tickets"
+    headers = {"X-API-KEY": APP_API_KEY}
     
     # Construct a dummy ticket dictionary for the API
     payload = {
@@ -47,7 +50,7 @@ def get_similar_tickets_tool(description: str) -> str:
     }
 
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         tickets = response.json()
         

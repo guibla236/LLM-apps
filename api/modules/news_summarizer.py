@@ -3,7 +3,7 @@ Módulo para la funcionalidad de resumen de noticias.
 Este archivo contiene la estructura mock para que implementes la funcionalidad.
 """
 
-from pydantic import BaseModel, field_validator, ConfigDict
+from pydantic import BaseModel, field_validator, ConfigDict, Field
 from .third_party_clients import groq_llm_client as groq_llm_client
 from groq import Groq
 import os
@@ -26,8 +26,8 @@ NEWS_SUMMARIZER_SYSTEM_MESSAGE = """
 
 class NewsInput(BaseModel):
     """Modelo para la entrada de datos de una noticia."""
-    title: str
-    content: str
+    title: str = Field(..., min_length=5, max_length=255)
+    content: str = Field(..., min_length=20, max_length=10000)
     
     model_config = ConfigDict(str_strip_whitespace=True)
     

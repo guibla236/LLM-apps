@@ -1,15 +1,31 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
+from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
+from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from pydantic import BaseModel, Field, EmailStr
+from datetime import timedelta
 import sys
 import shutil
 import os
 
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.on_event("startup")
+async def startup_db_client():
+    await connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await close_mongo_connection()
 
 # Configurar CORS para permitir solicitudes desde el frontend
 app.add_middleware(
@@ -23,14 +39,70 @@ app.add_middleware(
 # Montar archivos estáticos (CSS, JS, imágenes, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# --- Auth Models ---
+class UserRegister(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=72)
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+# --- Auth Endpoints ---
+@app.post("/api/register")
+async def register(user_in: UserRegister):
+    db = get_database()
+    # Check if user already exists
+    if await db.users.find_one({"$or": [{"username": user_in.username}, {"email": user_in.email}]}):
+        raise HTTPException(status_code=400, detail="Username or email already registered")
+    
+    new_user = {
+        "username": user_in.username,
+        "email": user_in.email,
+        "hashed_password": get_password_hash(user_in.password),
+        "api_key": generate_api_key(),
+        "quota_limit": 100,
+        "daily_usage": 0,
+        "is_active": True
+    }
+    
+    await db.users.insert_one(new_user)
+    return {"message": "User registered successfully", "api_key": new_user["api_key"]}
+
+@app.post("/api/login")
+async def login(user_in: UserLogin):
+    db = get_database()
+    user = await db.users.find_one({"username": user_in.username})
+    
+    if not user or not verify_password(user_in.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    
+    access_token_expires = timedelta(minutes=1440)
+    access_token = create_access_token(
+        data={"sub": user["username"]}, expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer", 
+        "api_key": user["api_key"],
+        "username": user["username"]
+    }
+
 # Endpoint que devuelve la página de bienvenida en HTML
 @app.get("/")
 async def get_welcome():
     """Devuelve la página de bienvenida."""
     return FileResponse("templates/index.html")
 
-@app.post("/api/summarize_news", response_model=NewsSummary)
-async def summarize_news_endpoint(news: NewsInput):
+@app.get("/auth")
+async def get_auth_page():
+    return FileResponse("templates/auth.html")
+
+@app.post("/api/summarize_news", response_model=NewsSummary, dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("5/minute")
+async def summarize_news_endpoint(news: NewsInput, request: Request):
     """
     Endpoint POST que devuelve el resumen de una noticia determinada.
     
@@ -83,8 +155,9 @@ async def summarize_news_endpoint(news: NewsInput):
             detail=f"Error al generar el resumen: {str(e)}"
         )
 
-@app.post("/api/ingest_json_ticket", response_model=str)
-async def ingest_json_ticket_endpoint(ticket: TicketModel):
+@app.post("/api/ingest_json_ticket", response_model=str, dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("10/minute")
+async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     """
     Endpoint POST que realiza la ingestión de un documento JSON determinado.
     
@@ -108,6 +181,12 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel):
     sys.stderr.write(f"DEBUG: Datos recibidos: {ticket}\n")
     sys.stderr.flush()
     
+    if await is_feature_enabled("block_ticket_ingestion"):
+        raise HTTPException(
+            status_code=403, 
+            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+        )
+    
     try:
         # Llamar a la función para realizar la ingestión de tickets
         result = ingest_individual_ticket(ticket)
@@ -126,11 +205,17 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel):
             detail=f"Error al generar el resumen: {str(e)}"
         )
 
-@app.post("/api/ingest_json_file")
-async def ingest_json_file_endpoint(file: UploadFile = File(...)):
+@app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
+async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
     """
     Endpoint POST para la ingestión masiva de tickets desde un archivo JSON.
     """
+    if await is_feature_enabled("block_ticket_ingestion"):
+        raise HTTPException(
+            status_code=403, 
+            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+        )
+        
     sys.stderr.write(f"\n========== DEBUG: Llamada a /api/ingest_json_file ==========\n")
     sys.stderr.write(f"DEBUG: Archivo recibido: {file.filename}\n")
     sys.stderr.flush()
@@ -166,8 +251,9 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...)):
             detail=f"Error al procesar el archivo: {str(e)}"
         )
 
-@app.post("/api/get_similar_tickets", response_model=list[TicketModel])
-async def get_similar_tickets_endpoint(ticket: TicketModel):
+@app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("20/minute")
+async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
     """
     Endpoint POST que devuelve los tickets similares a un ticket determinado que se recibe como parámetro.
     
@@ -224,8 +310,9 @@ async def get_similar_tickets_endpoint(ticket: TicketModel):
             detail=f"Error al generar el resumen: {str(e)}"
         )
 
-@app.post("/api/augment_ticket_information", response_model=dict)
-async def augment_ticket_information_endpoint(ticket: TicketModel):
+@app.post("/api/augment_ticket_information", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("10/minute")
+async def augment_ticket_information_endpoint(ticket: TicketModel, request: Request):
     """
     Endpoint POST que aumenta la información de un ticket determinado que se recibe como parámetro.
     
