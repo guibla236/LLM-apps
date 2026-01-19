@@ -8,7 +8,7 @@ This project contains a production-ready API for managing support tickets and an
 - **AI Augmentation**: Generates summaries and identifies relevant contacts using Llama 3 models via Groq.
 - **News Summarization**: Specialized endpoint for processing and summarizing technical news.
 - **Hybrid Authentication**: Support for both JWT (for web users) and API Keys (for agents).
-- **Admin Dashboard**: A secure web interface to manage feature flags, monitor error logs, and control usage quotas.
+- **Admin Dashboard**: A secure web interface to manage feature flags, monitor error logs, track IP usage, and control registration limits.
 
 ## Security & Reliability
 - **Comprehensive Quotas**: Usage limits per individual user and per IP address (Anti Sybil/Multi-account).
@@ -58,5 +58,7 @@ For detailed information on quotas and safety measures, see [API_LIMITATIONS.md]
 ### Administrative (Protected)
 - `GET /admin`: Dashboard UI.
 - `GET /api/admin/logs`: Audit technical errors.
+- `GET /api/admin/ips`: Monitor daily usage per IP address.
+- `GET /api/admin/registrations`: View account registrations from today.
 - `POST /api/admin/flags/{name}`: Toggle feature flags in real-time.
 - `POST /api/admin/users/{username}/quota`: Update user consumption limits.
