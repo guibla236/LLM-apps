@@ -31,9 +31,9 @@ class TicketModel(BaseModel):
     creationDate: str = Field(..., description="Fecha de creación en formato YYYY-MM-DD")
     priority: TicketPriority
     owner: str = Field(..., description="Nombre y departamento del solicitante")
-    description: str = Field(..., description="Descripción detallada del problema")
-    impact: str = Field(..., description="Impacto del problema en la productividad")
-    actions: str = Field(..., description="Acciones tomadas por el solicitante antes de reportar")
+    description: str = Field(..., min_length=10, max_length=5000, description="Descripción detallada del problema")
+    impact: str = Field(..., max_length=500, description="Impacto del problema en la productividad")
+    actions: str = Field(..., max_length=1000, description="Acciones tomadas por el solicitante antes de reportar")
 
 def load_support_tickets(file_path: str) -> List[TicketModel]:
     """
