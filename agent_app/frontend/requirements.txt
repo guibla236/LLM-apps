@@ -1,0 +1,8 @@
+# Frontend requirements for Ticket Resolution Agent
+streamlit==1.52.1
+requests==2.32.5
+httpx==0.28.1
+python-dotenv==1.2.1
+pandas==2.3.3
+numpy==2.3.5
+pydantic==2.12.5
