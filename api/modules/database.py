@@ -24,3 +24,14 @@ async def close_mongo_connection():
 
 def get_database():
     return db.db
+
+async def is_feature_enabled(flag_name: str) -> bool:
+    """Check if a feature flag is enabled in the database."""
+    database = get_database()
+    if database is None:
+        return False
+    
+    flag = await database.feature_flags.find_one({"name": flag_name})
+    if flag:
+        return flag.get("enabled", False)
+    return False

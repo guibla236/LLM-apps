@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
-from modules.database import connect_to_mongo, close_mongo_connection, get_database
+from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
 from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -181,6 +181,12 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     sys.stderr.write(f"DEBUG: Datos recibidos: {ticket}\n")
     sys.stderr.flush()
     
+    if await is_feature_enabled("block_ticket_ingestion"):
+        raise HTTPException(
+            status_code=403, 
+            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+        )
+    
     try:
         # Llamar a la función para realizar la ingestión de tickets
         result = ingest_individual_ticket(ticket)
@@ -199,11 +205,17 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
             detail=f"Error al generar el resumen: {str(e)}"
         )
 
-@app.post("/api/ingest_json_file")
-async def ingest_json_file_endpoint(file: UploadFile = File(...)):
+@app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
+async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
     """
     Endpoint POST para la ingestión masiva de tickets desde un archivo JSON.
     """
+    if await is_feature_enabled("block_ticket_ingestion"):
+        raise HTTPException(
+            status_code=403, 
+            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+        )
+        
     sys.stderr.write(f"\n========== DEBUG: Llamada a /api/ingest_json_file ==========\n")
     sys.stderr.write(f"DEBUG: Archivo recibido: {file.filename}\n")
     sys.stderr.flush()
