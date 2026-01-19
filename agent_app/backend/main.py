@@ -33,10 +33,24 @@ async def get_authorized_user(request: Request):
                 headers={"Authorization": f"Bearer {token}"}
             )
             if response.status_code != 200:
-                raise HTTPException(status_code=401, detail="Token validation failed")
+                # Propagate the error from the API instead of masking it
+                detail = "Unknown error during token validation"
+                try:
+                    detail = response.json().get("detail", detail)
+                except:
+                    detail = response.text
+                raise HTTPException(status_code=response.status_code, detail=detail)
             return response.json()
-        except Exception:
+        except httpx.RequestError as e:
+            # specifically log connection/network issues
+            print(f"Error connecting to auth service at {API_MAIN_URL}: {str(e)}")
             raise HTTPException(status_code=401, detail="Could not connect to auth service")
+        except HTTPException:
+            # Re-raise HTTPExceptions we manually raised above
+            raise
+        except Exception as e:
+            print(f"Unexpected error in get_authorized_user: {str(e)}")
+            raise HTTPException(status_code=401, detail=f"Auth error: {str(e)}")
 
 @app.post("/solve_ticket")
 async def solve_ticket_endpoint(item: Item, request: Request):
