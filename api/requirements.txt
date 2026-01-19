@@ -78,3 +78,8 @@ xxhash==3.6.0
 yarl==1.22.0
 zstandard==0.25.0
 motor
+slowapi
+dnspython
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic[email]
