@@ -153,6 +153,16 @@ async def register(user_in: UserRegister, request: Request):
 
     return {"message": "User registered successfully", "api_key": new_user["api_key"]}
 
+@app.get("/api/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    """Validates token and returns current user info."""
+    return {
+        "username": user["username"],
+        "email": user["email"],
+        "quota_limit": user["quota_limit"],
+        "daily_usage": user["daily_usage"]
+    }
+
 @app.post("/api/login")
 async def login(user_in: UserLogin):
     db = get_database()
