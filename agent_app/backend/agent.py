@@ -9,6 +9,9 @@ import requests
 import json
 from dotenv import load_dotenv
 from model import TicketModel
+from logger import agent_logger
+import httpx
+from datetime import datetime
 
 load_dotenv()
 

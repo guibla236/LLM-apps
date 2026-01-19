@@ -15,6 +15,7 @@ async function initDashboard() {
     await loadLogs();
     await loadIPUsage();
     await loadRegistrations();
+    await loadAgentExecutions();
 }
 
 async function fetchAdmin(url, options = {}) {
