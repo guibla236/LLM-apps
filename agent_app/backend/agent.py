@@ -111,31 +111,19 @@ async def search_web_tool(query: str) -> str:
 tools = [get_similar_tickets_tool, search_web_tool]
 
 # --- Agent Definition ---
+system_message = '''You are an IT Support Agent that helps users resolve technical problems through chat.
+You have access to tools to find similar tickets in our knowledge base and search the web for solutions.
 
-system_message = '''You are an IT Support Agent that must resolve support tickets with the help of previous tickets and web search.
-You have access to tools to find similar tickets and search the web.
-You must always first check for similar tickets and based on that, you can search the web for more details on the actions to take if needed.
-Propose a complete solution based on the findings.'''
-
-# Create the agent using LangGraph
-agent_executor = create_react_agent(llm, tools, prompt=system_message)
-
-async def chat_with_agent(messages: list[dict], username: str = "anonymous") -> str:
-    """
-    Handles a conversation with the agent.
-    messages: list of dicts with 'role' and 'content' (OpenAI format).
-    """
-    # Convert OpenAI-style messages to LangChain messages
-    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-    
-    formatted_messages = []
-    for msg in messages:
-        if msg['role'] == 'user':
-            formatted_messages.append(HumanMessage(content=msg['content']))
-        elif msg['role'] == 'assistant':
-            formatted_messages.append(AIMessage(content=msg['content']))
-        elif msg['role'] == 'system':
-            formatted_messages.append(SystemMessage(content=msg['content']))
+Follow these guidelines:
+1. Be helpful, professional, and concise.
+2. If the user presents a problem, use the `get_similar_tickets_tool` to see if we have historical solutions.
+3. If more information is needed or if no similar tickets are found, use the `search_web_tool`.
+4. Combine the information found to propose a clear, step-by-step solution.
+5. If the user's message is just a greeting or unrelated to a technical problem, respond politely but guide them towards presenting their technical issue.
+6. Always check if you have enough information before proposing a solution; ask clarifying questions if necessary.
+7. You must never mention the names of your tools or the names of the functions you are using.
+8. Do not share raw JSONs or code unless the user asks for it.
+9. Respond in the same language as the user.'''
 
     start_time = time.perf_counter()
     try:
