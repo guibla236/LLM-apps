@@ -125,13 +125,64 @@ Follow these guidelines:
 8. Do not share raw JSONs or code unless the user asks for it.
 9. Respond in the same language as the user.'''
 
-from langgraph.checkpoint.memory import MemorySaver
+from checkpoint import AsyncMongoDBSaver
+from motor.motor_asyncio import AsyncIOMotorClient
+
+# Initialize MongoDB Connection for Checkpointer
+MONGODB_URI = os.getenv("MONGODB_URI")
+mongo_client = AsyncIOMotorClient(MONGODB_URI)
+db_name = os.getenv("MONGODB_DB_NAME", "ticket_system")
+db = mongo_client[db_name]
 
 # Initialize memory checkpointer
-memory = MemorySaver()
+checkpointer = AsyncMongoDBSaver(db)
 
 # Create the agent using LangGraph with checkpointer
-agent_executor = create_react_agent(llm, tools, prompt=system_message, checkpointer=memory)
+agent_executor = create_react_agent(llm, tools, prompt=system_message, checkpointer=checkpointer)
+
+async def get_user_sessions(username: str):
+    """Retrieves all chat sessions for a given username from the checkpoints."""
+    # Aggregation to find unique thread_ids that start with the username
+    pipeline = [
+        {"$match": {"thread_id": {"$regex": f"^{username}_"}}},
+        {"$sort": {"checkpoint_id": -1}}, # Newest first
+        {"$group": {
+            "_id": "$thread_id",
+            "last_updated": {"$first": "$_id"} # Approximate time from ObjectId generation if available or rely on checkpoint metadata if implemented
+            # LangGraph checkpoints don't intrinsically have a timestamp field at top level easily queryable without opening the blob, 
+            # but we can assume the latest write is the 'last updated'.
+        }}
+    ]
+    # For simplicity in this custom implementation, we might just list unique thread_ids if regex is slow, 
+    # but with username prefix it should be fine for now.
+    # Note: checkpoint_id in LangGraph is often a timestamp-like string or UUID.
+    
+    # A more efficient way if we had a separate 'sessions' collection. 
+    # Since we only have checkpoints, we scan unique thread_ids.
+    cursor = db["checkpoints"].aggregate(pipeline)
+    sessions = []
+    async for doc in cursor:
+        sessions.append(doc["_id"])
+    return sessions
+
+async def get_session_history_messages(thread_id: str):
+    """Retrieves the message history for a specific thread."""
+    config = {"configurable": {"thread_id": thread_id}}
+    # Retrieve the state
+    state = await agent_executor.aget_state(config)
+    messages = []
+    if state and state.values and "messages" in state.values:
+        for msg in state.values["messages"]:
+            # Serialize for frontend
+            role = "unknown"
+            if msg.type == "human": role = "user"
+            elif msg.type == "ai": role = "assistant"
+            elif msg.type == "tool": role = "tool"  # Valid for tool outputs
+            
+            # We filter out SystemMessages or keep them if needed. Usually frontends hide them.
+            if role in ["user", "assistant"]: 
+                 messages.append({"role": role, "content": msg.content})
+    return messages
 
 async def chat_with_agent(message: str, thread_id: str = "default_user") -> str:
     """
@@ -161,6 +212,9 @@ async def chat_with_agent(message: str, thread_id: str = "default_user") -> str:
         )
         return solution
     except Exception as e:
+        import traceback
+        print(f"CRITICAL AGENT ERROR: {e}")
+        traceback.print_exc()
         duration = round(time.perf_counter() - start_time, 2)
         error_msg = str(e)
         await agent_logger.log_execution(
