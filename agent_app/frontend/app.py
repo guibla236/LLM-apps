@@ -9,8 +9,12 @@ load_dotenv()
 # --- Configuration ---
 # Prioritize Streamlit Secrets (for Streamlit Cloud), then Env Vars, then Localhost
 def get_config(key, default):
-    if key in st.secrets:
-        return st.secrets[key]
+    try:
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        # Streamlit raises StreamlitSecretNotFoundError if no secrets are found
+        pass
     return os.getenv(key, default)
 
 API_MAIN_URL = get_config("API_MAIN_URL", os.getenv("API_BASE_URL", "http://localhost:8000"))
