@@ -140,29 +140,36 @@ checkpointer = AsyncMongoDBSaver(db)
 # Create the agent using LangGraph with checkpointer
 agent_executor = create_react_agent(llm, tools, prompt=system_message, checkpointer=checkpointer)
 
+async def generate_session_title(first_message: str, first_response: str) -> str:
+    """Generates a short title (3-5 words) for the chat session using Groq."""
+    try:
+        # Use a separate invocation or a simple prompt to summarize
+        prompt = f"""Summarize the following conversation in 3-5 words for a title. Do not use quotes.
+        User: {first_message[:200]}
+        AI: {first_response[:200]}
+        Title:"""
+        
+        # We can reuse the same LLM instance
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        title = response.content.strip().replace('"', '')
+        return title
+    except Exception as e:
+        print(f"Error generating title: {e}")
+        return "Nueva Conversación"
+
 async def get_user_sessions(username: str):
-    """Retrieves all chat sessions for a given username from the checkpoints."""
-    # Aggregation to find unique thread_ids that start with the username
-    pipeline = [
-        {"$match": {"thread_id": {"$regex": f"^{username}_"}}},
-        {"$sort": {"checkpoint_id": -1}}, # Newest first
-        {"$group": {
-            "_id": "$thread_id",
-            "last_updated": {"$first": "$_id"} # Approximate time from ObjectId generation if available or rely on checkpoint metadata if implemented
-            # LangGraph checkpoints don't intrinsically have a timestamp field at top level easily queryable without opening the blob, 
-            # but we can assume the latest write is the 'last updated'.
-        }}
-    ]
-    # For simplicity in this custom implementation, we might just list unique thread_ids if regex is slow, 
-    # but with username prefix it should be fine for now.
-    # Note: checkpoint_id in LangGraph is often a timestamp-like string or UUID.
+    """Retrieves all chat sessions for a given username from the sessions collection."""
+    # Query the sessions collection directly
+    cursor = db["sessions"].find({"username": username}).sort("last_updated", -1)
     
-    # A more efficient way if we had a separate 'sessions' collection. 
-    # Since we only have checkpoints, we scan unique thread_ids.
-    cursor = db["checkpoints"].aggregate(pipeline)
     sessions = []
     async for doc in cursor:
-        sessions.append(doc["_id"])
+        sessions.append({
+            "session_id": doc.get("session_id"), # Stored UUID part
+            "thread_id": doc.get("thread_id"),   # Full LangGraph ID
+            "title": doc.get("title", "Chat sin título"),
+            "last_updated": doc.get("last_updated").isoformat() if doc.get("last_updated") else None
+        })
     return sessions
 
 async def get_session_history_messages(thread_id: str):
@@ -201,6 +208,40 @@ async def chat_with_agent(message: str, thread_id: str = "default_user") -> str:
         )
         solution = response["messages"][-1].content
         duration = round(time.perf_counter() - start_time, 2)
+        
+        # --- Session Management ---
+        try:
+            # Parse username and session_uuid from thread_id (format: user_uuid)
+            parts = thread_id.split("_", 1)
+            if len(parts) == 2:
+                username, session_uuid = parts
+                
+                # Check if session exists
+                session_doc = await db["sessions"].find_one({"thread_id": thread_id})
+                
+                update_data = {
+                    "last_updated": datetime.utcnow()
+                }
+                
+                if not session_doc:
+                    # New session: Generate Title
+                    title = await generate_session_title(message, solution)
+                    update_data["title"] = title
+                    update_data["created_at"] = datetime.utcnow()
+                    update_data["thread_id"] = thread_id
+                    update_data["session_id"] = session_uuid
+                    update_data["username"] = username
+                    
+                    await db["sessions"].insert_one(update_data)
+                else:
+                    # Update existing session timestamp
+                    await db["sessions"].update_one(
+                        {"thread_id": thread_id},
+                        {"$set": update_data}
+                    )
+        except Exception as session_e:
+            print(f"Error updating session metadata: {session_e}")
+            # Non-blocking error
         
         # Log execution
         await agent_logger.log_execution(
