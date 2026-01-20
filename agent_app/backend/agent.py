@@ -120,9 +120,55 @@ Propose a complete solution based on the findings.'''
 # Create the agent using LangGraph
 agent_executor = create_react_agent(llm, tools, prompt=system_message)
 
+async def chat_with_agent(messages: list[dict], username: str = "anonymous") -> str:
+    """
+    Handles a conversation with the agent.
+    messages: list of dicts with 'role' and 'content' (OpenAI format).
+    """
+    # Convert OpenAI-style messages to LangChain messages
+    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+    
+    formatted_messages = []
+    for msg in messages:
+        if msg['role'] == 'user':
+            formatted_messages.append(HumanMessage(content=msg['content']))
+        elif msg['role'] == 'assistant':
+            formatted_messages.append(AIMessage(content=msg['content']))
+        elif msg['role'] == 'system':
+            formatted_messages.append(SystemMessage(content=msg['content']))
+
+    start_time = time.perf_counter()
+    try:
+        response = await agent_executor.ainvoke({"messages": formatted_messages})
+        solution = response["messages"][-1].content
+        duration = round(time.perf_counter() - start_time, 2)
+        
+        # Log execution (we use a dummy ticketId for general chat)
+        await agent_logger.log_execution(
+            ticket_id="CHAT-SESSION",
+            user=username,
+            input_data=messages[-1]['content'],
+            solution=solution,
+            execution_time=duration
+        )
+        return solution
+    except Exception as e:
+        duration = round(time.perf_counter() - start_time, 2)
+        error_msg = str(e)
+        await agent_logger.log_execution(
+            ticket_id="CHAT-SESSION",
+            user=username,
+            input_data=messages[-1]['content'],
+            solution=None,
+            execution_time=duration,
+            status="error",
+            error_message=error_msg
+        )
+        return f"Error running agent: {error_msg}"
+
 async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymous") -> str:
     """
-    Main entry point for the agent.
+    Main entry point for the agent (Legacy/Ticket mode).
     """
     description = ticket_to_resolve.description
     if not description:
@@ -139,16 +185,13 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
     4. The solution must match the language of the ticket description; please translate it if necessary but do not inform the user about the translation.
     """
     
-    execution_id = None
     start_time = time.perf_counter()
     try:
-        # LangGraph ainvoke for async execution
         response = await agent_executor.ainvoke({"messages": [HumanMessage(content=query)]})
         solution = response["messages"][-1].content
         duration = round(time.perf_counter() - start_time, 2)
         
-        # Log successful execution
-        execution_id = await agent_logger.log_execution(
+        await agent_logger.log_execution(
             ticket_id=ticket_to_resolve.ticketId,
             user=username,
             input_data=description,
@@ -159,8 +202,7 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
     except Exception as e:
         duration = round(time.perf_counter() - start_time, 2)
         error_msg = str(e)
-        # Log failed execution
-        execution_id = await agent_logger.log_execution(
+        await agent_logger.log_execution(
             ticket_id=ticket_to_resolve.ticketId,
             user=username,
             input_data=description,
@@ -169,4 +211,4 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
             status="error",
             error_message=error_msg
         )
-        return f"Error running agent (ID: {execution_id}): {error_msg}"
+        return f"Error running agent: {error_msg}"
