@@ -73,10 +73,38 @@ if st.sidebar.button("Cerrar Sesión"):
     logout()
 
 st.sidebar.markdown("---")
-if st.sidebar.button("Limpiar Chat"):
+# New Conversation Button
+if st.sidebar.button("➕ Nueva Conversación"):
     st.session_state['messages'] = []
-    st.session_state['chat_session_id'] = str(uuid.uuid4()) # Dynamic session reset
+    st.session_state['chat_session_id'] = str(uuid.uuid4())
     st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📜 Historial")
+
+# Load past sessions
+if st.session_state['token']:
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+        resp = requests.get(f"{AGENT_BACKEND_URL}/sessions", headers=headers)
+        if resp.status_code == 200:
+            sessions = resp.json().get("sessions", [])
+            for s in sessions:
+                # s is "username_sessionuuid"
+                parts = s.split("_", 1)
+                if len(parts) == 2:
+                    pure_id = parts[1]
+                    username_prefix = parts[0]
+                    # Simple display
+                    if st.sidebar.button(f"Chat {pure_id[:8]}...", key=pure_id):
+                        st.session_state['chat_session_id'] = pure_id
+                        # Load history
+                        hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{pure_id}", headers=headers)
+                        if hist_resp.status_code == 200:
+                            st.session_state['messages'] = hist_resp.json().get("messages", [])
+                        st.rerun()
+    except Exception as e:
+        st.sidebar.error(f"Connection error: {e}")
 
 st.title("🤖 Chat de Soporte IT")
 st.markdown("""
