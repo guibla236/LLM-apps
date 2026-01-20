@@ -20,6 +20,11 @@ async def root():
 class Item(BaseModel):
     ticket: dict
 
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str
+
+from agent import solve_ticket, chat_with_agent, get_user_sessions, get_session_history_messages, delete_user_session
 from model import TicketModel
 
 API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
@@ -37,7 +42,6 @@ async def get_authorized_user(request: Request):
                 headers={"Authorization": f"Bearer {token}"}
             )
             if response.status_code != 200:
-                # Propagate the error from the API instead of masking it
                 detail = "Unknown error during token validation"
                 try:
                     detail = response.json().get("detail", detail)
@@ -46,11 +50,9 @@ async def get_authorized_user(request: Request):
                 raise HTTPException(status_code=response.status_code, detail=detail)
             return response.json()
         except httpx.RequestError as e:
-            # specifically log connection/network issues
             print(f"Error connecting to auth service at {API_MAIN_URL}: {str(e)}")
             raise HTTPException(status_code=401, detail="Could not connect to auth service")
         except HTTPException:
-            # Re-raise HTTPExceptions we manually raised above
             raise
         except Exception as e:
             print(f"Unexpected error in get_authorized_user: {str(e)}")
@@ -60,12 +62,53 @@ async def get_authorized_user(request: Request):
 async def solve_ticket_endpoint(item: Item, request: Request):
     user = await get_authorized_user(request)
     try:
-        # Convert dict to TicketModel
         ticket_model = TicketModel(**item.ticket)
         solution = await solve_ticket(ticket_model, username=user["username"])
         return {"solution": solution}
     except Exception as e:
-        # This will be caught by the global handler if not caught here
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest, http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        # Use a combination of username and session_id as thread_id
+        # This allows multiple independent sessions for the same user
+        thread_id = f"{user['username']}_{request.session_id}"
+        response = await chat_with_agent(
+            message=request.message, 
+            thread_id=thread_id
+        )
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sessions")
+async def get_sessions_endpoint(http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        sessions = await get_user_sessions(user["username"])
+        return {"sessions": sessions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/history/{session_id}")
+async def get_history_endpoint(session_id: str, http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        # Reconstruct thread_id
+        thread_id = f"{user['username']}_{session_id}"
+        messages = await get_session_history_messages(thread_id)
+        return {"messages": messages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.delete("/history/{session_id}")
+async def delete_history_endpoint(session_id: str, http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        await delete_user_session(user["username"], session_id)
+        return {"status": "success", "message": "Session deleted"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.exception_handler(Exception)

@@ -44,7 +44,8 @@ langsmith==0.4.59
 MarkupSafe==3.0.3
 marshmallow==3.26.1
 multidict==6.7.0
-motor==3.6.0
+motor
+extra-streamlit-components==3.6.0
 mypy_extensions==1.1.0
 narwhals==2.13.0
 numpy==2.3.5
