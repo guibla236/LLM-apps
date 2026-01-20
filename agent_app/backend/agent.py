@@ -172,6 +172,21 @@ async def get_user_sessions(username: str):
         })
     return sessions
 
+async def delete_user_session(username: str, session_id: str):
+    """Deletes a session and all its associated checkpoints."""
+    thread_id = f"{username}_{session_id}"
+    
+    # Delete from sessions metadata
+    await db["sessions"].delete_one({"thread_id": thread_id})
+    
+    # Delete checkpoints
+    await db["checkpoints"].delete_many({"thread_id": thread_id})
+    
+    # Delete writes (intermediate steps)
+    await db["checkpoints_writes"].delete_many({"thread_id": thread_id})
+    
+    return True
+
 async def get_session_history_messages(thread_id: str):
     """Retrieves the message history for a specific thread."""
     config = {"configurable": {"thread_id": thread_id}}
