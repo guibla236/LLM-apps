@@ -3,11 +3,11 @@ import requests
 import json
 import os
 import uuid
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ... (get_config and API URLs remain same)
 def get_config(key, default):
     try:
         if key in st.secrets:
@@ -21,6 +21,23 @@ API_MAIN_URL = get_config("API_MAIN_URL", os.getenv("API_BASE_URL", "http://loca
 AGENT_BACKEND_URL = get_config("API_AGENT_URL", "http://localhost:8001")
 
 st.set_page_config(page_title="Agente de Resolución de Tickets", page_icon="🤖", layout="wide")
+
+# --- Custom CSS for Toast Positioning ---
+st.markdown("""
+<style>
+    /* Move toast to bottom center */
+    div[data-testid="stToast"] {
+        position: fixed;
+        bottom: 50px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        right: auto !important;
+        top: auto !important;
+        width: auto !important;
+        min-width: 200px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # --- Session State Initialization ---
 if 'token' not in st.session_state:
@@ -40,7 +57,6 @@ def logout():
     st.rerun()
 
 # --- Login Logic ---
-# ... (existing login logic is fine)
 if not st.session_state['token']:
     st.title("🔐 Ingreso al Sistema de Agente")
     
@@ -94,17 +110,37 @@ if st.session_state['token']:
                 title = s.get("title", "Chat")
                 session_id = s.get("session_id")
                 
-                # Truncate title if too long
-                display_text = (title[:25] + '...') if len(title) > 25 else title
+                # Truncate title quite strictly (12 chars) to ensure single line with trash icon
+                display_text = (title[:12] + '...') if len(title) > 12 else title
                 
                 # 'help' parameter for tooltip (works as a hover text in newer Streamlit versions)
-                if st.sidebar.button(display_text, key=session_id, help=title):
-                    st.session_state['chat_session_id'] = session_id
-                    # Load history
-                    hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{session_id}", headers=headers)
-                    if hist_resp.status_code == 200:
-                        st.session_state['messages'] = hist_resp.json().get("messages", [])
-                    st.rerun()
+                col1, col2 = st.sidebar.columns([0.8, 0.2])
+                with col1:
+                    if st.button(display_text, key=session_id, help=title):
+                        st.session_state['chat_session_id'] = session_id
+                        # Load history
+                        hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{session_id}", headers=headers)
+                        if hist_resp.status_code == 200:
+                            st.session_state['messages'] = hist_resp.json().get("messages", [])
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🗑️", key=f"del_{session_id}", help="Eliminar conversación"):
+                        # Delete session
+                        del_headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+                        try:
+                            requests.delete(f"{AGENT_BACKEND_URL}/history/{session_id}", headers=del_headers)
+                            
+                            # If we deleted the active session, reset view
+                            if st.session_state.get('chat_session_id') == session_id:
+                                st.session_state['messages'] = []
+                                st.session_state['chat_session_id'] = str(uuid.uuid4())
+                            
+                            st.toast("Conversación eliminada correctamente! 🗑️")
+                            time.sleep(2) # Give time for toast to show
+                            st.rerun()
+                        except Exception as e:
+                            st.sidebar.error(f"Error deleting: {e}")
     except Exception as e:
         st.sidebar.error(f"Connection error: {e}")
 

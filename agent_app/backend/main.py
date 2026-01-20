@@ -24,7 +24,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str
 
-from agent import solve_ticket, chat_with_agent, get_user_sessions, get_session_history_messages
+from agent import solve_ticket, chat_with_agent, get_user_sessions, get_session_history_messages, delete_user_session
 from model import TicketModel
 
 API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
@@ -100,6 +100,14 @@ async def get_history_endpoint(session_id: str, http_request: Request):
         thread_id = f"{user['username']}_{session_id}"
         messages = await get_session_history_messages(thread_id)
         return {"messages": messages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.delete("/history/{session_id}")
+async def delete_history_endpoint(session_id: str, http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        await delete_user_session(user["username"], session_id)
+        return {"status": "success", "message": "Session deleted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
