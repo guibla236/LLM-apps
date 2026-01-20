@@ -125,17 +125,37 @@ Follow these guidelines:
 8. Do not share raw JSONs or code unless the user asks for it.
 9. Respond in the same language as the user.'''
 
+from langgraph.checkpoint.memory import MemorySaver
+
+# Initialize memory checkpointer
+memory = MemorySaver()
+
+# Create the agent using LangGraph with checkpointer
+agent_executor = create_react_agent(llm, tools, prompt=system_message, checkpointer=memory)
+
+async def chat_with_agent(message: str, thread_id: str = "default_user") -> str:
+    """
+    Handles a conversation with the agent using LangGraph state persistence.
+    """
+    from langchain_core.messages import HumanMessage
+    
     start_time = time.perf_counter()
+    config = {"configurable": {"thread_id": thread_id}}
+    
     try:
-        response = await agent_executor.ainvoke({"messages": formatted_messages})
+        # LangGraph rehydrates state from memory based on thread_id
+        response = await agent_executor.ainvoke(
+            {"messages": [HumanMessage(content=message)]},
+            config=config
+        )
         solution = response["messages"][-1].content
         duration = round(time.perf_counter() - start_time, 2)
         
-        # Log execution (we use a dummy ticketId for general chat)
+        # Log execution
         await agent_logger.log_execution(
-            ticket_id="CHAT-SESSION",
-            user=username,
-            input_data=messages[-1]['content'],
+            ticket_id=f"CHAT-{thread_id}",
+            user=thread_id,
+            input_data=message,
             solution=solution,
             execution_time=duration
         )
@@ -144,9 +164,9 @@ Follow these guidelines:
         duration = round(time.perf_counter() - start_time, 2)
         error_msg = str(e)
         await agent_logger.log_execution(
-            ticket_id="CHAT-SESSION",
-            user=username,
-            input_data=messages[-1]['content'],
+            ticket_id=f"CHAT-{thread_id}",
+            user=thread_id,
+            input_data=message,
             solution=None,
             execution_time=duration,
             status="error",

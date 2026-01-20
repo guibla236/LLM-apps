@@ -21,7 +21,8 @@ class Item(BaseModel):
     ticket: dict
 
 class ChatRequest(BaseModel):
-    messages: list[dict]
+    message: str
+    session_id: str
 
 from agent import solve_ticket, chat_with_agent
 from model import TicketModel
@@ -29,7 +30,6 @@ from model import TicketModel
 API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 async def get_authorized_user(request: Request):
-    # ... (existing code remains the same)
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
@@ -72,7 +72,13 @@ async def solve_ticket_endpoint(item: Item, request: Request):
 async def chat_endpoint(request: ChatRequest, http_request: Request):
     user = await get_authorized_user(http_request)
     try:
-        response = await chat_with_agent(request.messages, username=user["username"])
+        # Use a combination of username and session_id as thread_id
+        # This allows multiple independent sessions for the same user
+        thread_id = f"{user['username']}_{request.session_id}"
+        response = await chat_with_agent(
+            message=request.message, 
+            thread_id=thread_id
+        )
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
