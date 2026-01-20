@@ -24,7 +24,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str
 
-from agent import solve_ticket, chat_with_agent
+from agent import solve_ticket, chat_with_agent, get_user_sessions, get_session_history_messages
 from model import TicketModel
 
 API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
@@ -80,6 +80,26 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
             thread_id=thread_id
         )
         return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sessions")
+async def get_sessions_endpoint(http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        sessions = await get_user_sessions(user["username"])
+        return {"sessions": sessions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/history/{session_id}")
+async def get_history_endpoint(session_id: str, http_request: Request):
+    user = await get_authorized_user(http_request)
+    try:
+        # Reconstruct thread_id
+        thread_id = f"{user['username']}_{session_id}"
+        messages = await get_session_history_messages(thread_id)
+        return {"messages": messages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
