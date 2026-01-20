@@ -7,6 +7,8 @@ This directory contains the production-ready Ticket Resolution Agent, capable of
 - **Backend**: FastAPI service (`backend/`) running a fully **asynchronous** LangGraph ReAct agent.
 - **Frontend**: Streamlit application (`frontend/`) with built-in **JWT Authentication**.
 - **Auditing**: Every execution is logged to the `agent_executions` and `error_logs` collections in MongoDB.
+- **Memory & Persistence**: Stateful conversation history stored in MongoDB (`checkpoints`), maintaining context across sessions.
+- **Session Management**: Multi-session support with auto-generated titles, deletion capabilities, and cookie-based login persistence.
 - **Tools**:
     - `get_similar_tickets_tool`: Queries the Part 1 API to find historical context (respects Feature Flags).
     - `search_web_tool`: Searches the web via Tavily (respects Feature Flags).
