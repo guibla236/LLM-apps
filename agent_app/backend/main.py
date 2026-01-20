@@ -13,6 +13,10 @@ load_dotenv()
 
 app = FastAPI(title="Ticket Resolution Agent API")
 
+@app.get("/")
+async def root():
+    return {"message": "Agent Backend is running", "status": "online"}
+
 class Item(BaseModel):
     ticket: dict
 
