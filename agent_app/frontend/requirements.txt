@@ -6,3 +6,4 @@ python-dotenv==1.2.1
 pandas==2.3.3
 numpy==2.3.5
 pydantic==2.12.5
+extra_streamlit_components==0.1.81
