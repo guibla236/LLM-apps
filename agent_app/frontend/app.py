@@ -141,6 +141,11 @@ if st.session_state['token']:
         resp = requests.get(f"{AGENT_BACKEND_URL}/sessions", headers=headers)
         if resp.status_code == 200:
             sessions = resp.json().get("sessions", [])
+            
+            # --- Empty State Message ---
+            if not sessions:
+                st.sidebar.info("No hay historial.")
+            
             for s in sessions:
                 # s is now a dict: {session_id, thread_id, title, last_updated}
                 title = s.get("title", "Chat")
