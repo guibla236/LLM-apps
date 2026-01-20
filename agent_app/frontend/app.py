@@ -27,13 +27,17 @@ if 'token' not in st.session_state:
     st.session_state['token'] = None
 if 'username' not in st.session_state:
     st.session_state['username'] = None
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = []
 
 def logout():
     st.session_state['token'] = None
     st.session_state['username'] = None
+    st.session_state['messages'] = []
     st.rerun()
 
 # --- Login Logic ---
+# ... (existing login logic is fine)
 if not st.session_state['token']:
     st.title("🔐 Ingreso al Sistema de Agente")
     
@@ -65,52 +69,44 @@ st.sidebar.title(f"👤 {st.session_state['username']}")
 if st.sidebar.button("Cerrar Sesión"):
     logout()
 
-st.title("🤖 Agente de Resolución de Tickets")
+st.sidebar.markdown("---")
+if st.sidebar.button("Limpiar Chat"):
+    st.session_state['messages'] = []
+    st.rerun()
+
+st.title("🤖 Chat de Soporte IT")
 st.markdown("""
-Este agente inteligente te ayuda a resolver tickets de soporte técnico utilizando RAG y búsqueda web.
+Describe tu problema técnico y el agente te ayudará utilizando la base de conocimientos y búsqueda web.
 """)
 
-col1, col2 = st.columns([1, 1])
+# Display chat history
+for message in st.session_state['messages']:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-with col1:
-    ticket_json_input = st.text_area(
-        "Pega el JSON del Ticket aquí:",
-        height=400,
-        placeholder='''{
-      "ticketId": "12345",
-      "title": "Error de conexión en base de datos",
-      "description": "El servidor no puede conectar a MongoDB Atlas después del reinicio."
-    }'''
-    )
+# Chat input
+if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
+    # Add user message to state
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    if st.button("🚀 Resolver Ticket"):
-        if not ticket_json_input:
-            st.error("Por favor, ingresa el JSON del ticket.")
-        else:
+    # Get response from agent
+    with st.chat_message("assistant"):
+        with st.spinner("Pensando..."):
             try:
-                ticket_data = json.loads(ticket_json_input)
+                headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+                response = requests.post(
+                    f"{AGENT_BACKEND_URL}/chat",
+                    json={"messages": st.session_state['messages']},
+                    headers=headers
+                )
                 
-                with st.spinner("El agente está analizando el caso..."):
-                    headers = {"Authorization": f"Bearer {st.session_state['token']}"}
-                    response = requests.post(
-                        f"{AGENT_BACKEND_URL}/solve_ticket",
-                        json={"ticket": ticket_data},
-                        headers=headers
-                    )
-                    
-                    if response.status_code == 200:
-                        st.session_state['last_solution'] = response.json().get("solution")
-                    else:
-                        st.error(f"Error ({response.status_code}): {response.text}")
-                        
-            except json.JSONDecodeError:
-                st.error("Formato JSON inválido.")
+                if response.status_code == 200:
+                    agent_response = response.json().get("response")
+                    st.markdown(agent_response)
+                    st.session_state['messages'].append({"role": "assistant", "content": agent_response})
+                else:
+                    st.error(f"Error ({response.status_code}): {response.text}")
             except Exception as e:
                 st.error(f"Error inesperado: {str(e)}")
-
-with col2:
-    st.markdown("### 💡 Solución Propuesta")
-    if 'last_solution' in st.session_state and st.session_state['last_solution']:
-        st.markdown(st.session_state['last_solution'])
-    else:
-        st.info("Ingresa un ticket y haz clic en 'Resolver' para ver la propuesta del agente.")
