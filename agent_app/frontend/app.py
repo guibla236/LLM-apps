@@ -97,7 +97,8 @@ if st.session_state['token']:
                 # Truncate title if too long
                 display_text = (title[:25] + '...') if len(title) > 25 else title
                 
-                if st.sidebar.button(display_text, key=session_id):
+                # 'help' parameter for tooltip (works as a hover text in newer Streamlit versions)
+                if st.sidebar.button(display_text, key=session_id, help=title):
                     st.session_state['chat_session_id'] = session_id
                     # Load history
                     hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{session_id}", headers=headers)
