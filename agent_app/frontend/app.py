@@ -2,12 +2,12 @@ import streamlit as st
 import requests
 import json
 import os
+import uuid
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Configuration ---
-# Prioritize Streamlit Secrets (for Streamlit Cloud), then Env Vars, then Localhost
+# ... (get_config and API URLs remain same)
 def get_config(key, default):
     try:
         if key in st.secrets:
@@ -29,11 +29,14 @@ if 'username' not in st.session_state:
     st.session_state['username'] = None
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
+if 'chat_session_id' not in st.session_state:
+    st.session_state['chat_session_id'] = str(uuid.uuid4())
 
 def logout():
     st.session_state['token'] = None
     st.session_state['username'] = None
     st.session_state['messages'] = []
+    st.session_state['chat_session_id'] = str(uuid.uuid4())
     st.rerun()
 
 # --- Login Logic ---
@@ -72,6 +75,7 @@ if st.sidebar.button("Cerrar Sesión"):
 st.sidebar.markdown("---")
 if st.sidebar.button("Limpiar Chat"):
     st.session_state['messages'] = []
+    st.session_state['chat_session_id'] = str(uuid.uuid4()) # Dynamic session reset
     st.rerun()
 
 st.title("🤖 Chat de Soporte IT")
@@ -98,7 +102,10 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
                 headers = {"Authorization": f"Bearer {st.session_state['token']}"}
                 response = requests.post(
                     f"{AGENT_BACKEND_URL}/chat",
-                    json={"messages": st.session_state['messages']},
+                    json={
+                        "message": prompt, 
+                        "session_id": st.session_state['chat_session_id']
+                    },
                     headers=headers
                 )
                 
