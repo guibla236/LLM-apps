@@ -90,19 +90,20 @@ if st.session_state['token']:
         if resp.status_code == 200:
             sessions = resp.json().get("sessions", [])
             for s in sessions:
-                # s is "username_sessionuuid"
-                parts = s.split("_", 1)
-                if len(parts) == 2:
-                    pure_id = parts[1]
-                    username_prefix = parts[0]
-                    # Simple display
-                    if st.sidebar.button(f"Chat {pure_id[:8]}...", key=pure_id):
-                        st.session_state['chat_session_id'] = pure_id
-                        # Load history
-                        hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{pure_id}", headers=headers)
-                        if hist_resp.status_code == 200:
-                            st.session_state['messages'] = hist_resp.json().get("messages", [])
-                        st.rerun()
+                # s is now a dict: {session_id, thread_id, title, last_updated}
+                title = s.get("title", "Chat")
+                session_id = s.get("session_id")
+                
+                # Truncate title if too long
+                display_text = (title[:25] + '...') if len(title) > 25 else title
+                
+                if st.sidebar.button(display_text, key=session_id):
+                    st.session_state['chat_session_id'] = session_id
+                    # Load history
+                    hist_resp = requests.get(f"{AGENT_BACKEND_URL}/history/{session_id}", headers=headers)
+                    if hist_resp.status_code == 200:
+                        st.session_state['messages'] = hist_resp.json().get("messages", [])
+                    st.rerun()
     except Exception as e:
         st.sidebar.error(f"Connection error: {e}")
 
@@ -141,6 +142,8 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
                     agent_response = response.json().get("response")
                     st.markdown(agent_response)
                     st.session_state['messages'].append({"role": "assistant", "content": agent_response})
+                    # Force rerun to update sidebar with new title if it was a new session
+                    st.rerun()
                 else:
                     st.error(f"Error ({response.status_code}): {response.text}")
             except Exception as e:
