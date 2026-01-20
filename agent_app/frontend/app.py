@@ -5,6 +5,7 @@ import os
 import uuid
 import time
 from dotenv import load_dotenv
+import extra_streamlit_components as stx
 
 load_dotenv()
 
@@ -39,6 +40,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- Cookie Manager for Persistence ---
+cookie_manager = stx.CookieManager()
+
 # --- Session State Initialization ---
 if 'token' not in st.session_state:
     st.session_state['token'] = None
@@ -49,11 +53,37 @@ if 'messages' not in st.session_state:
 if 'chat_session_id' not in st.session_state:
     st.session_state['chat_session_id'] = str(uuid.uuid4())
 
+# --- Auto-Login Check (Persistence) ---
+# If token not in state, try checking cookie
+if not st.session_state['token']:
+    try:
+        auth_cookie = cookie_manager.get("auth_token")
+        if auth_cookie:
+            # We have a cookie, let's assume it's valid or validate with /me
+            # Validating with /me is safer
+            headers = {"Authorization": f"Bearer {auth_cookie}"}
+            me_resp = requests.get(f"{API_MAIN_URL}/api/me", headers=headers)
+            if me_resp.status_code == 200:
+                data = me_resp.json()
+                st.session_state['token'] = auth_cookie
+                st.session_state['username'] = data['username']
+                # Optionally rerun to skip login screen immediately
+                # st.rerun() 
+                # But we are at top level, so falling through to main page logic works if we structure carefully.
+                # Since Streamlit runs top-to-bottom, if we set token here, the login block below won't trigger.
+            else:
+                # Invalid cookie
+                cookie_manager.delete("auth_token")
+    except Exception as e:
+        pass
+
 def logout():
     st.session_state['token'] = None
     st.session_state['username'] = None
     st.session_state['messages'] = []
     st.session_state['chat_session_id'] = str(uuid.uuid4())
+    # Delete cookie
+    cookie_manager.delete("auth_token")
     st.rerun()
 
 # --- Login Logic ---
@@ -73,9 +103,15 @@ if not st.session_state['token']:
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    st.session_state['token'] = data['access_token']
+                    token = data['access_token']
+                    st.session_state['token'] = token
                     st.session_state['username'] = data['username']
+                    
+                    # Set persistent cookie (expires in 7 days by default if not specified, or session)
+                    cookie_manager.set("auth_token", token)
+                    
                     st.success("¡Ingreso exitoso!")
+                    time.sleep(1) # Wait for cookie to set
                     st.rerun()
                 else:
                     st.error("Credenciales incorrectas")
