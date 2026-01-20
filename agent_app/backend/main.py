@@ -13,6 +13,10 @@ load_dotenv()
 
 app = FastAPI(title="Ticket Resolution Agent API")
 
+@app.get("/")
+async def root():
+    return {"message": "Agent Backend is running", "status": "online"}
+
 class Item(BaseModel):
     ticket: dict
 
@@ -95,4 +99,5 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.getenv("PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)
