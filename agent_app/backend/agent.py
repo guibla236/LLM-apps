@@ -1,7 +1,6 @@
 
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
-from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 import os
@@ -14,6 +13,8 @@ from utils import get_system_prompt
 import httpx
 from datetime import datetime
 import time
+from tools.get_similar_tickets import get_similar_tickets_tool
+from tools.search_web import search_web_tool
 
 load_dotenv()
 
@@ -31,86 +32,6 @@ llm = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
-async def is_tool_enabled(flag_name: str) -> bool:
-    """Helper to check if a specific tool is enabled via feature flags API."""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
-            if response.status_code == 200:
-                return response.json().get("enabled", True)
-    except Exception:
-        pass
-    return True # Default to enabled if API fails
-
-# --- Tools ---
-
-@tool
-async def get_similar_tickets_tool(description: str) -> str:
-    """
-    Useful to find similar support tickets in the database. 
-    Input should be a detailed description of the problem.
-    Returns a string representation of similar tickets found.
-    """
-    if not await is_tool_enabled("enable_rag_tool"):
-        return "El acceso a la base de datos de tickets similares está temporalmente desactivado por el administrador."
-
-    url = f"{API_BASE_URL}/api/get_similar_tickets"
-    headers = {"X-API-KEY": APP_API_KEY}
-    
-    payload = {
-        "ticketId": "SEARCH-QUERY",
-        "creationDate": datetime.utcnow().strftime("%Y-%m-%d"),
-        "priority": "Medium",
-        "owner": "Agent",
-        "description": description,
-        "impact": "Unknown",
-        "actions": "None"
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, headers=headers, timeout=30.0)
-            response.raise_for_status()
-            tickets = response.json()
-        
-        if not tickets:
-            return "No similar tickets found."
-            
-        result_str = "Found similar tickets:\n"
-        for i, t in enumerate(tickets):
-            result_str += f"{i+1}. ID: {t.get('ticketId')} - Description: {t.get('description')} - Actions: {t.get('actions')}\n"
-        return result_str
-        
-    except Exception as e:
-        return f"Error querying similar tickets: {str(e)}"
-
-# Tavily Tool wrapped to avoid schema complexity / type errors
-# LLMs sometimes struggle with the complex schema of TavilySearch (sending strings for lists)
-# So we expose a simpler interface.
-tavily_search = TavilySearch(max_results=3)
-
-@tool
-async def search_web_tool(query: str) -> str:
-    """
-    Useful to search the internet for solutions, documentation, and logic.
-    Input should be a search query string.
-    """
-    if not await is_tool_enabled("enable_web_search"):
-        return "La búsqueda web está temporalmente desactivada por el administrador."
-
-    try:
-        # We invoke the async version of the tool if available, or just run it in a thread if not.
-        # TavilySearch from langchain_tavily has ainvoke.
-        response = await tavily_search.ainvoke({"query": query})
-        output = []
-        for res in response['results']:
-            output.append(f"Source: {res['url']}\nContent: {res['content']}")
-        return "\n\n".join(output)
-    except Exception as e:
-        return f"Error searching web: {str(e)}"
-
-tools = [get_similar_tickets_tool, search_web_tool]
-
 
 from checkpoint import AsyncMongoDBSaver
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -123,6 +44,9 @@ db = mongo_client[db_name]
 
 # Initialize memory checkpointer
 checkpointer = AsyncMongoDBSaver(db)
+
+# Define the tools list
+tools_list = [get_similar_tickets_tool, search_web_tool]
 
 # Create the agent using LangGraph with checkpointer
 agent_executor = create_react_agent(llm, tools_list, prompt=get_system_prompt(), checkpointer=checkpointer)
