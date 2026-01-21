@@ -58,7 +58,7 @@ async def get_authorized_user(request: Request):
             print(f"Unexpected error in get_authorized_user: {str(e)}")
             raise HTTPException(status_code=401, detail=f"Auth error: {str(e)}")
 
-@app.post("/solve_ticket")
+@app.post("/solve_ticket", deprecated=True)
 async def solve_ticket_endpoint(item: Item, request: Request):
     user = await get_authorized_user(request)
     try:
