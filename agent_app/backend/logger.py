@@ -1,24 +1,16 @@
-import os
 import uuid
 from datetime import datetime
-from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv
+from core.database import get_db
 
-load_dotenv()
-
-MONGODB_URI = os.getenv("MONGODB_URI")
-MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "ticket_system")
 
 class AgentLogger:
     def __init__(self):
-        self.client = None
         self.db = None
         
     async def connect(self):
         if self.db is None:
-            self.client = AsyncIOMotorClient(MONGODB_URI)
-            self.db = self.client[MONGODB_DB_NAME]
-            
+            self.db = get_db()
+
     async def log_execution(self, ticket_id, user, input_data, solution, execution_time=None, status="success", error_message=None):
         await self.connect()
         execution_id = str(uuid.uuid4())
