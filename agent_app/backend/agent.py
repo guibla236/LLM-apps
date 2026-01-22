@@ -15,6 +15,7 @@ from datetime import datetime
 import time
 from tools.get_similar_tickets import get_similar_tickets_tool
 from tools.search_web import search_web_tool
+from core.database import get_checkpointer, get_db
 
 load_dotenv()
 
@@ -33,17 +34,9 @@ llm = ChatGroq(
 )
 
 
-from checkpoint import AsyncMongoDBSaver
-from motor.motor_asyncio import AsyncIOMotorClient
-
-# Initialize MongoDB Connection for Checkpointer
-MONGODB_URI = os.getenv("MONGODB_URI")
-mongo_client = AsyncIOMotorClient(MONGODB_URI)
-db_name = os.getenv("MONGODB_DB_NAME", "ticket_system")
-db = mongo_client[db_name]
-
 # Initialize memory checkpointer
-checkpointer = AsyncMongoDBSaver(db)
+checkpointer = get_checkpointer()
+db = get_db()
 
 # Define the tools list
 tools_list = [get_similar_tickets_tool, search_web_tool]
