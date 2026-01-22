@@ -7,7 +7,7 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
-from model import TicketModel
+from schema.ticket import TicketModel
 from logger import agent_logger
 from utils import get_system_prompt
 import httpx
@@ -125,7 +125,18 @@ async def chat_with_agent(message: str, thread_id: str = "default_user") -> str:
             {"messages": [HumanMessage(content=message)]},
             config=config
         )
-        solution = response["messages"][-1].content
+        
+        # Robustly find the last AI message with actual content
+        solution = "Lo siento, no pude generar una respuesta válida."
+        for msg in reversed(response["messages"]):
+             if msg.type == "ai" and msg.content and not msg.tool_calls:
+                 solution = msg.content
+                 break
+             # If we find a tool call at the end, it implies the agent got stuck or the LLM decided to stop.
+             # We try to get content even if tool_calls exist, as some models output thought+tool_call.
+             if msg.type == "ai" and msg.content:
+                 solution = msg.content
+                 break
         duration = round(time.perf_counter() - start_time, 2)
         
         # --- Session Management ---
