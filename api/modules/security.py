@@ -86,8 +86,8 @@ async def get_current_user(
     
     if current_ip_usage >= IP_QUOTA_LIMIT:
         raise HTTPException(
-            status_code=403, 
-            detail=f"Límite de cuota diaria para la dirección IP {ip_address} excedido. Intente mañana."
+            status_code=429, 
+            detail=f"Has excedido el límite diario de solicitudes por IP ({IP_QUOTA_LIMIT}). Por favor intenta nuevamente mañana."
         )
 
     # 2. Try JWT validation
@@ -125,7 +125,10 @@ async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_
     
     # User Quota Management (Moved from get_current_user to only apply to API tools)
     if user.get("daily_usage", 0) >= user.get("quota_limit", 100):
-        raise HTTPException(status_code=403, detail="Daily quota exceeded")
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Has excedido tu límite diario de uso de la API ({user.get('quota_limit')} peticiones). Actualiza tu plan o espera a mañana."
+        )
     
     # Increment user usage (Atomic update)
     await db.users.update_one(
