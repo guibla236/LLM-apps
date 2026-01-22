@@ -2,12 +2,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 import traceback
 from logger import agent_logger
-from pydantic import BaseModel
 from agent import solve_ticket
 from dotenv import load_dotenv
 import uvicorn
 import os
 import httpx
+from schema.chat import ChatRequest
+from schema.ticket import Item, TicketModel
 
 load_dotenv()
 
@@ -17,15 +18,7 @@ app = FastAPI(title="Ticket Resolution Agent API")
 async def root():
     return {"message": "Agent Backend is running", "status": "online"}
 
-class Item(BaseModel):
-    ticket: dict
-
-class ChatRequest(BaseModel):
-    message: str
-    session_id: str
-
 from agent import solve_ticket, chat_with_agent, get_user_sessions, get_session_history_messages, delete_user_session
-from model import TicketModel
 from core.security import get_authorized_user
 
 @app.post("/solve_ticket", deprecated=True)
