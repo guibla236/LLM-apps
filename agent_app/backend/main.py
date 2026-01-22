@@ -59,6 +59,44 @@ async def delete_history_endpoint(session_id: str, http_request: Request):
     await delete_user_session(user["username"], session_id)
     return {"status": "success", "message": "Session deleted"}
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Handle HTTP exceptions (401, 403, 404, etc.) and log them to MongoDB.
+    This allows us to track authentication failures and other HTTP errors.
+    """
+    user_info = "unknown"
+    try:
+        # Try to extract user info from the request if available
+        auth_header = request.headers.get("Authorization")
+        if auth_header:
+            # We could decode the token here, but for simplicity just note it exists
+            user_info = "authenticated_user"
+    except:
+        pass
+    
+    # Log HTTP exceptions to MongoDB
+    error_id = await agent_logger.log_error(
+        user=user_info,
+        path=request.url.path,
+        method=request.method,
+        error_message=f"HTTP {exc.status_code}: {exc.detail}",
+        traceback_data=f"HTTPException: {exc.status_code} - {exc.detail}"
+    )
+    
+    # Log to console for debugging
+    print(f"\n[ERROR_ID: {error_id}] HTTP EXCEPTION in Agent Backend:")
+    print(f"Status: {exc.status_code}, Detail: {exc.detail}, Path: {request.url.path}")
+    
+    # Return the original HTTP exception response
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error_id": error_id
+        }
+    )
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     # Log to MongoDB centralized error_logs
