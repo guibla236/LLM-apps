@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
 from schema.chat import ChatRequest
 from core.security import get_authorized_user
-from agent import chat_with_agent
+from services.agent_service import chat_with_agent
 from logger import agent_logger
 import traceback
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from core.security import get_authorized_user
-from agent import get_user_sessions
+from services.session_service import get_user_sessions
 
 router = APIRouter(
     prefix="/sessions",

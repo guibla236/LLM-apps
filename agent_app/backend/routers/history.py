@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from core.security import get_authorized_user
-from agent import get_session_history_messages, delete_user_session
+from services.session_service import delete_user_session, get_session_history_messages
 
 router = APIRouter(
     prefix="/history",
