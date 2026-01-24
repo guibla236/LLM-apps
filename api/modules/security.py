@@ -57,11 +57,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
+    if not SECRET_KEY:
+        raise Exception("JWT_SECRET environment variable is not set.")
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def generate_api_key():
     return secrets.token_urlsafe(32)
+def raise_401():
+    raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 # --- Hybrid Dependency ---
 async def get_current_user(
@@ -70,14 +78,23 @@ async def get_current_user(
     api_key: Optional[str] = Depends(api_key_header)
 ):
     db = get_database()
+    if request.client is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo determinar la dirección IP del cliente => No puede usar la API."
+        )
     ip_address = request.client.host
     user = None
 
     # 1. IP Quota Check (Global across all accounts from same IP)
     # Using a simple daily string key to handle resets automatically
-    today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     ip_usage_key = f"{ip_address}:{today}"
-    
+    if db is None or db.ip_usage is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Database connection error for IP usage tracking."
+        )
     ip_entry = await db.ip_usage.find_one({"_id": ip_usage_key})
     current_ip_usage = ip_entry.get("count", 0) if ip_entry else 0
     
@@ -88,12 +105,16 @@ async def get_current_user(
         )
 
     # 2. Try JWT validation
-    if token:
+    if token and SECRET_KEY:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str = payload.get("sub")
-            if username:
+            if payload is None or "sub" not in payload:
+                raise_401()
+            username = payload.get("sub")
+            if isinstance(username, str) and username:
                 user = await db.users.find_one({"username": username})
+            else: 
+                raise_401()
         except JWTError:
             pass # Invalid token, try API Key
 
@@ -102,11 +123,7 @@ async def get_current_user(
         user = await db.users.find_one({"api_key": api_key})
 
     if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise_401()
     
     # 4. Increment IP usage (Atomic updates)
     await db.ip_usage.update_one(
@@ -128,6 +145,11 @@ async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_
         )
     
     # Increment user usage (Atomic update)
+    if db is None or db.users is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Database connection error for user usage tracking."
+        )
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$inc": {"daily_usage": 1}}
@@ -138,6 +160,11 @@ async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_
 async def is_admin(user: dict = Depends(get_current_user)):
     """Dependency to verify if a user has administrative privileges."""
     db = get_database()
+    if db is None or db.admins is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Database connection error for admin verification."
+        )
     is_admin_user = await db.admins.find_one({"username": user["username"]})
     if not is_admin_user:
         raise HTTPException(
