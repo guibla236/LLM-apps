@@ -108,6 +108,8 @@ async def summarize_news(news: NewsInput) -> NewsSummary:
             raise ValueError("El título no puede estar vacío")
         if not news.content or len(news.content.strip()) == 0:
             raise ValueError("El contenido no puede estar vacío")
+        if not NEWS_SUMMARIZER_MODEL_NAME:
+            raise ValueError("La variable de entorno CHAT_MODEL_NAME no está configurada")
 
         message = await groq_llm_client.chat.completions.create(
             model=NEWS_SUMMARIZER_MODEL_NAME,
