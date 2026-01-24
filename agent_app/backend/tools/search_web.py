@@ -1,7 +1,7 @@
 
 
 from langchain_tavily import TavilySearch
-from utils import is_tool_enabled
+from core.utils import is_tool_enabled
 from langchain_core.tools import tool
 
 tavily_search = TavilySearch(max_results=3)
