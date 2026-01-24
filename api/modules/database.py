@@ -1,21 +1,35 @@
-import os
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from config import get_env_var
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 
-MONGODB_URI = os.getenv("MONGODB_URI")
-MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "ticket_system")
+MONGODB_URI = get_env_var("MONGODB_URI")
+MONGODB_DB_NAME = get_env_var("MONGODB_DB_NAME")
 
 class Database:
-    client: AsyncIOMotorClient = None
-    db = None
+    client: AsyncIOMotorClient
+    db: AsyncIOMotorDatabase
+    def __init__(self, client: AsyncIOMotorClient, db: AsyncIOMotorDatabase):
+        self.client = client
+        self.db = db
 
-db = Database()
+db: Optional[Database] = None
 
 async def connect_to_mongo():
-    db.client = AsyncIOMotorClient(MONGODB_URI)
-    db.db = db.client[MONGODB_DB_NAME]
+    global db
+    
+    if MONGODB_DB_NAME is None:
+        raise Exception("MONGODB_DB_NAME environment variable is not set.")
+    
+    client = AsyncIOMotorClient(MONGODB_URI)
+    db_instance = client[MONGODB_DB_NAME]
+    
+    if not isinstance(db_instance, AsyncIOMotorDatabase):
+        raise Exception("Failed to connect to the MongoDB database.")
+    
+    db = Database(client, db_instance)
     
     # Create unique indexes
     await db.db.users.create_index("username", unique=True)
@@ -26,10 +40,15 @@ async def connect_to_mongo():
     print(f"Connected to MongoDB: {MONGODB_DB_NAME} (Indexes ensured)")
 
 async def close_mongo_connection():
-    db.client.close()
-    print("Closed MongoDB connection")
+    if db is not None:
+        db.client.close()
+        print("Closed MongoDB connection")
+    else:
+        print("No MongoDB connection to close")
 
 def get_database():
+    if db is None:
+        return None
     return db.db
 
 async def is_feature_enabled(flag_name: str) -> bool:
