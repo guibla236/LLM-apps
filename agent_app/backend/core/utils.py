@@ -1,10 +1,7 @@
-from dotenv import load_dotenv
 import httpx
-import os
+from core.config import get_env_var
 
-load_dotenv()
-
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = get_env_var("API_BASE_URL")
 
 async def is_tool_enabled(flag_name: str) -> bool:
     """Helper to check if a specific tool is enabled via feature flags API."""
@@ -24,5 +21,4 @@ def get_system_prompt() -> str:
         with open("prompts/system_prompt.md", "r") as f:
             return f.read()
     except Exception:
-        pass
-    return None
+        raise FileNotFoundError("System prompt file not found.")
