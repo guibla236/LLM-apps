@@ -1,12 +1,9 @@
-from dotenv import load_dotenv
 from fastapi import HTTPException
 import httpx
 from fastapi import Request
-import os
+from core.config import get_env_var
 
-load_dotenv()
-
-API_MAIN_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_MAIN_URL = get_env_var("API_BASE_URL")
 
 async def get_authorized_user(request: Request):
     auth_header = request.headers.get("Authorization")
