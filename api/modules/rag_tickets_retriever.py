@@ -104,16 +104,11 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
             "contactos": []
         }
 
-    user_message = {
-                "role": "user",
-                "content": f"""
-                    Ticket de entrada:
-                    {inputTicket}
-                    
-                    Tickets similares:
-                    {relevant_tickets}
-                """
-            }
+    if CHAT_MODEL_NAME is None:
+        return {
+            "resumen": "La variable de entorno CHAT_MODEL_NAME no está configurada. No se pudo hacer nada",
+            "contactos": []
+        }
 
     message = await groq_llm_client.chat.completions.create(
         model=CHAT_MODEL_NAME,
@@ -137,7 +132,11 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
     )
 
     choice = message.choices[0]
-    
+    if choice.message is None or choice.message.content is None:
+        return {
+            "resumen": "El modelo no devolvió ningún contenido.",
+            "contactos": []
+        }
     summary_text = choice.message.content.split("```json")[1].split("```")[0]
 
     try:
