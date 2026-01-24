@@ -1,0 +1,33 @@
+{
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+  "reportUnusedClass": "warning",
+  "reportUnusedFunction": "warning",
+  "executionEnvironments": [
+    {
+      "root": "agent_app/backend",
+      "pythonVersion": "3.12",
+      "venvPath": "agent_app",
+      "venv": "agente_venv",
+      "extraPaths": ["agent_app/backend"]
+    },
+    {
+      "root": "agent_app/frontend",
+      "pythonVersion": "3.12",
+      "venvPath": "agent_app",
+      "venv": "agente_venv",
+      "extraPaths": ["agent_app/frontend"]
+    },
+    {
+      "root": "api",
+      "pythonVersion": "3.12",
+      "venvPath": "api",
+      "venv": "tarea2",
+      "extraPaths": ["api"]
+    }
+  ]
+}
