@@ -1,11 +1,12 @@
 from langchain_core.messages import HumanMessage
 import time
 from datetime import datetime
-from agent import agent_executor
-from logger import agent_logger
-from motor.motor_asyncio import AsyncIOMotorClient
+from agent_executor_service import agent_executor
+from core.logger import agent_logger
+from schema.ticket import TicketModel
 from core.database import get_db
 from services.session_service import generate_session_title
+from langchain_core.runnables.config import RunnableConfig
 
 db = get_db()
 
@@ -15,7 +16,7 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
     """
     
     start_time = time.perf_counter()
-    config = {"configurable": {"thread_id": thread_id}}
+    config = RunnableConfig(configurable={"configurable": {"thread_id": thread_id}})
     
     try:
         # LangGraph rehydrates state from memory based on thread_id
@@ -47,15 +48,15 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
                 # Check if session exists
                 session_doc = await db["sessions"].find_one({"thread_id": thread_id})
                 
-                update_data = {
-                    "last_updated": datetime.utcnow()
+                update_data: dict = {
+                    "last_updated": datetime.now()
                 }
                 
                 if not session_doc:
                     # New session: Generate Title
                     title = await generate_session_title(message, solution)
                     update_data["title"] = title
-                    update_data["created_at"] = datetime.utcnow()
+                    update_data["created_at"] = datetime.now()
                     update_data["thread_id"] = thread_id
                     update_data["session_id"] = session_uuid
                     update_data["username"] = username
