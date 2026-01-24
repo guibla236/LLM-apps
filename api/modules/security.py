@@ -1,18 +1,15 @@
 import os
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional, Union
-
-from fastapi import Request, HTTPException, Security, Depends
+from typing import Optional
+from fastapi import Request, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from jose import JWTError, jwt
-# from passlib.context import CryptContext
 from modules.database import get_database
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
-# --- Configuration ---
 from dotenv import load_dotenv
+
 load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET")
