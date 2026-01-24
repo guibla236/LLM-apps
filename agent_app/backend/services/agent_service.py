@@ -97,3 +97,50 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
             error_message=error_msg
         )
         return f"Error running agent: {error_msg}"
+
+async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymous") -> str:
+    """
+    Main entry point for the agent (Legacy/Ticket mode).
+    """
+    description = ticket_to_resolve.description
+    if not description:
+        return "Error: Ticket has no description."
+
+    query = f"""
+    I have a support ticket with the following description:
+    "{description}"
+    
+    Please help me resolve it by following these steps:
+    1. First, search for similar tickets in our database to see if this has happened before and what actions were taken.
+    2. Then, use the web search to find public information or documentation about this error.
+    3. Finally, combine the information to propose a step-by-step solution.
+    4. The solution must match the language of the ticket description; please translate it if necessary but do not inform the user about the translation.
+    """
+    
+    start_time = time.perf_counter()
+    try:
+        response = await agent_executor.ainvoke({"messages": [HumanMessage(content=query)]})
+        solution = response["messages"][-1].content
+        duration = round(time.perf_counter() - start_time, 2)
+        
+        await agent_logger.log_execution(
+            ticket_id=ticket_to_resolve.ticketId,
+            user=username,
+            input_data=description,
+            solution=solution,
+            execution_time=duration
+        )
+        return solution
+    except Exception as e:
+        duration = round(time.perf_counter() - start_time, 2)
+        error_msg = str(e)
+        await agent_logger.log_execution(
+            ticket_id=ticket_to_resolve.ticketId,
+            user=username,
+            input_data=description,
+            solution=None,
+            execution_time=duration,
+            status="error",
+            error_message=error_msg
+        )
+        return f"Error running agent: {error_msg}"
