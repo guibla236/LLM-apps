@@ -1,9 +1,7 @@
-from agent import agent_executor
-from utils import get_system_prompt
+from agent_executor_service import agent_executor
+from langchain_core.runnables.config import RunnableConfig
 from core.database import get_db
 from langchain_core.messages import HumanMessage
-from langchain_groq import ChatGroq
-from motor.motor_asyncio import AsyncIOMotorClient
 from core.config import get_llm
 
 # Get DB and LLM instances
@@ -21,8 +19,10 @@ async def generate_session_title(first_message: str, first_response: str) -> str
         
         # We can reuse the same LLM instance
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        title = response.content.strip().replace('"', '')
-        return title
+        if isinstance(response.content, str):
+            title = response.content.strip().replace('"', '')
+            return title
+        return "Nueva Conversación"
     except Exception as e:
         print(f"Error generating title: {e}")
         return "Nueva Conversación"
@@ -59,7 +59,7 @@ async def delete_user_session(username: str, session_id: str):
 
 async def get_session_history_messages(thread_id: str):
     """Retrieves the message history for a specific thread."""
-    config = {"configurable": {"thread_id": thread_id}}
+    config = RunnableConfig(configurable={"thread_id": thread_id})
     # Retrieve the state
     state = await agent_executor.aget_state(config)
     messages = []
