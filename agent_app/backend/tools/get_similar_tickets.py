@@ -1,8 +1,11 @@
-
 from langchain_core.tools import tool
 from datetime import datetime
-from utils import is_tool_enabled
+from core.config import get_env_var
+from core.utils import is_tool_enabled
 import httpx
+
+API_BASE_URL = get_env_var("API_BASE_URL")
+APP_API_KEY = get_env_var("APP_API_KEY")
 
 @tool
 async def get_similar_tickets_tool(description: str) -> str:
@@ -15,6 +18,8 @@ async def get_similar_tickets_tool(description: str) -> str:
         return "El acceso a la base de datos de tickets similares está temporalmente desactivado por el administrador."
 
     url = f"{API_BASE_URL}/api/get_similar_tickets"
+    if APP_API_KEY is None:
+        return "API key is not configured. Cannot access similar tickets."
     headers = {"X-API-KEY": APP_API_KEY}
     
     payload = {
