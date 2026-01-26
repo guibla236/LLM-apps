@@ -27,9 +27,9 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
     # This allows multiple independent sessions for the same user
     thread_id = f"{user['username']}_{request.session_id}"
     
-    response = await chat_with_agent(
+    response, trace = await chat_with_agent(
         message=request.message, 
         thread_id=thread_id
     )
     
-    return {"response": response}
+    return {"response": response, "trace": trace}
