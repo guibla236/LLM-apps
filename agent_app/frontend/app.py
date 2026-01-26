@@ -28,6 +28,7 @@ def render_mermaid(trace):
     if not trace:
         return ""
         
+    # Using TD layout as per user preference
     mermaid_code = """
     graph TD
     Start([Inicio]) --> Agent[Agente]
@@ -54,52 +55,83 @@ def render_mermaid(trace):
 
 def st_mermaid(code: str, unique_id: str):
     import streamlit.components.v1 as components
-    # Clean code
-    clean_code = "\n".join([line.strip() for line in code.split("\n") if line.strip()])
+    clean_code = code.strip()
     
     components.html(
         f"""
-        <div id="mermaid-container-{unique_id}" style="display: flex; justify-content: center; height: 100%; border: 1px solid #333; border-radius: 8px; padding: 10px; background-color: #0e1117; overflow: hidden;">
-            <div id="graph-{unique_id}" style="width: 100%; text-align: center;">Cargando diagrama...</div>
-            <pre id="src-{unique_id}" style="display:none;">{clean_code}</pre>
+        <style>
+            body {{ margin: 0; padding: 0; background-color: #0e1117; color: white; font-family: sans-serif; }}
+            #mermaid-host {{
+                width: 100%;
+                height: 400px;
+                border: 1px solid #444;
+                border-radius: 8px;
+                background-color: #0e1117;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+            }}
+            #mermaid-svg-container {{
+                width: 95%;
+                height: 95%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }}
+            svg {{
+                max-width: 100% !important;
+                max-height: 100% !important;
+                width: auto !important;
+                height: auto !important;
+            }}
+        </style>
+        <div id="mermaid-host">
+            <div id="mermaid-svg-container">Esperando al contenedor...</div>
         </div>
         <script type="module">
             import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs';
             
-            const render = async () => {{
+            const host = document.getElementById("mermaid-host");
+            const target = document.getElementById("mermaid-svg-container");
+            let rendered = false;
+
+            const renderGraph = async () => {{
+                if (rendered) return;
                 try {{
                     mermaid.initialize({{ 
                         startOnLoad: false, 
                         theme: 'dark',
-                        securityLevel: 'loose',
-                        flowchart: {{ useMaxWidth: true, htmlLabels: true, curve: 'basis' }}
+                        securityLevel: 'loose'
                     }});
                     
-                    const src = document.getElementById("src-{unique_id}").textContent;
-                    const {{ svg }} = await mermaid.render('svg-{unique_id}', src);
-                    const target = document.getElementById("graph-{unique_id}");
-                    if (target) {{
-                        target.innerHTML = svg;
-                        const svgElement = target.querySelector('svg');
-                        if (svgElement) {{
-                            // Remove hardcoded width/height to let it scale
-                            svgElement.removeAttribute('height');
-                            svgElement.style.width = '100%';
-                            svgElement.style.maxWidth = '600px'; // Cap size for readability
-                            svgElement.style.height = 'auto';
-                        }}
-                    }}
+                    const {{ svg }} = await mermaid.render('render-{unique_id}', `{clean_code}`);
+                    target.innerHTML = svg;
+                    rendered = true;
+                    console.log("Graph rendered for {unique_id}");
                 }} catch (e) {{
-                    console.error("Mermaid Render Error ({unique_id}):", e);
+                    console.error("Render Error:", e);
+                    target.innerHTML = "<p style='color:red'>Error al renderizar.</p>";
                 }}
             }};
 
-            render();
-            // Re-render after a delay to catch layout shifts
-            setTimeout(render, 300); 
+            // Use ResizeObserver to detect when the expander actually opens and provides width/height
+            const ro = new ResizeObserver((entries) => {{
+                for (let entry of entries) {{
+                    if (entry.contentRect.width > 50 && entry.contentRect.height > 50) {{
+                        renderGraph();
+                        ro.unobserve(host);
+                    }}
+                }}
+            }});
+            
+            ro.observe(host);
+            
+            // Safety fallback
+            setTimeout(renderGraph, 2000);
         </script>
         """,
-        height=320,
+        height=420,
     )
 
 # --- Custom CSS for Toast Positioning ---
