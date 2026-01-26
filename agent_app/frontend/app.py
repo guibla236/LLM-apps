@@ -24,32 +24,56 @@ st.set_page_config(page_title="Agente de Resolución de Tickets", page_icon="�
 
 # --- Mermaid Graph Helper ---
 def render_mermaid(trace):
-    """Generates Mermaid code with path highlighting based on the trace."""
+    """Generates Mermaid code with dynamic tool nodes and path highlighting."""
     if not trace:
         return ""
         
-    # Using TD layout as per user preference
+    # Analyze trace to find unique tools used
+    tools_used = {} # Mapping sanitized_id -> friendly_name
+    visited_ids = set(["Start"])
+    
+    # Tool labels map
+    FRIENDLY_NAMES = {
+        "get_similar_tickets_tool": "Tickets Similares",
+        "search_web_tool": "Búsqueda Web"
+    }
+    
+    for step in trace:
+        # Identify node type
+        if step["node"] == "agent":
+             visited_ids.add("Agent")
+             if step.get("event") == "answer":
+                 visited_ids.add("Final")
+        
+        # Capture tool usage from EITHER agent thought or tool result
+        t_id = step.get("tool_id")
+        if t_id:
+             # Sanitize ID for Mermaid (no underscores in some older versions, but safer to be alphanumeric)
+             clean_id = t_id.replace("_", "")
+             visited_ids.add(clean_id)
+             if clean_id not in tools_used:
+                 label = FRIENDLY_NAMES.get(t_id, t_id)
+                 tools_used[clean_id] = label
+    
+    # Start building Mermaid code
     mermaid_code = """
     graph TD
     Start([Inicio]) --> Agent[Agente]
-    Agent --> Tools[Herramientas]
-    Tools --> Agent
-    Agent --> Final([Respuesta])
-    
-    classDef active fill:#28a745,stroke:#28a745,color:#fff;
     """
     
-    visited_nodes = set(["Start"])
-    for step in trace:
-        if step["node"] == "agent":
-             visited_nodes.add("Agent")
-             if step["event"] == "answer":
-                 visited_nodes.add("Final")
-        if step["node"] == "tools":
-             visited_nodes.add("Tools")
+    # Add tool nodes
+    for clean_id, label in tools_used.items():
+        mermaid_code += f"\n    Agent --> {clean_id}[{label}]"
+        mermaid_code += f"\n    {clean_id} --> Agent"
     
-    for node in visited_nodes:
-        mermaid_code += f"\n class {node} active;"
+    mermaid_code += "\n    Agent --> Final([Respuesta])"
+    
+    # Styles
+    mermaid_code += "\n\n    classDef active fill:#28a745,stroke:#28a745,color:#fff;"
+    
+    # Apply highlighting
+    for cid in visited_ids:
+        mermaid_code += f"\n    class {cid} active;"
         
     return mermaid_code
 
@@ -73,17 +97,18 @@ def st_mermaid(code: str, unique_id: str):
                 overflow: hidden;
             }}
             #mermaid-svg-container {{
-                width: 95%;
-                height: 95%;
+                width: 100%;
+                height: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
             }}
             svg {{
-                max-width: 100% !important;
-                max-height: 100% !important;
+                max-width: 90% !important;
+                max-height: 380px !important; /* Cap height to prevent blowup */
                 width: auto !important;
                 height: auto !important;
+                margin: auto;
             }}
         </style>
         <div id="mermaid-host">

@@ -43,6 +43,7 @@ def format_trace(messages: list) -> list:
                     trace.append({
                         "node": "agent",
                         "event": "thought",
+                        "tool_id": tool_name, # Added technical ID
                         "description": f"El agente decidió: {friendly_name}",
                         "active": True
                     })
@@ -55,9 +56,11 @@ def format_trace(messages: list) -> list:
                 })
         
         elif msg.type == "tool":
+            tool_name = getattr(msg, 'name', None) # Capture tool name if available
             trace.append({
                 "node": "tools",
                 "event": "result",
+                "tool_id": tool_name, # Added technical ID
                 "description": "Se ha procesado la información obtenida.",
                 "active": True
             })
