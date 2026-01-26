@@ -1,0 +1,42 @@
+{
+	"folders": [
+		{
+			"name": "Backend",
+			"path": "agent_app/backend",
+			"settings": {
+				"python.defaultInterpreterPath": "${workspaceFolder:Backend}/backend_venv/bin/python"
+			}
+		},
+		{
+			"name": "Frontend",
+			"path": "agent_app/frontend",
+			"settings": {
+				"python.defaultInterpreterPath": "${workspaceFolder:Frontend}/frontend_venv/bin/python"
+			}
+		},
+		{
+			"name": "API",
+			"path": "api"
+		}
+	],
+	"settings": {
+		"python.analysis.extraPaths": [
+			"${workspaceFolder:API}/modules",
+			"${workspaceFolder:Backend}/core",
+			"${workspaceFolder:Backend}/schema",
+			"${workspaceFolder:Backend}/services",
+			"${workspaceFolder:Backend}/tools",
+			"${workspaceFolder:Backend}/routers"
+		],
+		"python.autoComplete.extraPaths": [
+			"${workspaceFolder:API}/modules",
+			"${workspaceFolder:Backend}/core",
+			"${workspaceFolder:Backend}/schema",
+			"${workspaceFolder:Backend}/services",
+			"${workspaceFolder:Backend}/tools",
+			"${workspaceFolder:Backend}/routers"
+		],
+		"python.languageServer": "Pylance",
+		"python.analysis.typeCheckingMode": "basic"
+	}
+}
