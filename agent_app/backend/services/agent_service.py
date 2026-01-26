@@ -7,16 +7,18 @@ from schema.ticket import TicketModel
 from core.database import get_db
 from services.session_service import generate_session_title
 from langchain_core.runnables.config import RunnableConfig
+from core.utils import format_trace
 
 db = get_db()
 
-async def chat_with_agent(message: str, thread_id: str) -> str:
+async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
     """
     Handles a conversation with the agent using LangGraph state persistence.
+    Returns a tuple (solution, trace).
     """
     
     start_time = time.perf_counter()
-    config = RunnableConfig(configurable={"configurable": {"thread_id": thread_id}})
+    config = {"configurable": {"thread_id": thread_id}}
     
     try:
         # LangGraph rehydrates state from memory based on thread_id
@@ -27,15 +29,16 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
         
         # Robustly find the last AI message with actual content
         solution = "Lo siento, no pude generar una respuesta válida."
-        for msg in reversed(response["messages"]):
+        all_messages = response["messages"]
+        for msg in reversed(all_messages):
              if msg.type == "ai" and msg.content and not msg.tool_calls:
                  solution = msg.content
                  break
-             # If we find a tool call at the end, it implies the agent got stuck or the LLM decided to stop.
-             # We try to get content even if tool_calls exist, as some models output thought+tool_call.
              if msg.type == "ai" and msg.content:
                  solution = msg.content
                  break
+        
+        trace = format_trace(all_messages)
         duration = round(time.perf_counter() - start_time, 2)
         
         # --- Session Management ---
@@ -70,7 +73,6 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
                     )
         except Exception as session_e:
             print(f"Error updating session metadata: {session_e}")
-            # Non-blocking error
         
         # Log execution
         await agent_logger.log_execution(
@@ -80,7 +82,7 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
             solution=solution,
             execution_time=duration
         )
-        return solution
+        return solution, trace
     except Exception as e:
         import traceback
         print(f"CRITICAL AGENT ERROR: {e}")
@@ -96,15 +98,15 @@ async def chat_with_agent(message: str, thread_id: str) -> str:
             status="error",
             error_message=error_msg
         )
-        return f"Error running agent: {error_msg}"
+        return f"Error running agent: {error_msg}", []
 
-async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymous") -> str:
+async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymous") -> tuple[str, list]:
     """
     Main entry point for the agent (Legacy/Ticket mode).
     """
     description = ticket_to_resolve.description
     if not description:
-        return "Error: Ticket has no description."
+        return "Error: Ticket has no description.", []
 
     query = f"""
     I have a support ticket with the following description:
@@ -120,7 +122,9 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
     start_time = time.perf_counter()
     try:
         response = await agent_executor.ainvoke({"messages": [HumanMessage(content=query)]})
-        solution = response["messages"][-1].content
+        all_messages = response["messages"]
+        solution = all_messages[-1].content
+        trace = format_trace(all_messages)
         duration = round(time.perf_counter() - start_time, 2)
         
         await agent_logger.log_execution(
@@ -130,7 +134,7 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
             solution=solution,
             execution_time=duration
         )
-        return solution
+        return solution, trace
     except Exception as e:
         duration = round(time.perf_counter() - start_time, 2)
         error_msg = str(e)
@@ -143,4 +147,4 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
             status="error",
             error_message=error_msg
         )
-        return f"Error running agent: {error_msg}"
+        return f"Error running agent: {error_msg}", []
