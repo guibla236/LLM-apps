@@ -56,12 +56,20 @@ def format_trace(messages: list) -> list:
                 })
         
         elif msg.type == "tool":
-            tool_name = getattr(msg, 'name', None) # Capture tool name if available
+            tool_name = getattr(msg, 'name', None)
+            
+            # Map tool result descriptions
+            RESULT_DESCRIPTIONS = {
+                "get_similar_tickets_tool": "Se ha procesado la información de tickets similares.",
+                "search_web_tool": "Se ha procesado la información obtenida de la web."
+            }
+            friendly_desc = RESULT_DESCRIPTIONS.get(tool_name, "Se ha procesado la información obtenida.")
+            
             trace.append({
                 "node": "tools",
                 "event": "result",
-                "tool_id": tool_name, # Added technical ID
-                "description": "Se ha procesado la información obtenida.",
+                "tool_id": tool_name,
+                "description": friendly_desc,
                 "active": True
             })
             
