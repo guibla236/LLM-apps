@@ -10,11 +10,14 @@ cleanup() {
 # Trap SIGINT (Ctrl+C) and call cleanup
 trap cleanup SIGINT
 
+# Obtener la ruta del directorio raíz del proyecto
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "Starting Support Ticket System..."
 
 # Start API (Part 1)
 echo "Starting API on port 8000..."
-cd api
+cd "$PROJECT_ROOT/api"
 if [ -d "venv" ]; then
     source venv/bin/activate
 elif [ -d "tarea2" ]; then
@@ -22,40 +25,44 @@ elif [ -d "tarea2" ]; then
 elif [ -d "../venv" ]; then
     source ../venv/bin/activate
 fi
-# Using python3 main.py as observed in usage history, or fallback to uvicorn if main.py doesn't setup the server similarly
+
+# Configurar PYTHONPATH para el API
+export PYTHONPATH="$PROJECT_ROOT/api:$PYTHONPATH"
 python3 main.py &
 API_PID=$!
-cd ..
+cd "$PROJECT_ROOT"
 
 # Wait a moment for API to initialize
 sleep 3
 
 # Start Agent Backend (Part 2)
 echo "Starting Agent Backend on port 8001..."
-cd agent_app/backend
-# Try to activate agent venv if it exists in expected locations
-if [ -d "../agente_venv" ]; then
-    source "../agente_venv/bin/activate"
-elif [ -d "../../agente_venv" ]; then
-    source "../../agente_venv/bin/activate"
+cd "$PROJECT_ROOT/agent_app/backend"
+if [ -d "backend_venv" ]; then
+    source "backend_venv/bin/activate"
 fi
+
+# Configurar PYTHONPATH para el agent backend
+export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
 python3 main.py &
 AGENT_BACKEND_PID=$!
-cd ../..
+cd "$PROJECT_ROOT"
 
 # Wait a moment for Agent Backend to initialize
 sleep 3
 
 # Start Streamlit Frontend (Part 2)
 echo "Starting Streamlit Frontend..."
-cd agent_app/frontend
-# Ensure we are still in the agent venv or reactivate just in case (subshells usually handle this but cd changes context)
-if [ -d "../agente_venv" ]; then
-    source "../agente_venv/bin/activate"
+cd "$PROJECT_ROOT/agent_app/frontend"
+if [ -d "frontend_venv" ]; then
+    source "frontend_venv/bin/activate"
 fi
+
+# Configurar PYTHONPATH para el frontend
+export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
 streamlit run app.py &
 FRONTEND_PID=$!
-cd ../..
+cd "$PROJECT_ROOT"
 
 echo "All services are running."
 echo "Press Ctrl+C to stop all services."
