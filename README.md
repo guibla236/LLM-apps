@@ -15,7 +15,7 @@ El núcleo del sistema de gestión. Provee las funcionalidades base para el equi
 👉 **[Ver documentación e instalación del API](api/README.md)**
 
 ### 2. Agente de Resolución Autónoma (`agent_app/`)
-Un agente inteligente diseñado para actuar sobre los tickets. Construido con LangGraph y Streamlit:
+Un agente inteligente diseñado para actuar sobre los tickets. Construido con LangGraph, FastAPI (con arquitectura modular) y Streamlit:
 *   **Investigación**: Consulta la API principal para obtener contexto histórico.
 *   **Búsqueda Web**: Utiliza herramientas de búsqueda (Tavily) para encontrar documentación pública y soluciones externas.
 *   **Síntesis**: Genera una propuesta de solución paso a paso lista para el usuario.

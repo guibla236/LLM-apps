@@ -4,7 +4,11 @@ This directory contains the production-ready Ticket Resolution Agent, capable of
 
 ## Architecture
 
-- **Backend**: FastAPI service (`backend/`) running a fully **asynchronous** LangGraph ReAct agent.
+- **Backend**: Modular FastAPI service (`backend/`) with a fully **asynchronous** LangGraph ReAct agent.
+    - `core/`: Config, database connection, security, and logging.
+    - `services/`: Business logic, agent execution, and session management.
+    - `routers/`: FastAPI routes for chat, sessions, and history.
+    - `schema/`: Pydantic models for data validation.
 - **Frontend**: Streamlit application (`frontend/`) with built-in **JWT Authentication**.
 - **Auditing**: Every execution is logged to the `agent_executions` and `error_logs` collections in MongoDB.
 - **Memory & Persistence**: Stateful conversation history stored in MongoDB (`checkpoints`), maintaining context across sessions.
