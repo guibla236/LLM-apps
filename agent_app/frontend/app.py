@@ -22,6 +22,143 @@ AGENT_BACKEND_URL = get_config("API_AGENT_URL", "http://localhost:8001")
 
 st.set_page_config(page_title="Agente de Resolución de Tickets", page_icon="🤖", layout="wide")
 
+# --- Mermaid Graph Helper ---
+def render_mermaid(trace):
+    """Generates Mermaid code with dynamic tool nodes and path highlighting."""
+    if not trace:
+        return ""
+        
+    # Analyze trace to find unique tools used
+    tools_used = {} # Mapping sanitized_id -> friendly_name
+    visited_ids = set(["Start"])
+    
+    # Tool labels map
+    FRIENDLY_NAMES = {
+        "get_similar_tickets_tool": "Tickets Similares",
+        "search_web_tool": "Búsqueda Web"
+    }
+    
+    for step in trace:
+        # Identify node type
+        if step["node"] == "agent":
+             visited_ids.add("Agent")
+             if step.get("event") == "answer":
+                 visited_ids.add("Final")
+        
+        # Capture tool usage from EITHER agent thought or tool result
+        t_id = step.get("tool_id")
+        if t_id:
+             # Sanitize ID for Mermaid (no underscores in some older versions, but safer to be alphanumeric)
+             clean_id = t_id.replace("_", "")
+             visited_ids.add(clean_id)
+             if clean_id not in tools_used:
+                 label = FRIENDLY_NAMES.get(t_id, t_id)
+                 tools_used[clean_id] = label
+    
+    # Start building Mermaid code
+    mermaid_code = """
+    graph TD
+    Start([Inicio]) --> Agent[Agente]
+    """
+    
+    # Add tool nodes
+    for clean_id, label in tools_used.items():
+        mermaid_code += f"\n    Agent --> {clean_id}[{label}]"
+        mermaid_code += f"\n    {clean_id} --> Agent"
+    
+    mermaid_code += "\n    Agent --> Final([Respuesta])"
+    
+    # Styles
+    mermaid_code += "\n\n    classDef active fill:#28a745,stroke:#28a745,color:#fff;"
+    
+    # Apply highlighting
+    for cid in visited_ids:
+        mermaid_code += f"\n    class {cid} active;"
+        
+    return mermaid_code
+
+def st_mermaid(code: str, unique_id: str):
+    import streamlit.components.v1 as components
+    clean_code = code.strip()
+    
+    components.html(
+        f"""
+        <style>
+            body {{ margin: 0; padding: 0; background-color: #0e1117; color: white; font-family: sans-serif; }}
+            #mermaid-host {{
+                width: 100%;
+                height: 400px;
+                border: 1px solid #444;
+                border-radius: 8px;
+                background-color: #0e1117;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+            }}
+            #mermaid-svg-container {{
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }}
+            svg {{
+                max-width: 90% !important;
+                max-height: 380px !important; /* Cap height to prevent blowup */
+                width: auto !important;
+                height: auto !important;
+                margin: auto;
+            }}
+        </style>
+        <div id="mermaid-host">
+            <div id="mermaid-svg-container">Esperando al contenedor...</div>
+        </div>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs';
+            
+            const host = document.getElementById("mermaid-host");
+            const target = document.getElementById("mermaid-svg-container");
+            let rendered = false;
+
+            const renderGraph = async () => {{
+                if (rendered) return;
+                try {{
+                    mermaid.initialize({{ 
+                        startOnLoad: false, 
+                        theme: 'dark',
+                        securityLevel: 'loose'
+                    }});
+                    
+                    const {{ svg }} = await mermaid.render('render-{unique_id}', `{clean_code}`);
+                    target.innerHTML = svg;
+                    rendered = true;
+                    console.log("Graph rendered for {unique_id}");
+                }} catch (e) {{
+                    console.error("Render Error:", e);
+                    target.innerHTML = "<p style='color:red'>Error al renderizar.</p>";
+                }}
+            }};
+
+            // Use ResizeObserver to detect when the expander actually opens and provides width/height
+            const ro = new ResizeObserver((entries) => {{
+                for (let entry of entries) {{
+                    if (entry.contentRect.width > 50 && entry.contentRect.height > 50) {{
+                        renderGraph();
+                        ro.unobserve(host);
+                    }}
+                }}
+            }});
+            
+            ro.observe(host);
+            
+            // Safety fallback
+            setTimeout(renderGraph, 2000);
+        </script>
+        """,
+        height=420,
+    )
+
 # --- Custom CSS for Toast Positioning ---
 st.markdown("""
 <style>
@@ -193,6 +330,18 @@ Describe tu problema técnico y el agente te ayudará utilizando la base de cono
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        # If assistant has a trace, show it in an expander
+        if message["role"] == "assistant" and message.get("trace"):
+            with st.expander("🔍 Ver proceso de pensamiento del agente"):
+                m_code = render_mermaid(message["trace"])
+                # Use a unique ID based on role and trace length/index
+                u_id = f"hist_{str(hash(str(message['content'])))[-6:]}"
+                st_mermaid(m_code, u_id)
+                # Show steps breakdown
+                st.markdown("### Pasos ejecutados:")
+                for i, step in enumerate(message["trace"]):
+                    node_icon = "🧠" if step["node"] == "agent" else "🛠️"
+                    st.write(f"{i+1}. {node_icon} {step['description']}")
 
 # Chat input
 if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
@@ -207,7 +356,7 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
             try:
                 headers = {"Authorization": f"Bearer {st.session_state['token']}"}
                 response = requests.post(
-                    f"{AGENT_BACKEND_URL}/chat",
+                    f"{AGENT_BACKEND_URL}/chat/", # Added slash just in case
                     json={
                         "message": prompt, 
                         "session_id": st.session_state['chat_session_id']
@@ -216,9 +365,27 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
                 )
                 
                 if response.status_code == 200:
-                    agent_response = response.json().get("response")
+                    resp_json = response.json()
+                    agent_response = resp_json.get("response")
+                    trace = resp_json.get("trace", [])
+                    
                     st.markdown(agent_response)
-                    st.session_state['messages'].append({"role": "assistant", "content": agent_response})
+                    
+                    # Show trace for the current response immediately
+                    if trace:
+                        with st.expander("🔍 Ver proceso de pensamiento del agente", expanded=False):
+                            m_code = render_mermaid(trace)
+                            st_mermaid(m_code, f"curr_{int(time.time())}")
+                            st.markdown("### Pasos ejecutados:")
+                            for i, step in enumerate(trace):
+                                node_icon = "🧠" if step["node"] == "agent" else "🛠️"
+                                st.write(f"{i+1}. {node_icon} {step['description']}")
+
+                    st.session_state['messages'].append({
+                        "role": "assistant", 
+                        "content": agent_response,
+                        "trace": trace
+                    })
                     # Force rerun to update sidebar with new title if it was a new session
                     st.rerun()
                 else:

@@ -85,12 +85,18 @@ class AsyncMongoDBSaver(BaseCheckpointSaver):
         thread_id = configurable.get("thread_id")
         checkpoint_id = checkpoint["id"]
         
+        # Sanitize configurable to only include picklable/essential keys
+        clean_configurable = {
+            k: v for k, v in config.get("configurable", {}).items() 
+            if k in ["thread_id", "checkpoint_id", "checkpoint_ns"]
+        }
+        
         doc = {
             "thread_id": thread_id,
             "checkpoint_id": checkpoint_id,
             "checkpoint": pickle.dumps(checkpoint),
             "metadata": pickle.dumps(metadata),
-            "parent_config": pickle.dumps(config)
+            "parent_config": pickle.dumps(clean_configurable)
         }
         
         await self.collection.replace_one(
