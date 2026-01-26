@@ -20,7 +20,6 @@ def get_pinecone_index() -> Any:
     if pinecone_index_string is None:
         raise ValueError("PINECONE_INDEX_NAME no está definido en las variables de entorno")
     else:
-        test = pinecone_client.Index(pinecone_index_string)
         return pinecone_client.Index(pinecone_index_string)
         
 vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_pinecone_index())

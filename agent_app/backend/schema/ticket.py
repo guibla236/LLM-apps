@@ -8,6 +8,8 @@ class TicketPriority(str, Enum):
     HIGH = "High"
     URGENT = "Urgent"
 
+class Item(BaseModel):
+    ticket: dict
 
 class TicketModel(BaseModel):
     """Modelo de un ticket de soporte."""

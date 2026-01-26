@@ -5,7 +5,7 @@ Este archivo contiene la estructura mock para que implementes la funcionalidad.
 
 import sys
 import json
-from pydantic import BaseModel, field_validator, ConfigDict, Field
+from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List
 from .third_party_clients import vector_store_instance as vector_store

@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/api/tarea2/bin/python",
+  
+  "pylance.analysis.extraPaths": [
+    "${workspaceFolder}/tarea2/lib/python3.12/site-packages"
+  ]
+}
