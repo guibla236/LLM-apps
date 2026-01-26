@@ -22,3 +22,44 @@ def get_system_prompt() -> str:
             return f.read()
     except Exception:
         raise FileNotFoundError("System prompt file not found.")
+
+TOOL_NAME_MAP = {
+    "get_similar_tickets_tool": "Consultando la base de conocimientos de tickets similares",
+    "search_web_tool": "Buscando información en la web"
+}
+
+def format_trace(messages: list) -> list:
+    """Reconstructs a user-friendly execution trace from a list of LangChain messages."""
+    trace = []
+    for msg in messages:
+        if msg.type == "human":
+            continue
+        
+        if msg.type == "ai":
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tool_name = tc.get("name")
+                    friendly_name = TOOL_NAME_MAP.get(tool_name, f"Ejecutando herramienta: {tool_name}")
+                    trace.append({
+                        "node": "agent",
+                        "event": "thought",
+                        "description": f"El agente decidió: {friendly_name}",
+                        "active": True
+                    })
+            elif msg.content:
+                trace.append({
+                    "node": "agent",
+                    "event": "answer",
+                    "description": "El agente ha generado una respuesta final.",
+                    "active": True
+                })
+        
+        elif msg.type == "tool":
+            trace.append({
+                "node": "tools",
+                "event": "result",
+                "description": "Se ha procesado la información obtenida.",
+                "active": True
+            })
+            
+    return trace

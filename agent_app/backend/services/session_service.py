@@ -58,20 +58,41 @@ async def delete_user_session(username: str, session_id: str):
     return True
 
 async def get_session_history_messages(thread_id: str):
-    """Retrieves the message history for a specific thread."""
+    """Retrieves the message history for a specific thread with context traces."""
+    from core.utils import format_trace
     config = RunnableConfig(configurable={"thread_id": thread_id})
-    # Retrieve the state
     state = await agent_executor.aget_state(config)
-    messages = []
-    if state and state.values and "messages" in state.values:
-        for msg in state.values["messages"]:
-            # Serialize for frontend
-            role = "unknown"
-            if msg.type == "human": role = "user"
-            elif msg.type == "ai": role = "assistant"
-            elif msg.type == "tool": role = "tool"  # Valid for tool outputs
+    
+    if not (state and state.values and "messages" in state.values):
+        return []
+
+    raw_messages = state.values["messages"]
+    processed = []
+    
+    # Track the messages belonging to the current "turn" (from one Human message to the next)
+    current_turn_raw = []
+    
+    for msg in raw_messages:
+        if msg.type == "human":
+            # If we were tracking a turn, it means it's finished. 
+            # (Though in standard chat, AI/Tools always follow Human).
+            current_turn_raw = [msg]
+            processed.append({"role": "user", "content": msg.content})
+        
+        elif msg.type == "ai":
+            current_turn_raw.append(msg)
+            # If it's a final answer (has content and no tool calls), we attach the trace of the turn up to here
+            if msg.content and (not hasattr(msg, 'tool_calls') or not msg.tool_calls):
+                trace = format_trace(current_turn_raw)
+                processed.append({
+                    "role": "assistant", 
+                    "content": msg.content,
+                    "trace": trace
+                })
+                # Reset turn raw after final answer to avoid double counting if multiple AI msgs exist
+                current_turn_raw = [] 
             
-            # We filter out SystemMessages or keep them if needed. Usually frontends hide them.
-            if role in ["user", "assistant"]: 
-                 messages.append({"role": role, "content": msg.content})
-    return messages
+        elif msg.type == "tool":
+            current_turn_raw.append(msg)
+            
+    return processed
