@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage
 import time
 from datetime import datetime
-from agent_executor_service import agent_executor
+from services.agent_executor_service import agent_executor
 from core.logger import agent_logger
 from schema.ticket import TicketModel
 from core.database import get_db

@@ -90,7 +90,7 @@ class AsyncMongoDBSaver(BaseCheckpointSaver):
             "checkpoint_id": checkpoint_id,
             "checkpoint": pickle.dumps(checkpoint),
             "metadata": pickle.dumps(metadata),
-            "parent_config": pickle.dumps(config.get("configurable", {}).get("checkpoint_id")) 
+            "parent_config": pickle.dumps(config)
         }
         
         await self.collection.replace_one(

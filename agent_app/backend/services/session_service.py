@@ -1,4 +1,4 @@
-from agent_executor_service import agent_executor
+from services.agent_executor_service import agent_executor
 from langchain_core.runnables.config import RunnableConfig
 from core.database import get_db
 from langchain_core.messages import HumanMessage

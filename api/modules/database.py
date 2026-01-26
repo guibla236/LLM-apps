@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from config import get_env_var
+from modules.config import get_env_var
 from dotenv import load_dotenv
 from typing import Optional
 
