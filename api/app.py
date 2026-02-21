@@ -16,6 +16,8 @@ import shutil
 import os
 import uuid
 import traceback
+import zipfile
+import tempfile
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -358,6 +360,79 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Reque
             os.remove(temp_file_path)
             
     return {"message": f"Archivo {file.filename} procesado e ingestado exitosamente."}
+
+
+@app.post("/api/ingest_kb_zip", dependencies=[Depends(is_admin)])
+async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request = None):
+    """
+    Endpoint POST para la ingestión masiva de documentos KB desde un archivo ZIP.
+    Requiere privilegios de admin.
+    """
+    temp_zip_path = f"temp_{uuid.uuid4()}_{file.filename}"
+    temp_dir = tempfile.mkdtemp(prefix="kb_ingest_")
+
+    try:
+        with open(temp_zip_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Solo soportamos ZIPs
+        try:
+            with zipfile.ZipFile(temp_zip_path, 'r') as z:
+                z.extractall(temp_dir)
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="El archivo subido no es un ZIP válido.")
+
+        # Ejecutar ingesta desde el directorio temporal (sin consumir cuota)
+        run_kb_ingestion_from(temp_dir)
+    finally:
+        # Cleanup
+        if os.path.exists(temp_zip_path):
+            os.remove(temp_zip_path)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+    return {"message": f"ZIP {file.filename} procesado e ingestado exitosamente."}
+
+
+@app.post("/api/ingest_kb_md", dependencies=[Depends(is_admin)])
+async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Request = None):
+    """
+    Endpoint POST para la ingestión de un documento KB en formato Markdown (.md).
+    Requiere privilegios de admin.
+    """
+    # Validar extensión
+    filename = file.filename
+    if not filename.lower().endswith('.md'):
+        raise HTTPException(status_code=400, detail="Solo se permiten archivos con extensión .md")
+
+    try:
+        content_bytes = await file.read()
+        content = content_bytes.decode('utf-8')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error leyendo el archivo: {str(e)}")
+
+    try:
+        from modules.rag_kb_ingestor import KBDocument, ingest_individual_kb_document, extract_kb_category
+
+        # Derivar fileId a partir del nombre de archivo (sin extensión)
+        file_id = os.path.splitext(filename)[0]
+        category = extract_kb_category(file_id, content)
+
+        kb_doc = KBDocument(
+            fileId=file_id,
+            fileName=filename,
+            content=content,
+            category=category,
+            target_audience="",
+            purpose="",
+            tags=[]
+        )
+
+        result = ingest_individual_kb_document(kb_doc)
+        return {"message": result}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al procesar el documento KB: {str(e)}")
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("20/minute")
