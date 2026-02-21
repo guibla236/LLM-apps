@@ -10,6 +10,7 @@ import re
 import os
 from pathlib import Path
 from pydantic import BaseModel, Field
+from .unified_logger import log_execution, log_error
 from typing import List, Optional, Dict
 from .third_party_clients import vector_store_instance as vector_store
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -206,6 +207,11 @@ def ingest_kb_documents_to_vectorstore(documents: List[KBDocument]) -> None:
     try:
         for i, doc in enumerate(documents):
             print(f"\nDEBUG: Procesando documento {i+1}/{len(documents)}: {doc.fileId}\n")
+            # Log: start ingestion for this KB document
+            try:
+                log_execution(ticket_id=f"KB-INGEST-{doc.fileId}", user=doc.fileName, input_data={"fileId": doc.fileId}, solution="started", execution_time=0)
+            except Exception:
+                pass
             
             # Dividir contenido en chunks si es muy largo
             splits = [doc.content]
@@ -236,12 +242,20 @@ def ingest_kb_documents_to_vectorstore(documents: List[KBDocument]) -> None:
                 ids=ids
             )
             print(f"DEBUG: Documento {doc.fileId} ingresado exitosamente ({len(splits)} chunks).\n")
+            try:
+                log_execution(ticket_id=f"KB-INGEST-{doc.fileId}", user=doc.fileName, input_data={"fileId": doc.fileId}, solution="success", execution_time=0)
+            except Exception:
+                pass
             
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR en ingest_kb_documents_to_vectorstore ==========\n")
         sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
         sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
         sys.stderr.flush()
+        try:
+            log_error(user="system", path="ingest_kb_documents_to_vectorstore", method="ingest", error_message=str(e), traceback_data="see stderr")
+        except Exception:
+            pass
 
 def run_kb_ingestion_from(directory_path: str, recursive: bool = False) -> None:
     """

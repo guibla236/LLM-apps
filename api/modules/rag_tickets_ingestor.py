@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List
 from .third_party_clients import vector_store_instance as vector_store
+from .unified_logger import log_execution, log_error
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 text_splitter = RecursiveCharacterTextSplitter(
@@ -66,6 +67,11 @@ def ingest_tickets_to_vectorstore(tickets: List[TicketModel]) -> None:
     try:
         for i, ticket in enumerate(tickets):
             print(f"\nDEBUG: Procesando ticket {i+1}/{len(tickets)}: {ticket.ticketId}\n")
+            # Log: start ingestion for this ticket
+            try:
+                log_execution(ticket_id=f"TICKET-INGEST-{ticket.ticketId}", user=ticket.owner, input_data={"ticketId": ticket.ticketId}, solution="started", execution_time=0)
+            except Exception:
+                pass
             splits = [ticket.description]
             if len(ticket.description) < 5:
                 sys.stderr.write(f"\nDEBUG: Ticket {ticket.ticketId} tiene descripción muy corta, se omite.\n")
@@ -84,11 +90,19 @@ def ingest_tickets_to_vectorstore(tickets: List[TicketModel]) -> None:
                 ids=ids
             )
             print(f"DEBUG: Ticket {ticket.ticketId} ingresado exitosamente.\n")
+            try:
+                log_execution(ticket_id=f"TICKET-INGEST-{ticket.ticketId}", user=ticket.owner, input_data={"ticketId": ticket.ticketId}, solution="success", execution_time=0)
+            except Exception:
+                pass
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR en ingest_tickets_to_vectorstore ==========\n")
         sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
         sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
         sys.stderr.flush()
+        try:
+            log_error(user="system", path="ingest_tickets_to_vectorstore", method="ingest", error_message=str(e), traceback_data="see stderr")
+        except Exception:
+            pass
 
 def run_ingestion_from(file_path: str) -> None:
     """
