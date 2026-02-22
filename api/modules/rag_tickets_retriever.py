@@ -14,16 +14,17 @@ import json
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 
 TICKET_SUMMARIZER_SYSTEM_MESSAGE = """
-    Eres un asistente que ayuda a obtener información sobre tickets de soporte técnico informático.
-    Para eso cuentas con algunos ejemplos de tickets similares que permitan resolver el ticket de entrada.
-    Tu deberás proveer en lenguaje natural una descripción que resuma los problemas más similares que han habido en otros tickets.
-    Para eso cuentas con una lista de tickets antiguos. Indaga en su campo description para realizar el resumen.
-    Además, debes brindar una lista de contactos que pueden ayudar a resolver el ticket de entrada, para lo cual has de usar los campos owner de los tickets antiguos.
-    Tu respuesta debe estar contenida en el siguiente formato JSON (bajo ningún concepto podrás colocar texto por fuera del JSON):
+    You are an assistant that helps to obtain solutions about IT support tickets.
+    For that, you have some examples of similar tickets that allow you to solve the input ticket.
+    Your duty is to provide in natural language a guide that helps in solving the problem of the input ticket 
+    by using the information from the similar tickets that allows the user to solve the input ticket.
+    You should delve into the old tickets' description field to compare with the input ticket and evaluate similarities and possible fixes.
+    Additionally, you should provide a list of contacts that can help solve the input ticket, for which you have to use the owner fields of the old tickets.
+    Your answer must be contained in the following JSON format (under no circumstances can you place text outside the JSON):
     ```json
     {
-        "resumen": <contenido del resumen que realizaste>,
-        "contactos": <array de contactos>
+        "answer": <content of the answer you give to solve the input ticket>,
+        "contacts": <array of contacts>
     }
     ```
 """
@@ -48,18 +49,14 @@ class TicketModel(BaseModel):
 
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
-    Obtiene una lista de tickets similares que permitan resolver el ticket de entrada.
+    Obtains a list of similar tickets that can help solve the input ticket.
     
     Args:
-        inputTicket (TicketModel): Objeto con los detalles del ticket a resolver.
+        inputTicket (TicketModel): Object with details about the ticket to solve.
         
     Returns:
-        List[TicketModel]: Lista de los tickets similares al ingresado.
+        List[TicketModel]: List of similar tickets that can help solve the input ticket.
         
-    Implementar:
-        - Lógica de resumen (ej: con un modelo de IA, algoritmo de extracción, etc.)
-        - Extracción de puntos clave
-        - Validación de entrada
     """
     try:
         raw_results = await vector_store.asimilarity_search(inputTicket.description, k=5)
@@ -72,14 +69,14 @@ async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketMode
         return results
         
     except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR en retrieve_relevant_tickets ==========\n")
-        sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
-        sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
+        sys.stderr.write(f"\n========== DEBUG: ERROR in retrieve_relevant_tickets ==========\n")
+        sys.stderr.write(f"DEBUG: Error type: {type(e).__name__}\n")
+        sys.stderr.write(f"DEBUG: Error message: {str(e)}\n")
         sys.stderr.flush()
         import traceback
-        sys.stderr.write(f"DEBUG: Traceback completo:\n")
+        sys.stderr.write(f"DEBUG: Complete traceback:\n")
         sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("========== DEBUG: ERROR finalizado ==========\n")
+        sys.stderr.write("========== DEBUG: ERROR finished ==========\n")
         sys.stderr.flush()
         
         return []
@@ -87,27 +84,27 @@ async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketMode
 
 async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
     """
-    Utilizando un LLM, retorna información sobre tickets similares, contactos y acciones sugeridas.
+    Using an LLM, return information about similar tickets, contacts, and suggested actions.
     
     Args:
-        inputTicket (TicketModel): Objeto con los detalles del ticket a resolver.
+        inputTicket (TicketModel): Object with details about the ticket to solve.
         
     Returns:
-        str: Un texto con información sobre tickets similares, contactos y acciones sugeridas.
+        str: A text containing information about similar tickets, contacts, and suggested actions.
     """
 
     relevant_tickets = await retrieve_relevant_tickets(inputTicket)
 
     if (len(relevant_tickets) == 0):
         return {
-            "resumen": "No se encontraron tickets similares",
-            "contactos": []
+            "answer": "No similar tickets found in the system for the given input ticket.",
+            "contacts": []
         }
 
     if CHAT_MODEL_NAME is None:
         return {
-            "resumen": "La variable de entorno CHAT_MODEL_NAME no está configurada. No se pudo hacer nada",
-            "contactos": []
+            "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
+            "contacts": []
         }
 
     message = await groq_llm_client.chat.completions.create(
@@ -120,40 +117,40 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
             {
                 "role": "user",
                 "content": f"""
-                    Ticket de entrada:
+                    Input ticket:
                     {inputTicket}
                     
-                    Tickets similares:
+                    Similar tickets:
                     {relevant_tickets}
                 """
             }
         ],
-        temperature=0.7
+        temperature=0
     )
 
     choice = message.choices[0]
     if choice.message is None or choice.message.content is None:
         return {
-            "resumen": "El modelo no devolvió ningún contenido.",
-            "contactos": []
+            "answer": "The LLM did not return any content.",
+            "contacts": []
         }
     summary_text = choice.message.content.split("```json")[1].split("```")[0]
 
     try:
         # Intentar parsear la respuesta como JSON
         response_data = json.loads(summary_text)
-        resumen = response_data.get("resumen", "")
-        if (not resumen or len(resumen) == 0 ):
-            resumen = response_data.get("'resumen'", "")
+        summary = response_data.get("answer", "")
+        if (not summary or len(summary) == 0 ):
+            summary = response_data.get("'answer'", "")
         return {
-            "resumen": resumen,
-            "contactos": list(set([t.owner for t in relevant_tickets]))
+            "answer": summary,
+            "contacts": list(set([t.owner for t in relevant_tickets]))
         }
     except json.JSONDecodeError:
         # Fallback si el LLM no devuelve JSON válido
-        sys.stderr.write(f"DEBUG: Error al parsear JSON del LLM. Usando fallback.\n")
+        sys.stderr.write(f"DEBUG: Error on parsing JSON from LLM. Using fallback.\n")
         unique_owners = list(set([t.owner for t in relevant_tickets]))
         return {
-            "resumen": summary_text,
-            "contactos": unique_owners
+            "answer": summary_text,
+            "contacts": unique_owners
         }

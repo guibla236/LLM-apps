@@ -26,7 +26,7 @@ async function fetchAdmin(url, options = {}) {
     };
     const response = await fetch(url, { ...options, headers });
     if (response.status === 403) {
-        alert("No tienes permisos de administrador.");
+        alert("Access Denied (admins only section).");
         window.location.href = '/';
         return;
     }
@@ -41,10 +41,10 @@ async function loadFeatureFlags() {
 
     const btn = document.getElementById('toggle-ingestion');
     if (ingestionFlag && ingestionFlag.enabled) {
-        btn.textContent = 'Activado';
+        btn.textContent = 'Enabled';
         btn.className = 'toggle-btn toggle-on';
     } else {
-        btn.textContent = 'Desactivado';
+        btn.textContent = 'Disabled';
         btn.className = 'toggle-btn toggle-off';
     }
 }
@@ -71,7 +71,7 @@ async function loadUsers() {
             <td>${user.username}</td>
             <td>${user.daily_usage}</td>
             <td><input type="number" class="form-input" value="${user.quota_limit}" id="quota-${user.username}"></td>
-            <td><button class="btn-save" onclick="updateQuota('${user.username}')">Guardar</button></td>
+            <td><button class="btn-save" onclick="updateQuota('${user.username}')">Save</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -83,7 +83,7 @@ async function updateQuota(username) {
         method: 'POST',
         body: JSON.stringify({ quota_limit: parseInt(newLimit) })
     });
-    if (response.ok) alert("Cuota actualizada");
+    if (response.ok) alert("Quota updated successfully.");
 }
 
 // --- Logs ---
@@ -103,7 +103,7 @@ async function loadLogs() {
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span><strong>${log.user}</strong>: ${log.error_message.substring(0, 50)}...</span>
-                <button class="btn-view-more" onclick="showErrorDetail('${log.error_id}')">Ver Traza</button>
+                <button class="btn-view-more" onclick="showErrorDetail('${log.error_id}')">View Trace</button>
             </div>
         `;
         container.appendChild(div);
@@ -159,7 +159,7 @@ async function loadRegistrations() {
         div.innerHTML = `
             <div class="log-header">
                 <span>${new Date(reg.timestamp).toLocaleString()}</span>
-                <span style="color: var(--admin-success)">NUEVO</span>
+                <span style="color: var(--admin-success)">NEW</span>
             </div>
             <div>
                 <strong>${reg.username}</strong> desde <small>${reg.ip}</small>
@@ -185,7 +185,7 @@ async function loadAgentExecutions() {
             <td>${ex.ticket_id}</td>
             <td style="${statusClass}">${ex.status.toUpperCase()}</td>
             <td>${ex.execution_time ? ex.execution_time + 's' : '-'}</td>
-            <td><button class="btn-view-more" onclick="showAgentDetail('${ex._id}')">Ver Solución</button></td>
+            <td><button class="btn-view-more" onclick="showAgentDetail('${ex._id}')">View Details</button></td>
         `;
         tbody.appendChild(tr);
         // Cache execution for detail view
@@ -198,8 +198,8 @@ function showAgentDetail(id) {
     const ex = agentCache[id];
     if (!ex) return;
 
-    const durationText = ex.execution_time ? ` | Duración: ${ex.execution_time}s` : "";
-    document.getElementById('modal-title').textContent = "Solución Propuesta por Agente";
+    const durationText = ex.execution_time ? ` | Duration: ${ex.execution_time}s` : "";
+    document.getElementById('modal-title').textContent = "Agent Proposed Solution";
     document.getElementById('modal-date').textContent = new Date(ex.timestamp).toLocaleString() + durationText;
     document.getElementById('modal-user').textContent = ex.user;
     document.getElementById('modal-path').textContent = `Ticket ID: ${ex.ticket_id}`;

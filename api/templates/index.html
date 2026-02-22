@@ -13,21 +13,22 @@
         <div class="header-actions">
             <span id="user-display"></span>
             <button id="admin-btn" class="btn-admin" style="display: none;"
-                onclick="window.location.href='/admin'">Panel Admin</button>
-            <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                onclick="window.location.href='/admin'">Admin Panel</button>
+            <button class="btn-logout" onclick="logout()">Logout</button>
         </div>
-        <h1>🚀 Interfaz del RAG</h1>
-        <p class="subtitle">Powered by Groq AI</p>
+        <h1>🚀 RAG UI</h1>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('summarizer')">📰 Resumidor de Noticias</button>
-            <button class="tab-btn" onclick="switchTab('ingestor')">📥 Carga de Ticket</button>
-            <button class="tab-btn" onclick="switchTab('bulk')">📂 Carga Masiva de Tickets</button>
-            <button class="tab-btn" onclick="switchTab('search')">🔍 Búsqueda de Tickets Similares</button>
-            <button class="tab-btn" onclick="switchTab('augment')">✨ Asistente IA</button>
+            <!-- <button class="tab-btn" onclick="switchTab('summarizer')">📰 News Summarizer</button> -->
+            <button class="tab-btn active" onclick="switchTab('ingestor')">📥 RAG Ticket Ingestor</button>
+            <button class="tab-btn" onclick="switchTab('bulk')">📂 RAG Massive Ticket Ingestor</button>
+            <button class="tab-btn" onclick="switchTab('kb_ingestor')">📚 KB Ingestor (.md)</button>
+            <button class="tab-btn" onclick="switchTab('kb_bulk')">📦 Massive KB Ingestor (.zip)</button>
+            <button class="tab-btn" onclick="switchTab('search')">🔍 Similar Tickets Search</button>
+            <button class="tab-btn" onclick="switchTab('augment')">✨ IA Ticket Assistant</button>
         </div>
 
-
+<!-- 
         <div id="summarizer-section" class="section active">
             <div class="info-box">
                 <h2>¿Qué es esto?</h2>
@@ -54,29 +55,29 @@
 
                 <button class="btn-primary" onclick="callSummarizeEndpoint()">Resumir Noticia</button>
             </div>
-        </div>
+        </div> -->
 
-        <div id="ingestor-section" class="section" style="display: none;">
+        <div id="ingestor-section" class="section active">
             <div class="info-box">
-                <h2>¿Qué es esto?</h2>
-                <p>Ingresa un objeto JSON con la información del ticket para almacenarlo en la base de datos vectorial.
+                <h2>What is this?</h2>
+                <p>Enter a JSON object with the ticket information to store it in the vector database.
                 </p>
             </div>
 
             <div class="info-box">
-                <h2>📥 Ingestión de Tickets</h2>
-                <p>Pega aquí el JSON del ticket que deseas procesar.</p>
+                <h2>📥 RAG Ticket Ingestor</h2>
+                <p>Paste here the JSON of the ticket you want to process.</p>
 
                 <div class="form-group">
-                    <label for="ticketJson">JSON del Ticket:</label>
+                    <label for="ticketJson">Ticket JSON:</label>
                     <textarea id="ticketJson" placeholder='{
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer problem",
       "priority": "HIGH",
       "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
+      "description": "The printer is not responding and shows a connection error.",
       "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "actions": "Restarted the printer and verified the cables."
     }' class="form-textarea" rows="10"></textarea>
                 </div>
 
@@ -86,43 +87,81 @@
 
         <div id="bulk-section" class="section" style="display: none;">
             <div class="info-box">
-                <h2>¿Qué es esto?</h2>
-                <p>Sube un archivo JSON que contenga una lista de tickets para ser procesados masivamente.</p>
+                <h2>What is this?</h2>
+                <p>Upload a JSON file that contains a list of tickets to be processed in bulk.</p>
             </div>
 
             <div class="info-box">
-                <h2>📂 Carga Masiva de Tickets</h2>
-                <p>Selecciona un archivo .json con el array de tickets.</p>
+                <h2>📂 Bulk Ticket Ingestion</h2>
+                <p>Select a .json file with the array of tickets.</p>
 
                 <div class="form-group">
-                    <label for="jsonFile">Archivo JSON:</label>
+                    <label for="jsonFile">JSON File:</label>
                     <input type="file" id="jsonFile" accept=".json" class="form-input">
                 </div>
 
-                <button class="btn-primary" onclick="callBulkIngestEndpoint()">Subir y Procesar</button>
+                <button class="btn-primary" onclick="callBulkIngestEndpoint()">Upload and Process</button>
+            </div>
+        </div>
+
+        <div id="kb-ingestor-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>What is this?</h2>
+                <p>Upload a Markdown `.md` file to be indexed in the Knowledge Base.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>📚 KB Ingestor (single file)</h2>
+                <p>Select a `.md` file to ingest into the KB index.</p>
+
+                <div class="form-group">
+                    <label for="kbMdFile">Markdown File:</label>
+                    <input type="file" id="kbMdFile" accept=".md" class="form-input">
+                </div>
+
+                <button class="btn-primary" onclick="callKBIngestEndpoint()">Upload and Process .md</button>
+            </div>
+        </div>
+
+        <div id="kb-bulk-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>What is this?</h2>
+                <p>Upload a `.zip` file that contains multiple `.md` files to be ingested in bulk into the KB.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>📦 Bulk KB Ingestion (ZIP)</h2>
+                <p>Select a .zip file with the `.md` files inside.</p>
+
+                <div class="form-group">
+                    <label for="kbZipFile">ZIP File:</label>
+                    <input type="file" id="kbZipFile" accept=".zip" class="form-input">
+                </div>
+
+                <button class="btn-primary" onclick="callKBBulkIngestEndpoint()">Upload and Process ZIP</button>
             </div>
         </div>
 
         <div id="search-section" class="section" style="display: none;">
             <div class="info-box">
-                <h2>¿Qué es esto?</h2>
-                <p>Ingresa la información de un ticket para encontrar otros tickets similares en la base de datos.</p>
+                <h2>What is this?</h2>
+                <p>Enter the information of a ticket to find similar tickets in the database.</p>
             </div>
 
             <div class="info-box">
-                <h2>🔍 Búsqueda de Tickets Similares</h2>
-                <p>Pega aquí el JSON del ticket referencia.</p>
+                <h2>🔍 Similar Tickets Search</h2>
+                <p>Paste here the JSON of the reference ticket.</p>
 
                 <div class="form-group">
-                    <label for="ticketJsonSearch">JSON del Ticket:</label>
+                    <label for="ticketJsonSearch">Ticket JSON:</label>
                     <textarea id="ticketJsonSearch" placeholder='{
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer problem",
       "priority": "HIGH",
       "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
-      "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "description": "The printer is not responding and shows a connection error.",
+      "impact": "High",
+      "actions": "I restarted the printer and checked the cables."
     }' class="form-textarea" rows="10"></textarea>
                 </div>
 
@@ -132,29 +171,28 @@
 
         <div id="augment-section" class="section" style="display: none;">
             <div class="info-box">
-                <h2>¿Qué es esto?</h2>
-                <p>El asistente utilizará IA para analizar tickets similares y proponerte una solución resumida y
-                    contactos clave.</p>
+                <h2>What is this?</h2>
+                <p>The assistant will use AI to analyze similar tickets and propose a summarized solution and key contacts.</p>
             </div>
 
             <div class="info-box">
-                <h2>✨ Asistente de Resolución</h2>
-                <p>Pega aquí el JSON del ticket a resolver.</p>
+                <h2>✨ Resolution Assistant</h2>
+                <p>Paste here the JSON of the ticket to be resolved.</p>
 
                 <div class="form-group">
-                    <label for="ticketJsonAugment">JSON del Ticket:</label>
+                    <label for="ticketJsonAugment">Ticket JSON:</label>
                     <textarea id="ticketJsonAugment" placeholder='{
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer problem",
       "priority": "HIGH",
       "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
-      "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "description": "The printer is not responding and shows a connection error.",
+      "impact": "High",
+      "actions": "I restarted the printer and checked the cables."
     }' class="form-textarea" rows="10"></textarea>
                 </div>
-
-                <button class="btn-primary" onclick="callAugmentEndpoint()">Consultar Asistente</button>
+                <button class="btn-primary" onclick="callAugmentEndpoint()">Consultar Asistente (Tickets)</button>
+                <button class="btn-primary" style="margin-left:8px;" onclick="callAugmentWithKBEndpoint()">Consultar Asistente (Tickets + KB)</button>
             </div>
         </div>
 
