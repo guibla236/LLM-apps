@@ -8,7 +8,9 @@ import os
 import json
 from pydantic import BaseModel, Field
 from enum import Enum
+from typing import List, Dict, Any
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
+from .rag_tickets_ingestor import TicketModel
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
@@ -56,7 +58,7 @@ async def search_tickets(query: str, k: int = 5) -> List[SearchResult]:
                     title=f"Ticket {ticket.ticketId}",
                     content=ticket.description,
                     metadata=ticket.model_dump(),
-                    score=0.8  # Placeholder para score real
+                    score=0.8
                 )
                 results.append(search_result)
         
