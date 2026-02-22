@@ -223,8 +223,8 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 return {
                     "summary": response_data.get("summary", ""),
                     "contacts": response_data.get("contacts", []),
-                    "kb_references": response_data.get("kb_references", []),
-                    "ticket_references": response_data.get("ticket_references", []),
+                    "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
+                    "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
                     "suggested_actions": response_data.get("suggested_actions", [])
                 }
             
@@ -233,13 +233,13 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             return {
                 "summary": f"Found {len(search_results)} relevant results. Check the tickets and KB documents for more details.",
                 "contacts": ticket_owners,
-                "kb_references": kb_ids,
-                "ticket_references": [r.id for r in ticket_results],
+                "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
+                "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
                 "suggested_actions": ["Review the KB documents and tickets mentioned to get more details"]
             }
         
     except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR en augment_search_results ==========\n")
+        sys.stderr.write(f"\n========== DEBUG: ERROR in augment_search_results_with_tickets_and_kbs ==========\n")
         sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
         sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
         sys.stderr.flush()
