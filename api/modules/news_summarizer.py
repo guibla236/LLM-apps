@@ -1,3 +1,4 @@
+# Legacy module (it's disabled in the router) - we keep it for reference and potential future use, but it's not currently active in the API.
 """
 Módulo para la funcionalidad de resumen de noticias.
 Este archivo contiene la estructura mock para que implementes la funcionalidad.

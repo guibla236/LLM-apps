@@ -19,14 +19,16 @@
         <h1>🚀 RAG UI</h1>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('summarizer')">📰 Resumidor de Noticias</button>
-            <button class="tab-btn" onclick="switchTab('ingestor')">📥 Carga de Ticket</button>
-            <button class="tab-btn" onclick="switchTab('bulk')">📂 Carga Masiva de Tickets</button>
-            <button class="tab-btn" onclick="switchTab('search')">🔍 Búsqueda de Tickets Similares</button>
-            <button class="tab-btn" onclick="switchTab('augment')">✨ Asistente IA</button>
+            <!-- <button class="tab-btn" onclick="switchTab('summarizer')">📰 News Summarizer</button> -->
+            <button class="tab-btn active" onclick="switchTab('ingestor')">📥 RAG Ticket Ingestor</button>
+            <button class="tab-btn" onclick="switchTab('bulk')">📂 RAG Massive Ticket Ingestor</button>
+            <button class="tab-btn" onclick="switchTab('kb_ingestor')">📚 KB Ingestor (.md)</button>
+            <button class="tab-btn" onclick="switchTab('kb_bulk')">📦 Massive KB Ingestor (.zip)</button>
+            <button class="tab-btn" onclick="switchTab('search')">🔍 Similar Tickets Search</button>
+            <button class="tab-btn" onclick="switchTab('augment')">✨ IA Ticket Assistant</button>
         </div>
 
-
+<!-- 
         <div id="summarizer-section" class="section active">
             <div class="info-box">
                 <h2>¿Qué es esto?</h2>
@@ -53,7 +55,7 @@
 
                 <button class="btn-primary" onclick="callSummarizeEndpoint()">Resumir Noticia</button>
             </div>
-        </div>
+        </div> -->
 
         <div id="ingestor-section" class="section active">
             <div class="info-box">
@@ -102,6 +104,41 @@
             </div>
         </div>
 
+        <div id="kb-ingestor-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>What is this?</h2>
+                <p>Upload a Markdown `.md` file to be indexed in the Knowledge Base.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>📚 KB Ingestor (single file)</h2>
+                <p>Select a `.md` file to ingest into the KB index.</p>
+
+                <div class="form-group">
+                    <label for="kbMdFile">Markdown File:</label>
+                    <input type="file" id="kbMdFile" accept=".md" class="form-input">
+                </div>
+
+                <button class="btn-primary" onclick="callKBIngestEndpoint()">Upload and Process .md</button>
+            </div>
+        </div>
+
+        <div id="kb-bulk-section" class="section" style="display: none;">
+            <div class="info-box">
+                <h2>What is this?</h2>
+                <p>Upload a `.zip` file that contains multiple `.md` files to be ingested in bulk into the KB.</p>
+            </div>
+
+            <div class="info-box">
+                <h2>📦 Bulk KB Ingestion (ZIP)</h2>
+                <p>Select a .zip file with the `.md` files inside.</p>
+
+                <div class="form-group">
+                    <label for="kbZipFile">ZIP File:</label>
+                    <input type="file" id="kbZipFile" accept=".zip" class="form-input">
+                </div>
+
+                <button class="btn-primary" onclick="callKBBulkIngestEndpoint()">Upload and Process ZIP</button>
             </div>
         </div>
 
