@@ -71,26 +71,36 @@ async function callSummarizeEndpoint() {
 
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('summarizer-section').style.display = 'none';
+    // document.getElementById('summarizer-section').style.display = 'none';
     document.getElementById('ingestor-section').style.display = 'none';
     document.getElementById('bulk-section').style.display = 'none';
+    document.getElementById('kb-ingestor-section') && (document.getElementById('kb-ingestor-section').style.display = 'none');
+    document.getElementById('kb-bulk-section') && (document.getElementById('kb-bulk-section').style.display = 'none');
     document.getElementById('search-section').style.display = 'none';
     document.getElementById('augment-section').style.display = 'none';
 
-    if (tabName === 'summarizer') {
+    // if (tabName === 'summarizer') {
+    //     document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    //     document.getElementById('summarizer-section').style.display = 'block';
+    // } else
+
+    if (tabName === 'ingestor') {
         document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-        document.getElementById('summarizer-section').style.display = 'block';
-    } else if (tabName === 'ingestor') {
-        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
         document.getElementById('ingestor-section').style.display = 'block';
     } else if (tabName === 'bulk') {
-        document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
         document.getElementById('bulk-section').style.display = 'block';
-    } else if (tabName === 'search') {
+    } else if (tabName === 'kb_ingestor') {
+        document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+        document.getElementById('kb-ingestor-section').style.display = 'block';
+    } else if (tabName === 'kb_bulk') {
         document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+        document.getElementById('kb-bulk-section').style.display = 'block';
+    } else if (tabName === 'search') {
+        document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
         document.getElementById('search-section').style.display = 'block';
     } else {
-        document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
+        document.querySelector('.tab-btn:nth-child(6)').classList.add('active');
         document.getElementById('augment-section').style.display = 'block';
     }
     clearResponse();
@@ -161,6 +171,76 @@ async function callBulkIngestEndpoint() {
     }
 }
 
+async function callKBIngestEndpoint() {
+    showLoading(true);
+    try {
+        const fileInput = document.getElementById('kbMdFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showResponse({ error: 'Please, select a .md file' }, true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/ingest_kb_md', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) return logout();
+            const errorData = await response.json();
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
+            return;
+        }
+
+        const data = await response.json();
+        showResponse({ message: data.message || data }, false);
+    } catch (error) {
+        showResponse({ error: error.message }, true);
+    }
+}
+
+async function callKBBulkIngestEndpoint() {
+    showLoading(true);
+    try {
+        const fileInput = document.getElementById('kbZipFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showResponse({ error: 'Please, select a ZIP file' }, true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/ingest_kb_zip', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) return logout();
+            const errorData = await response.json();
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
+            return;
+        }
+
+        const data = await response.json();
+        showResponse({ message: data.message || data }, false);
+    } catch (error) {
+        showResponse({ error: error.message }, true);
+    }
+}
+
 async function callGetSimilarTicketsEndpoint() {
     showLoading(true);
     try {
@@ -202,6 +282,36 @@ async function callAugmentEndpoint() {
 
         let ticketData = JSON.parse(jsonText);
         const response = await fetch('/api/augment_ticket_information', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(ticketData)
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) return logout();
+            const errorData = await response.json();
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
+            return;
+        }
+
+        const data = await response.json();
+        showResponse(data, false);
+    } catch (error) {
+        showResponse({ error: error.message }, true);
+    }
+}
+
+async function callAugmentWithKBEndpoint() {
+    showLoading(true);
+    try {
+        const jsonText = document.getElementById('ticketJsonAugment').value.trim();
+        if (!jsonText) {
+            showResponse({ error: 'Please, enter the JSON of the ticket' }, true);
+            return;
+        }
+
+        let ticketData = JSON.parse(jsonText);
+        const response = await fetch('/api/augment_search_results', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(ticketData)
