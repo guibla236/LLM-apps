@@ -1,6 +1,6 @@
 """
-Módulo unificado para recuperación de información desde tickets y Knowledge Base.
-Este módulo permite buscar y combinar resultados de ambas fuentes para un RAG más completo.
+Unified Retriever Module for Tickets and Knowledge Base.
+This module allows searching and combining results from both sources for a more comprehensive RAG experience.
 """
 
 import sys
@@ -145,15 +145,15 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
 
 async def augment_search_results(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10) -> dict:
     """
-    Utilizando un LLM, procesa los resultados de búsqueda para generar un resumen y acciones sugeridas.
+    Using an LLM, process the search results to generate a summary and suggested actions.
     
     Args:
-        query (str): Consulta original
-        search_type (SearchType): Tipo de búsqueda
-        k (int): Número de resultados a considerar
+        query (str): Original query
+        search_type (SearchType): Search type to perform
+        k (int): Number of results to retrieve and process
         
     Returns:
-        dict: Diccionario con resumen y acciones sugeridas
+        dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
     """
     try:
         # Obtener resultados de búsqueda
@@ -161,43 +161,38 @@ async def augment_search_results(query: str, search_type: SearchType = SearchTyp
         
         if not search_results:
             return {
-                "resumen": "No se encontraron resultados relevantes",
-                "contactos": [],
+                "summary": "No relevant tickets or KB documents found for the given query.",
+                "contacts": [],
                 "kb_references": [],
                 "ticket_references": []
             }
         
-        # Separar resultados por tipo
+        # Split results by type for better processing
         ticket_results = [r for r in search_results if r.source == "ticket"]
         kb_results = [r for r in search_results if r.source == "kb"]
         
-        # Extraer información relevante
+        # Extract relevant information
         ticket_owners = list(set([r.metadata.get('owner', '') for r in ticket_results if r.metadata.get('owner')]))
-        kb_ids = list(set([r.id for r in kb_results]))
         
-        # Preparar contexto para el LLM
-        context = f"Consulta: {query}\n\n"
-        context += "Tickets similares encontrados:\n"
-        for ticket in ticket_results[:3]:  # Limitar a 3 tickets para no exceder token limit
-            context += f"- {ticket.id}: {ticket.content[:200]}...\n"
+        # Prepare LLM context
+        context = f"Query: {query}\n\n"
+        context += "Similar tickets found:\n"
+        for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
         
         context += "\nDocumentos Knowledge Base relevantes:\n"
         for kb in kb_results[:3]:  # Limitar a 3 documentos KB
             context += f"- {kb.id}: {kb.content[:200]}...\n"
         
-        # Mensaje para el LLM
+        # System prompt
         system_message = """
-Eres un asistente experto en soporte técnico informático. Basado en los tickets y documentos de conocimiento proporcionados, genera un resumen útil y acciones sugeridas.
-
-Tu respuesta debe ser en formato JSON con la siguiente estructura:
-{
-    "resumen": "Resumen conciso de la información relevante encontrada",
-    "contactos": ["Lista de contactos relevantes de los tickets"],
-    "kb_references": ["IDs de documentos KB mencionados"],
-    "ticket_references": ["IDs de tickets mencionados"],
-    "acciones_sugeridas": ["Lista de acciones sugeridas basadas en la información"]
-}
-"""
+            You are an expert assistant in IT technical support. Based on the provided tickets and knowledge base documents, generate a useful summary and suggested actions.
+            Your response must be in JSON format with the following structure:
+            {
+                "summary": "Concise summary of the relevant information found",
+                "contacts": ["List of relevant contacts from the tickets' owners"],
+                "suggested_actions": ["List of suggested actions based on the information"]
+            }
+        """
 
         try:
             message = await groq_llm_client.chat.completions.create(
@@ -212,7 +207,7 @@ Tu respuesta debe ser en formato JSON con la siguiente estructura:
             if message.choices[0].message and message.choices[0].message.content:
                 content = message.choices[0].message.content
                 
-                # Extraer JSON del contenido
+                # Extract JSON from content
                 if "```json" in content:
                     json_part = content.split("```json")[1].split("```")[0]
                 else:
@@ -220,21 +215,21 @@ Tu respuesta debe ser en formato JSON con la siguiente estructura:
                 
                 response_data = json.loads(json_part)
                 return {
-                    "resumen": response_data.get("resumen", ""),
-                    "contactos": response_data.get("contactos", []),
+                    "summary": response_data.get("summary", ""),
+                    "contacts": response_data.get("contacts", []),
                     "kb_references": response_data.get("kb_references", []),
                     "ticket_references": response_data.get("ticket_references", []),
-                    "acciones_sugeridas": response_data.get("acciones_sugeridas", [])
+                    "suggested_actions": response_data.get("suggested_actions", [])
                 }
             
         except json.JSONDecodeError:
-            # Fallback si el LLM no devuelve JSON válido
+            # Fallback if LLM does not return valid JSON
             return {
-                "resumen": f"Se encontraron {len(search_results)} resultados relevantes. Consulta los tickets y documentos KB para más detalles.",
-                "contactos": ticket_owners,
+                "summary": f"Found {len(search_results)} relevant results. Check the tickets and KB documents for more details.",
+                "contacts": ticket_owners,
                 "kb_references": kb_ids,
                 "ticket_references": [r.id for r in ticket_results],
-                "acciones_sugeridas": ["Revisar los documentos KB y tickets mencionados para obtener más detalles"]
+                "suggested_actions": ["Review the KB documents and tickets mentioned to get more details"]
             }
         
     except Exception as e:
@@ -244,18 +239,18 @@ Tu respuesta debe ser en formato JSON con la siguiente estructura:
         sys.stderr.flush()
         
         return {
-            "resumen": f"Error al procesar los resultados: {str(e)}",
-            "contactos": [],
+            "summary": f"Error processing the results: {str(e)}",
+            "contacts": [],
             "kb_references": [],
             "ticket_references": [],
-            "acciones_sugeridas": []
+            "suggested_actions": []
         }
 
 # Funciones de compatibilidad con el sistema existente
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
-    Función de compatibilidad con el sistema existente.
-    Obtiene tickets similares usando el nuevo sistema unificado.
+    Compatibility function with the existing system.
+    Uses the new unified system but maintains the original interface.
     """
     try:
         search_results = await search_tickets(inputTicket.description, k=5)
@@ -269,17 +264,17 @@ async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketMode
 
 async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
     """
-    Función de compatibilidad con el sistema existente.
-    Utiliza el nuevo sistema unificado pero mantiene la interfaz original.
+    Compatibility function with the existing system.
+    Uses the new unified system but maintains the original interface.
     """
     try:
-        result = await augment_search_results(inputTicket.description, SearchType.TICKETS_ONLY, k=5)
+        result = await augment_search_results_with_tickets_and_kbs(inputTicket.description, SearchType.TICKETS_ONLY, k=5)
         return {
-            "resumen": result.get("resumen", ""),
-            "contactos": result.get("contactos", [])
+            "summary": result.get("summary", ""),
+            "contacts": result.get("contacts", [])
         }
     except Exception:
         return {
-            "resumen": "Error al procesar el ticket",
-            "contactos": []
+            "summary": "Error processing the ticket",
+            "contacts": []
         }

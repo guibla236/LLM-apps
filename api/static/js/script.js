@@ -42,7 +42,7 @@ async function callSummarizeEndpoint() {
         const content = document.getElementById('newsContent').value.trim();
 
         if (!title || !content) {
-            showResponse({ error: 'Por favor, completa el título y contenido de la noticia' }, true);
+            showResponse({ error: 'Please fill the title and content of the news' }, true);
             return;
         }
 
@@ -58,7 +58,7 @@ async function callSummarizeEndpoint() {
         if (!response.ok) {
             if (response.status === 401) return logout();
             const errorData = await response.json();
-            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
             return;
         }
 
@@ -101,7 +101,7 @@ async function callIngestEndpoint() {
     try {
         const jsonText = document.getElementById('ticketJson').value.trim();
         if (!jsonText) {
-            showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
+            showResponse({ error: 'Please, enter the JSON of the ticket' }, true);
             return;
         }
 
@@ -115,7 +115,7 @@ async function callIngestEndpoint() {
         if (!response.ok) {
             if (response.status === 401) return logout();
             const errorData = await response.json();
-            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
             return;
         }
 
@@ -133,7 +133,7 @@ async function callBulkIngestEndpoint() {
         const file = fileInput.files[0];
 
         if (!file) {
-            showResponse({ error: 'Por favor, selecciona un archivo JSON' }, true);
+            showResponse({ error: 'Please, select a JSON file' }, true);
             return;
         }
 
@@ -150,7 +150,7 @@ async function callBulkIngestEndpoint() {
         if (!response.ok) {
             if (response.status === 401) return logout();
             const errorData = await response.json();
-            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
             return;
         }
 
@@ -166,7 +166,7 @@ async function callGetSimilarTicketsEndpoint() {
     try {
         const jsonText = document.getElementById('ticketJsonSearch').value.trim();
         if (!jsonText) {
-            showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
+            showResponse({ error: 'Please, enter the JSON of the ticket' }, true);
             return;
         }
 
@@ -180,7 +180,7 @@ async function callGetSimilarTicketsEndpoint() {
         if (!response.ok) {
             if (response.status === 401) return logout();
             const errorData = await response.json();
-            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
             return;
         }
 
@@ -196,7 +196,7 @@ async function callAugmentEndpoint() {
     try {
         const jsonText = document.getElementById('ticketJsonAugment').value.trim();
         if (!jsonText) {
-            showResponse({ error: 'Por favor, ingresa el JSON del ticket' }, true);
+            showResponse({ error: 'Please, enter the JSON of the ticket' }, true);
             return;
         }
 
@@ -210,7 +210,7 @@ async function callAugmentEndpoint() {
         if (!response.ok) {
             if (response.status === 401) return logout();
             const errorData = await response.json();
-            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Error desconocido'}` }, true);
+            showResponse({ error: `Error ${response.status}: ${errorData.detail || 'Unknown error'}` }, true);
             return;
         }
 
@@ -232,36 +232,36 @@ function showResponse(data, isError = false) {
         content.textContent = `❌ Error: ${data.error}`;
     } else if (data.original_title) {
         content.classList.add('success');
-        let formattedText = `📌 TÍTULO ORIGINAL:\n${data.original_title}\n\n`;
-        formattedText += `📝 RESUMEN:\n${data.summary}\n\n`;
+        let formattedText = `📌 ORIGINAL TITLE:\n${data.original_title}\n\n`;
+        formattedText += `📝 SUMMARY:\n${data.summary}\n\n`;
         if (Array.isArray(data.key_points) && data.key_points.length > 0) {
-            formattedText += `🔑 PUNTOS CLAVE:\n`;
+            formattedText += `🔑 KEY POINTS:\n`;
             data.key_points.forEach((point, index) => { formattedText += `   ${index + 1}. ${point}\n`; });
         }
         content.textContent = formattedText;
-    } else if (data.resumen) {
+    } else if (data.answer) {
         content.classList.add('success');
-        let formattedText = `✨ CONSULTA AL ASISTENTE:\n\n`;
-        formattedText += `📝 RESUMEN DE SOLUCIONES:\n${data.resumen}\n\n`;
-        if (Array.isArray(data.contactos) && data.contactos.length > 0) {
-            formattedText += `👥 CONTACTOS SUGERIDOS:\n`;
-            data.contactos.forEach(contact => { formattedText += `   👤 ${contact}\n`; });
+        let formattedText = `✨ ASSISTANT QUERY:\n\n`;
+        formattedText += `📝 SOLUTIONS SUMMARY:\n${data.answer}\n\n`;
+        if (Array.isArray(data.contacts) && data.contacts.length > 0) {
+            formattedText += `👥 SUGGESTED CONTACTS:\n`;
+            data.contacts.forEach(contact => { formattedText += `   👤 ${contact}\n`; });
         }
         content.textContent = formattedText;
     } else if (data.message) {
         content.classList.add('success');
-        content.textContent = `✅ Éxito: ${data.message}`;
+        content.textContent = `✅ Success: ${data.message}`;
     } else if (Array.isArray(data)) {
         content.classList.add('success');
         if (data.length === 0) {
-            content.textContent = "🔍 No se encontraron tickets similares.";
+            content.textContent = "🔍 No similar tickets found.";
         } else {
-            let formattedText = `🔍 ENCONTRADOS ${data.length} TICKETS SIMILARES:\n\n`;
+            let formattedText = `🔍 FOUND ${data.length} SIMILAR TICKETS:\n\n`;
             data.forEach((ticket, index) => {
                 formattedText += `--- TICKET #${index + 1} ---\n`;
                 formattedText += `🆔 ID: ${ticket.ticketId}\n`;
-                formattedText += `🚨 Prioridad: ${ticket.priority}\n`;
-                formattedText += `📝 Descripción: ${ticket.description}\n\n`;
+                formattedText += `🚨 Priority: ${ticket.priority}\n`;
+                formattedText += `📝 Description: ${ticket.description}\n\n`;
             });
             content.textContent = formattedText;
         }
