@@ -16,9 +16,12 @@ TOKENIZER_MODEL_NAME = "all-minilm:22m"
 embeddings_model = OllamaEmbeddings(model=TOKENIZER_MODEL_NAME)
 
 def get_pinecone_index() -> Any:
+    """
+    Gets the Pinecone index for tickets.
+    """
     pinecone_index_string = os.getenv("PINECONE_INDEX_NAME")
     if pinecone_index_string is None:
-        raise ValueError("PINECONE_INDEX_NAME no está definido en las variables de entorno")
+        raise ValueError("PINECONE_INDEX_NAME is not defined in the env vars.")
     else:
         return pinecone_client.Index(pinecone_index_string)
         
@@ -26,18 +29,18 @@ def get_pinecone_index() -> Any:
 KB_INDEX_ENV_VAR = "PINECONE_KB_INDEX_NAME"
 
 def get_kb_pinecone_index() -> Any:
-    """Obtiene el índice de Pinecone para los Knowledge Base.
+    """Gets the Pinecone index for Knowledge Base.
 
-    La variable de entorno `PINECONE_KB_INDEX_NAME` es obligatoria. Si no está
-    definida se lanza una excepción para evitar comportamientos inesperados.
+    The `PINECONE_KB_INDEX_NAME` environment variable is required. If not
+    defined, an exception is raised to avoid unexpected behavior.
     """
     pinecone_index_string = os.getenv(KB_INDEX_ENV_VAR)
     if pinecone_index_string is None:
-        raise ValueError(f"{KB_INDEX_ENV_VAR} no está definido en las variables de entorno")
+        raise ValueError(f"{KB_INDEX_ENV_VAR} is not defined in the env vars.")
     return pinecone_client.Index(pinecone_index_string)
 
-# Instancia por defecto (actual) para tickets
+# Default instance for tickets
 vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_pinecone_index())
 
-# Nueva instancia separada para los Knowledge Base (KB)
+# Instance for Knowledge Base (KB)
 kb_vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_kb_pinecone_index())

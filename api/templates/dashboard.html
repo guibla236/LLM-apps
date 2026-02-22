@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soporte Técnico - Panel Administrativo</title>
+    <title>Admin Dashboard - GenAI Support</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -215,11 +215,11 @@
         <header class="header">
             <h1>Admin Dashboard</h1>
             <div id="user-info">
-                Admin: <span id="admin-name">Cargando...</span>
+                Admin: <span id="admin-name">Loading...</span>
                 <button onclick="initDashboard()" class="btn-view-more"
                     style="margin-left: 15px; border-color: rgba(255,255,255,0.2); color: #fff;">🔄 Refrescar</button>
             </div>
-            <a href="/" style="color: #94a3b8; text-decoration: none;">Volver al Inicio</a>
+            <a href="/" style="color: #94a3b8; text-decoration: none;">Go back to Home</a>
         </header>
 
         <div class="grid-sections">
@@ -228,28 +228,28 @@
                 <h2>Feature Flags</h2>
                 <div class="flag-control">
                     <div>
-                        <strong>Bloquear Ingesta</strong><br>
-                        <small style="color: #64748b;">Evita añadir nuevos tickets</small>
+                        <strong>Block Ingestion</strong><br>
+                        <small style="color: #64748b;">Prevents adding new tickets</small>
                     </div>
-                    <button id="toggle-ingestion" class="toggle-btn toggle-off">Desactivado</button>
+                    <button id="toggle-ingestion" class="toggle-btn toggle-off">Disabled</button>
                 </div>
             </section>
 
             <!-- Users Section -->
             <section class="card" style="grid-row: span 2;">
-                <h2>Gestión de Usuarios</h2>
+                <h2>Users Management</h2>
                 <div style="overflow-x: auto;">
                     <table id="users-table">
                         <thead>
                             <tr>
-                                <th>Usuario</th>
-                                <th>Uso</th>
-                                <th>Límite</th>
-                                <th>Acción</th>
+                                <th>Username</th>
+                                <th>Usage</th>
+                                <th>LLimit</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Contenido dinámico -->
+                            <!-- Dynamic Content -->
                         </tbody>
                     </table>
                 </div>
@@ -257,15 +257,15 @@
 
             <!-- Error Logs Section -->
             <section class="card">
-                <h2>Logs de Errores Recientes</h2>
+                <h2>Recent Error Logs</h2>
                 <div id="logs-container">
-                    <!-- Contenido dinámico -->
+                    <!-- Dynamic Content -->
                 </div>
             </section>
 
             <!-- IP Usage Section -->
             <section class="card">
-                <h2>Consumo por IP (Hoy)</h2>
+                <h2>By IP Usage (Today)</h2>
                 <div style="overflow-x: auto;">
                     <table id="ips-table">
                         <thead>
@@ -275,7 +275,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Contenido dinámico -->
+                            <!-- Dynamic Content -->
                         </tbody>
                     </table>
                 </div>
@@ -283,29 +283,29 @@
 
             <!-- Recent Registrations Section -->
             <section class="card">
-                <h2>Registros de Hoy</h2>
+                <h2>Today's Registrations</h2>
                 <div id="registrations-container">
-                    <!-- Contenido dinámico -->
+                    <!-- Dynamic Content -->
                 </div>
             </section>
 
             <!-- Agent Executions Section -->
             <section class="card" style="grid-column: span 2;">
-                <h2>Actividad del Agente (LangGraph)</h2>
+                <h2>Agent Activity (LangGraph)</h2>
                 <div style="overflow-x: auto;">
                     <table id="agent-table">
                         <thead>
                             <tr>
-                                <th>Fecha</th>
-                                <th>Usuario</th>
+                                <th>Date</th>
+                                <th>Username</th>
                                 <th>Ticket</th>
-                                <th>Estado</th>
-                                <th>Duración</th>
-                                <th>Acción</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Contenido dinámico -->
+                            <!-- Dynamic Content -->
                         </tbody>
                     </table>
                 </div>
@@ -316,13 +316,13 @@
     <!-- Modal para ver trazas -->
     <div id="modal-overlay" class="modal-overlay"></div>
     <div id="error-modal">
-        <h3 id="modal-title">Detalle del Error</h3>
-        <p><strong>Fecha:</strong> <span id="modal-date"></span></p>
-        <p><strong>Usuario:</strong> <span id="modal-user"></span></p>
-        <p><strong>Ruta:</strong> <span id="modal-path"></span></p>
+        <h3 id="modal-title">Error Details</h3>
+        <p><strong>Date:</strong> <span id="modal-date"></span></p>
+        <p><strong>User:</strong> <span id="modal-user"></span></p>
+        <p><strong>Path:</strong> <span id="modal-path"></span></p>
         <hr style="border: 1px solid rgba(255, 255, 255, 0.1);">
         <pre id="modal-trace"></pre>
-        <button onclick="closeModal()" class="btn-save" style="margin-top: 1rem;">Cerrar</button>
+        <button onclick="closeModal()" class="btn-save" style="margin-top: 1rem;">Close</button>
     </div>
 
     <script src="/static/js/dashboard.js"></script>

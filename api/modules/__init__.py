@@ -1,3 +1,3 @@
 """
-Módulo que contiene funcionalidades principales de la aplicación.
+Module for the main functionalities of the application.
 """

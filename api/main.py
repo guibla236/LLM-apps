@@ -1,7 +1,7 @@
 """
-Punto de entrada para ejecutar la aplicación FastAPI con uvicorn.
-Este archivo sirve como script ejecutable para iniciar el servidor.
-Para debugging, importa directamente desde app.py
+Entrypoint for running the FastAPI application with uvicorn.
+This file serves as the executable script to start the server.
+For debugging, import directly from app.py
 """
 
 from app import app

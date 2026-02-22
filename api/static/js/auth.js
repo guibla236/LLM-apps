@@ -48,13 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('api_key', data.api_key);
                 localStorage.setItem('username', data.username);
                 localStorage.setItem('is_admin', data.is_admin);
-                showMessage('¡Ingreso exitoso! Redirigiendo...', 'success');
+                showMessage('Login is successful. Redirecting...', 'success');
                 setTimeout(() => window.location.href = '/', 1000);
             } else {
-                showMessage(data.detail || 'Error en el ingreso', 'error');
+                showMessage(data.detail || 'Login failed', 'error');
             }
         } catch (err) {
-            showMessage('Error de conexión', 'error');
+            showMessage('Connection Error', 'error');
         }
     });
 
@@ -75,13 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
-                showMessage('Registro completado. Ya puedes ingresar.', 'success');
+                showMessage('Registration is successfully completed. Now you are able to login.', 'success');
                 setTimeout(() => loginTab.click(), 1500);
             } else {
-                showMessage(data.detail || 'Error en el registro', 'error');
+                showMessage(data.detail || 'Registration failed', 'error');
             }
         } catch (err) {
-            showMessage('Error de conexión', 'error');
+            showMessage('Connection Error', 'error');
         }
     });
 });
