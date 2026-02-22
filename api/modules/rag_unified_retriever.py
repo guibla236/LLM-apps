@@ -11,6 +11,8 @@ from enum import Enum
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
+KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
 
 class SearchType(str, Enum):
     """Tipos de búsqueda disponibles."""
@@ -160,6 +162,13 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
                 "contacts": []
             }
+        if TICKETS_TO_CONSIDER <= 0 and KBS_TO_CONSIDER <= 0:
+            return {
+                "answer": "Both TICKETS_TO_CONSIDER and KBS_TO_CONSIDER env vars are set to 0 or less. No results will be considered for the answer generation.",
+                "contacts": []
+            }
+        
+        # Get search results from both tickets and KB
         search_results = await unified_search(query, search_type, k)
         
         if not search_results:
@@ -181,9 +190,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         context = f"Query: {query}\n\n"
         context += "Similar tickets found:\n"
         for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
-        
-        context += "\nDocumentos Knowledge Base relevantes:\n"
-        for kb in kb_results[:3]:  # Limitar a 3 documentos KB
+        for kb in kb_results[:KBS_TO_CONSIDER]:
             context += f"- {kb.id}: {kb.content[:200]}...\n"
         
         # System prompt
