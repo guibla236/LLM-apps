@@ -125,7 +125,7 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
                 """
             }
         ],
-        temperature=0.7
+        temperature=0
     )
 
     choice = message.choices[0]

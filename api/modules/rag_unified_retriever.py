@@ -4,6 +4,7 @@ This module allows searching and combining results from both sources for a more 
 """
 
 import sys
+import os
 import json
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -12,7 +13,7 @@ from .third_party_clients import groq_llm_client, vector_store_instance as vecto
 from .rag_tickets_ingestor import TicketModel, TicketPriority
 from .rag_kb_ingestor import KBDocument
 
-CHAT_MODEL_NAME = "llama3-8b-8192"  # Modelo por defecto
+CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 
 class SearchType(str, Enum):
     """Tipos de búsqueda disponibles."""
@@ -143,7 +144,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         sys.stderr.flush()
         return []
 
-async def augment_search_results(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10) -> dict:
+async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10) -> dict:
     """
     Using an LLM, process the search results to generate a summary and suggested actions.
     
@@ -156,7 +157,12 @@ async def augment_search_results(query: str, search_type: SearchType = SearchTyp
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
     """
     try:
-        # Obtener resultados de búsqueda
+
+        if CHAT_MODEL_NAME is None:
+            return {
+                "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
+                "contacts": []
+            }
         search_results = await unified_search(query, search_type, k)
         
         if not search_results:
@@ -201,7 +207,7 @@ async def augment_search_results(query: str, search_type: SearchType = SearchTyp
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": context}
                 ],
-                temperature=0.7
+                temperature=0
             )
             
             if message.choices[0].message and message.choices[0].message.content:
