@@ -5,8 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
+from modules.rag_unified_retriever import augment_search_results_with_tickets_and_kbs, SearchType
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
 from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, is_admin
+from modules.rag_kb_ingestor import KBDocument, ingest_individual_kb_document, extract_kb_category, run_kb_ingestion_from
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
@@ -16,6 +18,8 @@ import shutil
 import os
 import uuid
 import traceback
+import zipfile
+import tempfile
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -69,7 +73,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={
-            "detail": "Ha ocurrido un error interno del servidor.",
+            "detail": "An internal server error has occurred.",
             "error_id": error_id
         }
     )
@@ -82,7 +86,7 @@ async def startup_db_client():
 async def shutdown_db_client():
     await close_mongo_connection()
 
-# Configurar CORS para permitir solicitudes desde el frontend
+# Configure CORS to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -91,7 +95,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montar archivos estáticos (CSS, JS, imágenes, etc.)
+# Mount static files (CSS, JS, images, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Auth Models ---
@@ -187,14 +191,15 @@ async def login(user_in: UserLogin):
         "is_admin": admin_record is not None
     }
 
-# Endpoint que devuelve la página de bienvenida en HTML
+# Endpoint that returns the welcome page in HTML
 @app.get("/")
 async def get_welcome():
-    """Devuelve la página de bienvenida."""
+    """Serves the welcome page."""
     return FileResponse("templates/index.html")
 
 @app.get("/auth")
 async def get_auth_page():
+    """Serves the authentication page."""
     return FileResponse("templates/auth.html")
 
 @app.get("/admin")
@@ -213,6 +218,23 @@ async def list_flags():
 
 @app.post("/api/admin/flags/{name}", dependencies=[Depends(is_admin)])
 async def update_flag(name: str, data: dict):
+    """
+    Asynchronously update or create a feature flag in the database.
+
+    Args:
+        name (str): The name of the feature flag to update.
+        data (dict): A dictionary containing the flag configuration. Must include:
+            - enabled (bool, optional): The enabled status of the feature flag. Defaults to False if not provided.
+
+    Returns:
+        dict: A dictionary with status confirmation {"status": "ok"}.
+
+    Raises:
+        None explicitly, but may raise database-related exceptions from MongoDB operations.
+
+    Note:
+        Uses upsert=True, so if the feature flag does not exist, it will be created.
+    """
     db = get_database()
     await db.feature_flags.update_one(
         {"name": name},
@@ -230,6 +252,7 @@ async def get_flag_status(name: str):
 
 @app.get("/api/admin/users", dependencies=[Depends(is_admin)])
 async def list_users():
+    """Lists all registered users (admin-only)."""
     db = get_database()
     users = await db.users.find({}, {"hashed_password": 0}).to_list(100)
     for u in users: u["_id"] = str(u["_id"])
@@ -237,6 +260,7 @@ async def list_users():
 
 @app.post("/api/admin/users/{username}/quota", dependencies=[Depends(is_admin)])
 async def update_user_quota(username: str, data: dict):
+    """Admin endpoint to update a user's API quota limit."""
     db = get_database()
     new_limit = data.get("quota_limit")
     if new_limit is None:
@@ -250,6 +274,7 @@ async def update_user_quota(username: str, data: dict):
 
 @app.get("/api/admin/logs", dependencies=[Depends(is_admin)])
 async def list_logs():
+    """Lists error logs (admin-only)."""
     db = get_database()
     logs = await db.error_logs.find().sort("timestamp", -1).to_list(50)
     for l in logs: l["_id"] = str(l["_id"])
@@ -257,6 +282,7 @@ async def list_logs():
 
 @app.get("/api/admin/logs/{error_id}", dependencies=[Depends(is_admin)])
 async def get_log_detail(error_id: str):
+    """Returns details for a specific error log (admin-only)."""
     db = get_database()
     log = await db.error_logs.find_one({"error_id": error_id})
     if not log:
@@ -266,6 +292,7 @@ async def get_log_detail(error_id: str):
 
 @app.get("/api/admin/ips", dependencies=[Depends(is_admin)])
 async def list_ip_usage():
+    """Lists IP usage stats for registrations (admin-only)."""
     db = get_database()
     today = datetime.utcnow().strftime('%Y-%m-%d')
     usage = await db.ip_usage.find({"date": today}).sort("count", -1).to_list(100)
@@ -274,6 +301,7 @@ async def list_ip_usage():
 
 @app.get("/api/admin/registrations", dependencies=[Depends(is_admin)])
 async def list_registrations():
+    """Lists recent user registrations (admin-only)."""
     db = get_database()
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     regs = await db.registrations.find({"timestamp": {"$gte": today}}).sort("timestamp", -1).to_list(100)
@@ -282,6 +310,7 @@ async def list_registrations():
 
 @app.get("/api/admin/agent_executions", dependencies=[Depends(is_admin)])
 async def list_agent_executions():
+    """Lists recent agent executions (admin-only)."""
     db = get_database()
     executions = await db.agent_executions.find().sort("timestamp", -1).to_list(100)
     for e in executions: e["_id"] = str(e["_id"])
@@ -290,17 +319,17 @@ async def list_agent_executions():
 @limiter.limit("5/minute")
 async def summarize_news_endpoint(news: NewsInput, request: Request):
     """
-    Endpoint POST que devuelve el resumen de una noticia determinada.
+    Endpoint POST that returns the summary of a given news article.
     
-    **Parámetros requeridos:**
-    - `title` (string): Título de la noticia
-    - `content` (string): Contenido completo de la noticia
+    **Required parameters:**
+    - `title` (string): News article title
+    - `content` (string): Full content of the news article
     
-    **Ejemplo de body JSON:**
+    **Example JSON body:**
     ```json
     {
-      "title": "Título de la noticia aquí",
-      "content": "Contenido completo de la noticia con suficientes caracteres..."
+      "title": "News article title here",
+      "content": "Full content of the news article with sufficient characters..."
     }
     ```
     """
@@ -310,28 +339,28 @@ async def summarize_news_endpoint(news: NewsInput, request: Request):
 @limiter.limit("10/minute")
 async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     """
-    Endpoint POST que realiza la ingestión de un documento JSON determinado.
+    Endpoint POST that performs the ingestion of a given JSON document.
     
-    **Parámetros requeridos:**
-    - `ticket` (TicketModel): Objeto TicketModel a ingresar.
+    **Required parameters:**
+    - `ticket` (TicketModel): TicketModel object to ingest.
     
-    **Ejemplo de body JSON:**
+    **Example JSON body:**
     ```json
     {
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer issue",
       "priority": "HIGH",
-      "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
-      "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "owner": "John Doe - IT",
+      "description": "The printer is not responding and shows a connection error.",
+      "impact": "High",
+      "actions": "I restarted the printer and checked the cables."
     }
     ```
     """
     if await is_feature_enabled("block_ticket_ingestion"):
         raise HTTPException(
             status_code=403, 
-            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+            detail="Tickets ingestion has been temporarily disabled by the administrator."
         )
     
     return ingest_individual_ticket(ticket)
@@ -339,12 +368,12 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
 @app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
 async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
     """
-    Endpoint POST para la ingestión masiva de tickets desde un archivo JSON.
+    Endpoint POST for bulk ticket ingestion from a JSON file.
     """
     if await is_feature_enabled("block_ticket_ingestion"):
         raise HTTPException(
             status_code=403, 
-            detail="La ingesta de tickets ha sido desactivada temporalmente por el administrador."
+            detail="Tickets ingestion has been temporarily disabled by the administrator."
         )
         
     temp_file_path = f"temp_{file.filename}"
@@ -357,27 +386,111 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Reque
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
             
-    return {"message": f"Archivo {file.filename} procesado e ingestado exitosamente."}
+    return {"message": f"File {file.filename} processed and ingested successfully."}
+
+
+@app.post("/api/ingest_kb_zip", dependencies=[Depends(is_admin)])
+async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request = None):
+    """
+    Endpoint POST for bulk ingestion of KB documents from a ZIP file.
+    Requires admin privileges.
+    """
+    if await is_feature_enabled("block_kb_ingestion"):
+        print("DEBUG: KB ingestion attempt blocked by feature flag")
+        raise HTTPException(
+            status_code=403, 
+            detail="KB document ingestion has been temporarily disabled by the administrator."
+        )
+
+    temp_zip_path = f"temp_{uuid.uuid4()}_{file.filename}"
+    temp_dir = tempfile.mkdtemp(prefix="kb_ingest_")
+
+    try:
+        with open(temp_zip_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Solo soportamos ZIPs
+        try:
+            with zipfile.ZipFile(temp_zip_path, 'r') as z:
+                z.extractall(temp_dir)
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="El archivo subido no es un ZIP válido.")
+
+        # Ejecutar ingesta desde el directorio temporal (sin consumir cuota)
+        run_kb_ingestion_from(temp_dir)
+    finally:
+        # Cleanup
+        if os.path.exists(temp_zip_path):
+            os.remove(temp_zip_path)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+    return {"message": f"ZIP {file.filename} processed and ingested successfully."}
+
+
+@app.post("/api/ingest_kb_md", dependencies=[Depends(is_admin)])
+async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Request = None):
+    """
+    Endpoint POST for ingestion of a KB document in Markdown (.md) format.
+    Requires admin privileges.
+    """
+    if await is_feature_enabled("block_kb_ingestion"):
+        raise HTTPException(
+            status_code=403, 
+            detail="KB document ingestion has been temporarily disabled by the administrator."
+        )
+
+    # Validar extensión
+    filename = str(file.filename)
+    if not filename.lower().endswith('.md'):
+        raise HTTPException(status_code=400, detail="Only Markdown (.md) files are accepted for KB ingestion.")
+
+    try:
+        content_bytes = await file.read()
+        content = content_bytes.decode('utf-8')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading the file: {str(e)}")
+
+    try:
+        # Derive fileId from the filename (without extension)
+        file_id = os.path.splitext(filename)[0]
+        category = extract_kb_category(file_id, content)
+
+        kb_doc = KBDocument(
+            fileId=file_id,
+            fileName=filename,
+            content=content,
+            category=category,
+            target_audience="",
+            purpose="",
+            tags=[]
+        )
+
+        result = ingest_individual_kb_document(kb_doc)
+        return {"message": result}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing the KB document: {str(e)}")
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("20/minute")
 async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
     """
-    Endpoint POST que devuelve los tickets similares a un ticket determinado que se recibe como parámetro.
+    Endpoint POST that returns tickets similar to a given ticket received as a parameter.
     
-    **Parámetros requeridos:**
-    - `ticket` (TicketModel): Objeto TicketModel a ingresar.
+    **Required parameters:**
+    - `ticket` (TicketModel): TicketModel object to ingest.
     
-    **Ejemplo de body JSON:**
+    **Example JSON body:**
     ```json
     {
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer issue",
       "priority": "HIGH",
-      "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
-      "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "owner": "John Doe - IT",
+      "description": "The printer is not responding and shows a connection error.",
+      "impact": "High",
+      "actions": "I restarted the printer and checked the cables."
     }
     ```
     """
@@ -387,22 +500,33 @@ async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
 @limiter.limit("10/minute")
 async def augment_ticket_information_endpoint(ticket: TicketModel, request: Request):
     """
-    Endpoint POST que aumenta la información de un ticket determinado que se recibe como parámetro.
+    Endpoint POST that augments the information of a given ticket received as a parameter.
     
-    **Parámetros requeridos:**
-    - `ticket` (TicketModel): Objeto TicketModel a ingresar.
+    **Required parameters:**
+    - `ticket` (TicketModel): TicketModel object to ingest.
     
-    **Ejemplo de body JSON:**
+    **Example JSON body:**
     ```json
     {
       "ticketId": "12345",
-      "title": "Problema con la impresora",
+      "title": "Printer issue",
       "priority": "HIGH",
-      "owner": "Juan Pérez - IT",
-      "description": "La impresora no responde y muestra un error de conexión.",
-      "impact": "Alto",
-      "actions": "Reinicié la impresora y verifiqué los cables."
+      "owner": "John Doe - IT",
+      "description": "The printer is not responding and shows a connection error.",
+      "impact": "High",
+      "actions": "I restarted the printer and checked the cables."
     }
     ```
     """
     return await augment_similar_tickets(ticket)
+
+
+@app.post("/api/augment_search_results", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("10/minute")
+async def augment_search_results_endpoint(ticket: TicketModel, request: Request):
+    """
+    Endpoint POST that augments the information of a given ticket using both tickets and KB documents.
+
+    Receives a `TicketModel` and returns the structured summary produced by the unified retriever + LLM.
+    """
+    return await augment_search_results_with_tickets_and_kbs(ticket.description, SearchType.BOTH, k=10)

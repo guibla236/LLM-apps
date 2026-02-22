@@ -157,6 +157,15 @@ async def validate_api_key_and_quota(request: Request, user: dict = Depends(get_
     
     return user
 
+
+async def validate_api_key_only(user: dict = Depends(get_current_user)):
+    """Dependency that authenticates the request via JWT or API key but
+    does NOT apply per-user quota consumption. Use for endpoints that only
+    require authentication (ingest/search) and should not decrement the
+    user's generation quota.
+    """
+    return user
+
 async def is_admin(user: dict = Depends(get_current_user)):
     """Dependency to verify if a user has administrative privileges."""
     db = get_database()
