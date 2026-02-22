@@ -5,8 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from modules.news_summarizer import NewsInput, NewsSummary, summarize_news
 from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, run_ingestion_from
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
+from modules.rag_unified_retriever import augment_search_results_with_tickets_and_kbs, SearchType
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
 from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, is_admin
+from modules.rag_kb_ingestor import KBDocument, ingest_individual_kb_document, extract_kb_category, run_kb_ingestion_from
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
