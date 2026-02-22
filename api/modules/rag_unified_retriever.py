@@ -135,7 +135,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         
         # Ordenar por score (placeholder) y limitar resultados
         results.sort(key=lambda x: x.score, reverse=True)
-        return results[:k]
+        return results[:2*k]
         
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR en unified_search ==========\n")
