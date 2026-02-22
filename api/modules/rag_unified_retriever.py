@@ -190,6 +190,14 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         context = f"Query: {query}\n\n"
         context += "Similar tickets found:\n"
         for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
+            context += f"""
+                Id: {ticket.id} \n
+                Description: {ticket.content[:200]}... \n
+                Actions taken: {ticket.metadata.get('actions', 'No actions recorded')} \n
+                Owner: {ticket.metadata.get('owner', 'Unknown')}\n
+                """
+        
+        context += "\n Knowledge Base relevant documents:\n"
         for kb in kb_results[:KBS_TO_CONSIDER]:
             context += f"- {kb.id}: {kb.content[:200]}...\n"
         
