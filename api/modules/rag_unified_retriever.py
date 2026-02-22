@@ -8,10 +8,7 @@ import os
 import json
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import List, Dict, Any, Optional, Union
-from .third_party_clients import groq_llm_client, vector_store_instance as vector_store
-from .rag_tickets_ingestor import TicketModel, TicketPriority
-from .rag_kb_ingestor import KBDocument
+from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 
@@ -82,7 +79,7 @@ async def search_kb_documents(query: str, k: int = 5) -> List[SearchResult]:
         List[SearchResult]: Lista de documentos KB relevantes
     """
     try:
-        raw_results = await vector_store.asimilarity_search(query, k=k)
+        raw_results = await kb_vector_store.asimilarity_search(query, k=k)
         if not raw_results:
             return []
         
