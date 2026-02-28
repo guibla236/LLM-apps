@@ -1,7 +1,19 @@
 """
+DEPRECATED: This module is deprecated and will be removed in future versions.
+Please use `rag_unified_retriever.py` instead, which provides the same interface 
+but leverages the unified hybrid search system.
+
 Module for the support tickets summary functionality.
 This file contains the mock structure for you to implement the functionality.
 """
+
+import warnings
+
+warnings.warn(
+    "The rag_tickets_retriever module is deprecated. Please use rag_unified_retriever instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from typing import List
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store
