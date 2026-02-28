@@ -37,8 +37,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-            from jose import jwt
-            from modules.security import SECRET_KEY, ALGORITHM
+            if SECRET_KEY is None:
+                raise HTTPException(status_code=500, detail="SECRET_KEY is not set in environment variables.")
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             user_info = payload.get("sub", "anonymous")
         else:
