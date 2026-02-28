@@ -1,8 +1,19 @@
 # Legacy module (it's disabled in the router) - we keep it for reference and potential future use, but it's not currently active in the API.
 """
+DEPRECATED: This module is deprecated and will be removed in future versions.
+It is kept for reference but is no longer actively maintained.
+
 Módulo para la funcionalidad de resumen de noticias.
 Este archivo contiene la estructura mock para que implementes la funcionalidad.
 """
+
+import warnings
+
+warnings.warn(
+    "The news_summarizer module is deprecated and no longer actively maintained.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from pydantic import BaseModel, field_validator, ConfigDict, Field
 from .third_party_clients import groq_llm_client
