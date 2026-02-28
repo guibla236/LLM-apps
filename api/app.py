@@ -5,7 +5,6 @@ import uuid
 import traceback
 import zipfile
 import tempfile
-from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -377,7 +376,7 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     return ingest_individual_ticket(ticket)
 
 @app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
-async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
+async def ingest_json_file_endpoint(file: UploadFile = File(...)):
     """
     Endpoint POST for bulk ticket ingestion from a JSON file.
     """
@@ -401,7 +400,7 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Optio
 
 
 @app.post("/api/ingest_kb_zip", dependencies=[Depends(is_admin)])
-async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
+async def ingest_kb_zip_endpoint(file: UploadFile = File(...)):
     """
     Endpoint POST for bulk ingestion of KB documents from a ZIP file.
     Requires admin privileges.
@@ -440,7 +439,7 @@ async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Optional
 
 
 @app.post("/api/ingest_kb_md", dependencies=[Depends(is_admin)])
-async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
+async def ingest_kb_md_endpoint(file: UploadFile = File(...)):
     """
     Endpoint POST for ingestion of a KB document in Markdown (.md) format.
     Requires admin privileges.
