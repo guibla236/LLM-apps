@@ -1,5 +1,6 @@
 import os
-from groq import AsyncGroq
+from langchain_groq import ChatGroq
+from pydantic import SecretStr
 from pinecone import Pinecone
 from dotenv import load_dotenv
 from typing import Any
@@ -8,7 +9,16 @@ from langchain_pinecone import PineconeVectorStore
 
 
 load_dotenv()
-groq_llm_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not CHAT_MODEL_NAME:
+    raise ValueError("CHAT_MODEL_NAME must be defined in the environment variables.")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
+else:
+    groq_llm_client = ChatGroq(model=CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
+
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 TOKENIZER_MODEL_NAME = "all-minilm:22m"
