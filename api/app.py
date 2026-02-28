@@ -108,6 +108,11 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
+class SearchRequest(BaseModel):
+    description: str = Field(..., min_length=5, max_length=2000, description="Descripción del problema a consultar")
+    search_type: SearchType = Field(default=SearchType.BOTH, description="Tipo de búsqueda: tickets_only, kb_only, both")
+    hybrid_search: bool = Field(default=True, description="Si es True, realiza búsqueda híbrida (Vector + BM25)")
+
 # --- Auth Endpoints ---
 @app.post("/api/register")
 async def register(user_in: UserRegister, request: Request):
@@ -523,10 +528,16 @@ async def augment_ticket_information_endpoint(ticket: TicketModel, request: Requ
 
 @app.post("/api/augment_search_results", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
-async def augment_search_results_endpoint(ticket: TicketModel, request: Request):
+async def augment_search_results_endpoint(search_req: SearchRequest, request: Request):
     """
-    Endpoint POST that augments the information of a given ticket using both tickets and KB documents.
+    Endpoint POST for the Support Assistant.
 
-    Receives a `TicketModel` and returns the structured summary produced by the unified retriever + LLM.
+    Receives a `SearchRequest` with the problem description, search type, and hybrid search toggle.
+    Returns an AI-generated summary with contacts and suggested actions.
     """
-    return await augment_search_results_with_tickets_and_kbs(ticket.description, SearchType.BOTH, k=10)
+    return await augment_search_results_with_tickets_and_kbs(
+        search_req.description,
+        search_type=search_req.search_type,
+        k=10,
+        hybrid_search=search_req.hybrid_search
+    )
