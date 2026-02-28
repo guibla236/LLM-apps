@@ -15,7 +15,7 @@ from modules.rag_tickets_ingestor import TicketModel, ingest_individual_ticket, 
 from modules.rag_tickets_retriever import retrieve_relevant_tickets, augment_similar_tickets
 from modules.rag_unified_retriever import augment_search_results_with_tickets_and_kbs, SearchType
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
-from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, is_admin
+from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, validate_api_key_only, is_admin
 from modules.rag_kb_ingestor import KBDocument, ingest_individual_kb_document, extract_kb_category, run_kb_ingestion_from
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime, timedelta
 from jose import jwt
 from modules.security import SECRET_KEY, ALGORITHM
+from modules.utils import list_models
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -529,6 +530,14 @@ async def augment_ticket_information_endpoint(ticket: TicketModel, request: Requ
     ```
     """
     return await augment_similar_tickets(ticket)
+
+
+@app.get("/api/models", dependencies=[Depends(validate_api_key_only)])
+async def list_available_models():
+    """
+    Returns the list of available LLM models for the assistant.
+    """
+    return list_models()
 
 
 @app.post("/api/augment_search_results", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])

@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="es">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bienvenida - API FastAPI</title>
     <link rel="stylesheet" href="/static/css/style.css" />
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <div class="header-actions">
-            <span id="user-display"></span>
+      <div class="header-actions">
+        <span id="user-display"></span>
         <button
           id="admin-btn"
           class="btn-admin"
@@ -19,12 +19,12 @@
         >
           Admin Panel
         </button>
-            <button class="btn-logout" onclick="logout()">Logout</button>
-        </div>
-        <h1>🚀 RAG UI</h1>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+      <h1>🚀 RAG UI</h1>
 
-        <div class="tabs">
-            <!-- <button class="tab-btn" onclick="switchTab('summarizer')">📰 News Summarizer</button> -->
+      <div class="tabs">
+        <!-- <button class="tab-btn" onclick="switchTab('summarizer')">📰 News Summarizer</button> -->
         <button class="tab-btn active" onclick="switchTab('ingestor')">
           📥 RAG Ticket Ingestor
         </button>
@@ -43,9 +43,9 @@
         <button class="tab-btn" onclick="switchTab('augment')">
           🤖 Support Assistant
         </button>
-        </div>
+      </div>
 
-<!-- 
+      <!-- 
         <div id="summarizer-section" class="section active">
             <div class="info-box">
                 <h2>¿Qué es esto?</h2>
@@ -74,21 +74,21 @@
             </div>
         </div> -->
 
-        <div id="ingestor-section" class="section active">
-            <div class="info-box">
-                <h2>What is this?</h2>
+      <div id="ingestor-section" class="section active">
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Enter a JSON object with the ticket information to store it in the
             vector database.
-                </p>
-            </div>
+          </p>
+        </div>
 
-            <div class="info-box">
-                <h2>📥 RAG Ticket Ingestor</h2>
-                <p>Paste here the JSON of the ticket you want to process.</p>
+        <div class="info-box">
+          <h2>📥 RAG Ticket Ingestor</h2>
+          <p>Paste here the JSON of the ticket you want to process.</p>
 
-                <div class="form-group">
-                    <label for="ticketJson">Ticket JSON:</label>
+          <div class="form-group">
+            <label for="ticketJson">Ticket JSON:</label>
             <textarea
               id="ticketJson"
               placeholder='{
@@ -103,110 +103,110 @@
               class="form-textarea"
               rows="10"
             ></textarea>
-                </div>
+          </div>
 
           <button class="btn-primary" onclick="callIngestEndpoint()">
             Ingestar Ticket
           </button>
-            </div>
         </div>
+      </div>
 
       <div id="bulk-section" class="section" style="display: none">
-            <div class="info-box">
-                <h2>What is this?</h2>
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Upload a JSON file that contains a list of tickets to be processed
             in bulk.
           </p>
-            </div>
+        </div>
 
-            <div class="info-box">
-                <h2>📂 Bulk Ticket Ingestion</h2>
-                <p>Select a .json file with the array of tickets.</p>
+        <div class="info-box">
+          <h2>📂 Bulk Ticket Ingestion</h2>
+          <p>Select a .json file with the array of tickets.</p>
 
-                <div class="form-group">
-                    <label for="jsonFile">JSON File:</label>
+          <div class="form-group">
+            <label for="jsonFile">JSON File:</label>
             <input
               type="file"
               id="jsonFile"
               accept=".json"
               class="form-input"
             />
-                </div>
+          </div>
 
           <button class="btn-primary" onclick="callBulkIngestEndpoint()">
             Upload and Process
           </button>
-            </div>
         </div>
+      </div>
 
       <div id="kb-ingestor-section" class="section" style="display: none">
-            <div class="info-box">
-                <h2>What is this?</h2>
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Upload a Markdown `.md` file to be indexed in the Knowledge Base.
           </p>
-            </div>
+        </div>
 
-            <div class="info-box">
-                <h2>📚 KB Ingestor (single file)</h2>
-                <p>Select a `.md` file to ingest into the KB index.</p>
+        <div class="info-box">
+          <h2>📚 KB Ingestor (single file)</h2>
+          <p>Select a `.md` file to ingest into the KB index.</p>
 
-                <div class="form-group">
-                    <label for="kbMdFile">Markdown File:</label>
+          <div class="form-group">
+            <label for="kbMdFile">Markdown File:</label>
             <input type="file" id="kbMdFile" accept=".md" class="form-input" />
-                </div>
+          </div>
 
           <button class="btn-primary" onclick="callKBIngestEndpoint()">
             Upload and Process .md
           </button>
-            </div>
         </div>
+      </div>
 
       <div id="kb-bulk-section" class="section" style="display: none">
-            <div class="info-box">
-                <h2>What is this?</h2>
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Upload a `.zip` file that contains multiple `.md` files to be
             ingested in bulk into the KB.
           </p>
-            </div>
+        </div>
 
-            <div class="info-box">
-                <h2>📦 Bulk KB Ingestion (ZIP)</h2>
-                <p>Select a .zip file with the `.md` files inside.</p>
+        <div class="info-box">
+          <h2>📦 Bulk KB Ingestion (ZIP)</h2>
+          <p>Select a .zip file with the `.md` files inside.</p>
 
-                <div class="form-group">
-                    <label for="kbZipFile">ZIP File:</label>
+          <div class="form-group">
+            <label for="kbZipFile">ZIP File:</label>
             <input
               type="file"
               id="kbZipFile"
               accept=".zip"
               class="form-input"
             />
-                </div>
+          </div>
 
           <button class="btn-primary" onclick="callKBBulkIngestEndpoint()">
             Upload and Process ZIP
           </button>
-            </div>
         </div>
+      </div>
 
       <div id="search-section" class="section" style="display: none">
-            <div class="info-box">
-                <h2>What is this?</h2>
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Enter the information of a ticket to find similar tickets in the
             database.
           </p>
-            </div>
+        </div>
 
-            <div class="info-box">
-                <h2>🔍 Similar Tickets Search</h2>
-                <p>Paste here the JSON of the reference ticket.</p>
+        <div class="info-box">
+          <h2>🔍 Similar Tickets Search</h2>
+          <p>Paste here the JSON of the reference ticket.</p>
 
-                <div class="form-group">
-                    <label for="ticketJsonSearch">Ticket JSON:</label>
+          <div class="form-group">
+            <label for="ticketJsonSearch">Ticket JSON:</label>
             <textarea
               id="ticketJsonSearch"
               placeholder='{
@@ -221,58 +221,81 @@
               class="form-textarea"
               rows="10"
             ></textarea>
-                </div>
+          </div>
 
           <button class="btn-primary" onclick="callGetSimilarTicketsEndpoint()">
             Buscar Similares
           </button>
-            </div>
         </div>
+      </div>
 
       <div id="augment-section" class="section" style="display: none">
-            <div class="info-box">
-                <h2>What is this?</h2>
+        <div class="info-box">
+          <h2>What is this?</h2>
           <p>
             Describe your IT problem in plain language. The assistant will
             search for similar tickets and Knowledge Base articles to generate a
             summarized solution with key contacts and suggested actions.
           </p>
-            </div>
-
-            <div class="info-box">
-                <h2>✨ Resolution Assistant</h2>
-                <p>Paste here the JSON of the ticket to be resolved.</p>
-
-                <div class="form-group">
-                    <label for="ticketJsonAugment">Ticket JSON:</label>
-                    <textarea id="ticketJsonAugment" placeholder='{
-      "ticketId": "12345",
-      "title": "Printer problem",
-      "priority": "HIGH",
-      "owner": "Juan Pérez - IT",
-      "description": "The printer is not responding and shows a connection error.",
-      "impact": "High",
-      "actions": "I restarted the printer and checked the cables."
-    }' class="form-textarea" rows="10"></textarea>
-                </div>
-                <button class="btn-primary" onclick="callAugmentEndpoint()">Consultar Asistente (Tickets)</button>
-                <button class="btn-primary" style="margin-left:8px;" onclick="callAugmentWithKBEndpoint()">Consultar Asistente (Tickets + KB)</button>
-            </div>
         </div>
 
+        <div class="info-box">
+          <h2>🤖 Support Assistant</h2>
 
-        <div class="button-container">
-            <button class="btn-secondary" onclick="clearResponse()">Limpiar respuesta</button>
-        </div>
+          <div class="form-group">
+            <label for="consultDescription">Problem description:</label>
+            <input
+              type="text"
+              id="consultDescription"
+              placeholder="E.g. My printer is not responding and shows a connection error."
+              class="form-input"
+            />
+          </div>
 
-        <div class="response-box" id="responseBox">
-            <h3>📋 Resultado:</h3>
-            <span class="loading" id="loading">Cargando...</span>
-            <div id="responseContent" class="response-content"></div>
+          <div class="form-group">
+            <label for="searchTypeSelect">Search type:</label>
+            <select id="searchTypeSelect" class="form-input">
+              <option value="both">Tickets + Knowledge Base</option>
+              <option value="tickets_only">Tickets only</option>
+              <option value="kb_only">Knowledge Base only</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="llmModelSelect">AI Model:</label>
+            <select id="llmModelSelect" class="form-input">
+              <option value="" disabled>Loading models...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="hybridSearchCheck" checked />
+              &nbsp;Use hybrid search (Semantic + Keyword)
+            </label>
+          </div>
+          <div style="display: flex; justify-content: center;">
+          <button class="btn-primary" onclick="callSupportAssistantEndpoint()">
+            Consult Assistant
+          </button>
+          </div>
         </div>
+      </div>
+
+      <div class="button-container">
+        <button class="btn-secondary" onclick="clearResponse()">
+          Limpiar respuesta
+        </button>
+      </div>
+
+      <div class="response-box" id="responseBox">
+        <h3>📋 Resultado:</h3>
+        <span class="loading" id="loading">Cargando...</span>
+        <div id="responseContent" class="response-content"></div>
+      </div>
     </div>
 
     <script src="/static/js/script.js"></script>
-</body>
+  </body>
 
 </html>

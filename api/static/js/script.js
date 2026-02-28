@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adminBtn && isAdmin) {
         adminBtn.style.display = 'block';
     }
+
+    loadModels();
 });
 
 function logout() {
@@ -301,20 +303,70 @@ async function callAugmentEndpoint() {
     }
 }
 
-async function callAugmentWithKBEndpoint() {
-    showLoading(true);
+async function loadModels() {
     try {
-        const jsonText = document.getElementById('ticketJsonAugment').value.trim();
-        if (!jsonText) {
-            showResponse({ error: 'Please, enter the JSON of the ticket' }, true);
+        const response = await fetch('/api/models', { headers: getAuthHeaders() });
+        if (!response.ok) {
+            if (response.status === 401) return logout();
+            return;
+        }
+        const data = await response.json();
+        const select = document.getElementById('llmModelSelect');
+        if (!select) return;
+        select.innerHTML = '';
+
+        // Normalize response shapes:
+        // - API may return an array of strings: ["llama-3.1-8b-instant"]
+        // - Or an object: { models: [{ id, name }, ...] }
+        let modelsArray = [];
+        if (Array.isArray(data)) {
+            modelsArray = data;
+        } else if (data && Array.isArray(data.models)) {
+            modelsArray = data.models;
+        } else {
+            console.warn('Unexpected /api/models response shape', data);
             return;
         }
 
-        let ticketData = JSON.parse(jsonText);
+        modelsArray.forEach(m => {
+            const option = document.createElement('option');
+            if (typeof m === 'string') {
+                option.value = m;
+                option.textContent = m;
+            } else if (m && m.id) {
+                option.value = m.id;
+                option.textContent = m.name || m.id;
+            } else {
+                option.value = String(m);
+                option.textContent = String(m);
+            }
+            select.appendChild(option);
+        });
+    } catch (e) {
+        console.warn('Could not load models:', e);
+    }
+}
+
+async function callSupportAssistantEndpoint() {
+    showLoading(true);
+    try {
+        const description = document.getElementById('consultDescription').value.trim();
+        if (!description || description.length < 5) {
+            showResponse({ error: 'Please enter a description of at least 5 characters.' }, true);
+            return;
+        }
+
+        const searchType = document.getElementById('searchTypeSelect').value;
+        const hybridSearch = document.getElementById('hybridSearchCheck').checked;
+
         const response = await fetch('/api/augment_search_results', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(ticketData)
+            body: JSON.stringify({
+                description: description,
+                search_type: searchType,
+                hybrid_search: hybridSearch
+            })
         });
 
         if (!response.ok) {
@@ -375,6 +427,27 @@ function showResponse(data, isError = false) {
             });
             content.textContent = formattedText;
         }
+    } else if (data.summary) {
+        content.classList.add('success');
+        let formattedText = `🤖 SUPPORT ASSISTANT\n\n`;
+        formattedText += `📝 SUMMARY:\n${data.summary}\n\n`;
+        if (Array.isArray(data.suggested_actions) && data.suggested_actions.length > 0) {
+            formattedText += `💡 SUGGESTED ACTIONS:\n`;
+            data.suggested_actions.forEach((action, i) => { formattedText += `   ${i + 1}. ${action}\n`; });
+            formattedText += '\n';
+        }
+        if (Array.isArray(data.contacts) && data.contacts.length > 0) {
+            formattedText += `👥 CONTACTS:\n`;
+            data.contacts.forEach(contact => { formattedText += `   👤 ${contact}\n`; });
+            formattedText += '\n';
+        }
+        if (Array.isArray(data.ticket_references) && data.ticket_references.length > 0) {
+            formattedText += `🎫 REFERENCED TICKETS: ${data.ticket_references.join(', ')}\n`;
+        }
+        if (Array.isArray(data.kb_references) && data.kb_references.length > 0) {
+            formattedText += `📚 KB ARTICLES: ${data.kb_references.join(', ')}\n`;
+        }
+        content.textContent = formattedText;
     } else {
         content.classList.add('success');
         content.textContent = JSON.stringify(data, null, 2);
