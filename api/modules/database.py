@@ -48,7 +48,7 @@ async def close_mongo_connection():
 
 def get_database():
     if db is None:
-        return None
+        raise Exception("Database connection is not established. Please call connect_to_mongo() first.")
     return db.db
 
 async def is_feature_enabled(flag_name: str) -> bool:
