@@ -6,7 +6,7 @@ This file contains the mock structure for you to implement the functionality.
 from typing import List
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store
 from .utils import extract_json_from_llm_response
-from ..models.tickets import TicketModel
+from models.tickets import TicketModel
 import sys
 import os
 import json
