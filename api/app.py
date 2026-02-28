@@ -112,9 +112,9 @@ class UserLogin(BaseModel):
     password: str
 
 class SearchRequest(BaseModel):
-    description: str = Field(..., min_length=5, max_length=2000, description="Descripción del problema a consultar")
-    search_type: SearchType = Field(default=SearchType.BOTH, description="Tipo de búsqueda: tickets_only, kb_only, both")
-    hybrid_search: bool = Field(default=True, description="Si es True, realiza búsqueda híbrida (Vector + BM25)")
+    description: str = Field(..., min_length=5, max_length=2000, description="Description of the support problem to search for")
+    search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
+    hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
 
 # --- Auth Endpoints ---
 @app.post("/api/register")
@@ -134,7 +134,7 @@ async def register(user_in: UserRegister, request: Request):
     if reg_count >= 3:
         raise HTTPException(
             status_code=429, 
-            detail="Has superado el límite de registros permitidos desde esta conexión por hoy."
+            detail="Too many registrations from this IP address. Please try again later."
         )
     
     # 2. Check if user already exists (Atomic check handled by unique index too)
