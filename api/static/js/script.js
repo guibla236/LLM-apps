@@ -305,8 +305,11 @@ async function callAugmentEndpoint() {
 
 async function loadModels() {
     try {
-        const response = await fetch('/api/models');
-        if (!response.ok) return;
+        const response = await fetch('/api/models', { headers: getAuthHeaders() });
+        if (!response.ok) {
+            if (response.status === 401) return logout();
+            return;
+        }
         const data = await response.json();
         const select = document.getElementById('llmModelSelect');
         if (!select) return;
