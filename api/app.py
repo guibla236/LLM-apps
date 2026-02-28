@@ -59,11 +59,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     }
     
     # Log to MongoDB if connected
-    if db is not None:
-        try:
-            await db.error_logs.insert_one(error_log)
-        except Exception as e:
-            sys.stderr.write(f"CRITICAL: Failed to log error to MongoDB: {str(e)}\n")
+    try:
+        await db.error_logs.insert_one(error_log)
+    except Exception as e:
+        sys.stderr.write(f"CRITICAL: Failed to log error to MongoDB: {str(e)}\n")
     
     # Also log to stderr for safety
     sys.stderr.write(f"\n[ERROR_ID: {error_id}] Global exception caught:\n")
