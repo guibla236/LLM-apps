@@ -1,21 +1,85 @@
 {
-    // Use IntelliSense para saber los atributos posibles.
-    // Mantenga el puntero para ver las descripciones de los existentes atributos.
-    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Depurador de Python: FastAPI",
+            "name": "Debug: API (FastAPI)",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "args": [
                 "main:app",
+                "--port", "8000",
                 "--reload"
             ],
             "jinja": true,
             "cwd": "${workspaceFolder}/api",
-            "python": "${workspaceFolder}/api/tarea2/bin/python"
+            "python": "${workspaceFolder}/api/tarea2/bin/python",
+            "subProcess": true,
+            "justMyCode": false,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/api"
+            }
+        },
+        {
+            "name": "Debug: Agent Backend",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "main:app",
+                "--port", "8001",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/agent_app/backend",
+            "python": "${workspaceFolder}/agent_app/backend/backend_venv/bin/python",
+            "subProcess": true,
+            "justMyCode": false,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/agent_app/backend",
+                "PORT": "8001"
+            }
+        },
+        {
+            "name": "Debug: Streamlit Frontend",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "app.py"
+            ],
+            "cwd": "${workspaceFolder}/agent_app/frontend",
+            "python": "${workspaceFolder}/agent_app/frontend/frontend_venv/bin/python",
+            "justMyCode": false,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/agent_app/backend:${workspaceFolder}/agent_app/frontend"
+            }
+        },
+        {
+            "name": "Run run_all.sh (No Debug)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "/bin/bash",
+            "runtimeArgs": ["-c", "${workspaceFolder}/run_all.sh"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🚀 DEBUG FULL SYSTEM",
+            "configurations": [
+                "Debug: API (FastAPI)",
+                "Debug: Agent Backend",
+                "Debug: Streamlit Frontend"
+            ],
+            "stopAll": true
         }
     ]
 }
