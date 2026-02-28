@@ -116,6 +116,8 @@ class SearchRequest(BaseModel):
 @app.post("/api/register")
 async def register(user_in: UserRegister, request: Request):
     db = get_database()
+    if request.client is None:
+        raise HTTPException(status_code=400, detail="Unable to determine client IP address. No service can be provided.")
     ip_address = request.client.host
     
     # 1. IP Check (Limit: 3 registrations per IP per 24h)
