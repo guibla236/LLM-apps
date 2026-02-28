@@ -23,7 +23,8 @@ import tempfile
 
 app = FastAPI()
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler) # type: ignore
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -372,7 +373,7 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     return ingest_individual_ticket(ticket)
 
 @app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
-async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for bulk ticket ingestion from a JSON file.
     """
@@ -396,7 +397,7 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Reque
 
 
 @app.post("/api/ingest_kb_zip", dependencies=[Depends(is_admin)])
-async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for bulk ingestion of KB documents from a ZIP file.
     Requires admin privileges.
@@ -435,7 +436,7 @@ async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request 
 
 
 @app.post("/api/ingest_kb_md", dependencies=[Depends(is_admin)])
-async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for ingestion of a KB document in Markdown (.md) format.
     Requires admin privileges.
