@@ -24,8 +24,8 @@ def get_system_prompt() -> str:
         raise FileNotFoundError("System prompt file not found.")
 
 TOOL_NAME_MAP = {
-    "get_similar_tickets_tool": "Consultando la base de conocimientos de tickets similares",
-    "search_web_tool": "Buscando información en la web"
+    "get_similar_tickets_tool": "Checking similar tickets from history",
+    "search_web_tool": "Searching the web for relevant information"
 }
 
 def format_trace(messages: list) -> list:
@@ -39,19 +39,19 @@ def format_trace(messages: list) -> list:
             if hasattr(msg, 'tool_calls') and msg.tool_calls:
                 for tc in msg.tool_calls:
                     tool_name = tc.get("name")
-                    friendly_name = TOOL_NAME_MAP.get(tool_name, f"Ejecutando herramienta: {tool_name}")
+                    friendly_name = TOOL_NAME_MAP.get(tool_name, f"Executing tool: {tool_name}")
                     trace.append({
                         "node": "agent",
                         "event": "thought",
                         "tool_id": tool_name, # Added technical ID
-                        "description": f"El agente decidió: {friendly_name}",
+                        "description": f"Agent decided to execute: {friendly_name}",
                         "active": True
                     })
             elif msg.content:
                 trace.append({
                     "node": "agent",
                     "event": "answer",
-                    "description": "El agente ha generado una respuesta final.",
+                    "description": "Agent has generated a final response.",
                     "active": True
                 })
         
@@ -60,10 +60,10 @@ def format_trace(messages: list) -> list:
             
             # Map tool result descriptions
             RESULT_DESCRIPTIONS = {
-                "get_similar_tickets_tool": "Se ha procesado la información de tickets similares.",
-                "search_web_tool": "Se ha procesado la información obtenida de la web."
+                "get_similar_tickets_tool": "Similar tickets information has been processed.",
+                "search_web_tool": "Web search results have been processed."
             }
-            friendly_desc = RESULT_DESCRIPTIONS.get(tool_name, "Se ha procesado la información obtenida.")
+            friendly_desc = RESULT_DESCRIPTIONS.get(tool_name, "Tool result has been processed.") if tool_name else "Tool result has been processed."
             
             trace.append({
                 "node": "tools",

@@ -1,45 +1,45 @@
-# Sistema de Soporte Técnico Potenciado por GenAI
+# GenAI-Powered Technical Support System
 
-Este repositorio alberga una solución integral para la gestión y resolución automatizada de tickets de soporte técnico. El proyecto combina una API robusta para la gestión de datos con un agente autónomo inteligente capaz de proponer soluciones.
+This repository houses an integrated solution for the automated management and resolution of technical support tickets. The project combines a robust API for data management with an autonomous intelligent agent capable of proposing solutions.
 
-## Estructura del Proyecto
+## Project Structure
 
-El sistema está dividido en dos componente principales:
+The system is divided into two main components:
 
-### 1. API de Gestión de Tickets (`api/`)
-El núcleo del sistema de gestión. Provee las funcionalidades base para el equipo de soporte:
-*   **Base de Conocimiento RAG**: Ingesta y vectorización de tickets históricos.
-*   **Búsqueda Semántica**: Encuentra problemas similares ocurridos en el pasado.
-*   **Asistente de Enriquecimiento**: Utiliza LLMs para resumir incidencias y sugerir expertos internos.
+### 1. Ticket Management API (`api/`)
+The core of the system. Provides the base functionalities for the support team:
+*   **RAG Knowledge Base**: Ingestion and vectorization of historical tickets.
+*   **Semantic Search**: Finds similar problems that occurred in the past.
+*   **Enrichment Assistant**: Uses LLMs to summarize incidents and suggest internal experts.
 
-👉 **[Ver documentación e instalación del API](api/README.md)**
+👉 **[View API documentation and installation](api/README.md)**
 
-### 2. Agente de Resolución Autónoma (`agent_app/`)
-Un agente inteligente diseñado para actuar sobre los tickets. Construido con LangGraph, FastAPI (con arquitectura modular) y Streamlit:
-*   **Investigación**: Consulta la API principal para obtener contexto histórico.
-*   **Búsqueda Web**: Utiliza herramientas de búsqueda (Tavily) para encontrar documentación pública y soluciones externas.
-*   **Síntesis**: Genera una propuesta de solución paso a paso lista para el usuario.
+### 2. Autonomous Resolution Agent (`agent_app/`)
+An intelligent agent designed to act on tickets. Built with LangGraph, FastAPI (with modular architecture) and Streamlit:
+*   **Research**: Queries the main API to obtain historical context.
+*   **Web Search**: Uses search tools (Tavily) to find public documentation and external solutions.
+*   **Synthesis**: Generates a step-by-step solution proposal ready for the user.
 
-👉 **[Ver documentación e instalación del Agente](agent_app/README.md)**
+👉 **[View Agent documentation and installation](agent_app/README.md)**
 
-## Despliegue en Producción (Arquitectura Híbrida)
+## Production Deployment (Hybrid Architecture)
 
-El sistema está diseñado para un despliegue optimizado en la nube (cero costo) utilizando tres plataformas especializadas:
+The system is designed for optimized cloud deployment (zero cost) using three specialized platforms:
 
-| Componente | Plataforma | Rol |
+| Component | Platform | Role |
 | :--- | :--- | :--- |
-| **API Backend** | **Vercel** | Gestión de datos, búsqueda RAG y Panel Admin. |
-| **Agente Backend** | **Render** | Procesamiento asíncrono del agente (Docker). |
-| **Agente Frontend** | **Streamlit Cloud** | Interfaz de usuario interactiva y segura. |
+| **API Backend** | **Vercel** | Data management, RAG search, and Admin Panel. |
+| **Agent Backend** | **Render** | Asynchronous agent processing (Docker). |
+| **Agent Frontend** | **Streamlit Cloud** | Interactive and secure user interface. |
 
-### Configuración del Monorepo
-Aunque cada servicio reside en una plataforma distinta, el despliegue se realiza directamente desde este repositorio utilizando la funcionalidad de **Root Directory**.
+### Monorepo Configuration
+Although each service resides on a different platform, deployment is performed directly from this repository using **Root Directory** functionality.
 
 ---
 
-## Flujo de Trabajo Recomendado
+## Recommended Workflow
 
-1.  **Levantar el API (Parte 1)**: Es necesario que la API esté corriendo en el puerto 8000 para proveer contexto histórico.
-2.  **Iniciar el Agente (Parte 2)**: Levantar el backend del agente y su interfaz gráfica para comenzar a resolver tickets.
+1. **Start the API (Part 1)**: The API must be running on port 8000 to provide historical context.
+2. **Start the Agent (Part 2)**: Launch the agent backend and its graphical interface to begin resolving tickets.
 
-Para detalles técnicos específicos, dependencias y configuración de variables de entorno, por favor consulta el `README.md` respectivo de cada módulo.
+For specific technical details, dependencies, and environment variable configuration, please consult the respective `README.md` of each module.
