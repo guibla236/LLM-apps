@@ -13,7 +13,7 @@ async def search_web_tool(query: str) -> str:
     Input should be a search query string.
     """
     if not await is_tool_enabled("enable_web_search"):
-        return "La búsqueda web está temporalmente desactivada por el administrador."
+        return "The access to web search is temporarily disabled by the administrator."
 
     try:
         # We invoke the async version of the tool if available, or just run it in a thread if not.
