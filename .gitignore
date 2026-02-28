@@ -13,3 +13,8 @@ tarea2/
 /agente_venv/
 /agent_app/backend/backend_venv/
 /agent_app/frontend/frontend_venv/
+
+# Tickets y KBs
+/api/static/mock/tickets
+/api/static/mock/knowledge_base
+
