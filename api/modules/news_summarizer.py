@@ -5,14 +5,11 @@ Este archivo contiene la estructura mock para que implementes la funcionalidad.
 """
 
 from pydantic import BaseModel, field_validator, ConfigDict, Field
-from .third_party_clients import groq_llm_client as groq_llm_client
-from groq import AsyncGroq
+from .third_party_clients import groq_llm_client
 import os
 import sys
 import re
 import json
-
-groq_llm_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 NEWS_SUMMARIZER_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 NEWS_SUMMARIZER_SYSTEM_MESSAGE = """
@@ -112,9 +109,8 @@ async def summarize_news(news: NewsInput) -> NewsSummary:
         if not NEWS_SUMMARIZER_MODEL_NAME:
             raise ValueError("La variable de entorno CHAT_MODEL_NAME no está configurada")
 
-        message = await groq_llm_client.chat.completions.create(
-            model=NEWS_SUMMARIZER_MODEL_NAME,
-            messages=[
+        response = await groq_llm_client.ainvoke(
+            input=[
                 {
                     "role": "system",
                     "content": NEWS_SUMMARIZER_SYSTEM_MESSAGE
@@ -128,9 +124,7 @@ async def summarize_news(news: NewsInput) -> NewsSummary:
             temperature=0.7
         )
 
-        choice = message.choices[0]
-        
-        summary_text = choice.message.content
+        summary_text = response.content
 
         sys.stderr.write(f"\nDEBUG: Respuesta bruta de Groq:\n{summary_text}\n")
         sys.stderr.flush()
