@@ -314,10 +314,32 @@ async function loadModels() {
         const select = document.getElementById('llmModelSelect');
         if (!select) return;
         select.innerHTML = '';
-        data.models.forEach(model => {
+
+        // Normalize response shapes:
+        // - API may return an array of strings: ["llama-3.1-8b-instant"]
+        // - Or an object: { models: [{ id, name }, ...] }
+        let modelsArray = [];
+        if (Array.isArray(data)) {
+            modelsArray = data;
+        } else if (data && Array.isArray(data.models)) {
+            modelsArray = data.models;
+        } else {
+            console.warn('Unexpected /api/models response shape', data);
+            return;
+        }
+
+        modelsArray.forEach(m => {
             const option = document.createElement('option');
-            option.value = model.id;
-            option.textContent = model.name;
+            if (typeof m === 'string') {
+                option.value = m;
+                option.textContent = m;
+            } else if (m && m.id) {
+                option.value = m.id;
+                option.textContent = m.name || m.id;
+            } else {
+                option.value = String(m);
+                option.textContent = String(m);
+            }
             select.appendChild(option);
         });
     } catch (e) {
