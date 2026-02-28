@@ -1,3 +1,11 @@
+import sys
+import shutil
+import os
+import uuid
+import traceback
+import zipfile
+import tempfile
+from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,17 +21,13 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime, timedelta
-import sys
-import shutil
-import os
-import uuid
-import traceback
-import zipfile
-import tempfile
+from jose import jwt
+from modules.security import SECRET_KEY, ALGORITHM
 
 app = FastAPI()
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler) # type: ignore
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -37,8 +41,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-            from jose import jwt
-            from modules.security import SECRET_KEY, ALGORITHM
+            if SECRET_KEY is None:
+                raise HTTPException(status_code=500, detail="SECRET_KEY is not set in environment variables.")
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             user_info = payload.get("sub", "anonymous")
         else:
@@ -59,11 +63,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     }
     
     # Log to MongoDB if connected
-    if db is not None:
-        try:
-            await db.error_logs.insert_one(error_log)
-        except Exception as e:
-            sys.stderr.write(f"CRITICAL: Failed to log error to MongoDB: {str(e)}\n")
+    try:
+        await db.error_logs.insert_one(error_log)
+    except Exception as e:
+        sys.stderr.write(f"CRITICAL: Failed to log error to MongoDB: {str(e)}\n")
     
     # Also log to stderr for safety
     sys.stderr.write(f"\n[ERROR_ID: {error_id}] Global exception caught:\n")
@@ -109,14 +112,16 @@ class UserLogin(BaseModel):
     password: str
 
 class SearchRequest(BaseModel):
-    description: str = Field(..., min_length=5, max_length=2000, description="Descripción del problema a consultar")
-    search_type: SearchType = Field(default=SearchType.BOTH, description="Tipo de búsqueda: tickets_only, kb_only, both")
-    hybrid_search: bool = Field(default=True, description="Si es True, realiza búsqueda híbrida (Vector + BM25)")
+    description: str = Field(..., min_length=5, max_length=2000, description="Description of the support problem to search for")
+    search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
+    hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
 
 # --- Auth Endpoints ---
 @app.post("/api/register")
 async def register(user_in: UserRegister, request: Request):
     db = get_database()
+    if request.client is None:
+        raise HTTPException(status_code=400, detail="Unable to determine client IP address. No service can be provided.")
     ip_address = request.client.host
     
     # 1. IP Check (Limit: 3 registrations per IP per 24h)
@@ -129,7 +134,7 @@ async def register(user_in: UserRegister, request: Request):
     if reg_count >= 3:
         raise HTTPException(
             status_code=429, 
-            detail="Has superado el límite de registros permitidos desde esta conexión por hoy."
+            detail="Too many registrations from this IP address. Please try again later."
         )
     
     # 2. Check if user already exists (Atomic check handled by unique index too)
@@ -371,7 +376,7 @@ async def ingest_json_ticket_endpoint(ticket: TicketModel, request: Request):
     return ingest_individual_ticket(ticket)
 
 @app.post("/api/ingest_json_file", dependencies=[Depends(validate_api_key_and_quota)])
-async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for bulk ticket ingestion from a JSON file.
     """
@@ -395,7 +400,7 @@ async def ingest_json_file_endpoint(file: UploadFile = File(...), request: Reque
 
 
 @app.post("/api/ingest_kb_zip", dependencies=[Depends(is_admin)])
-async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for bulk ingestion of KB documents from a ZIP file.
     Requires admin privileges.
@@ -434,7 +439,7 @@ async def ingest_kb_zip_endpoint(file: UploadFile = File(...), request: Request 
 
 
 @app.post("/api/ingest_kb_md", dependencies=[Depends(is_admin)])
-async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Request = None):
+async def ingest_kb_md_endpoint(file: UploadFile = File(...), request: Optional[Request] = None):
     """
     Endpoint POST for ingestion of a KB document in Markdown (.md) format.
     Requires admin privileges.
