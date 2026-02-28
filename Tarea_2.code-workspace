@@ -16,7 +16,10 @@
 		},
 		{
 			"name": "API",
-			"path": "api"
+			"path": "api",
+			"settings": {
+				"python.defaultInterpreterPath": "${workspaceFolder:API}/tarea2/bin/python"
+			}
 		}
 	],
 	"settings": {
