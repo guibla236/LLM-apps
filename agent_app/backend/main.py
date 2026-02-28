@@ -97,7 +97,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={
-            "detail": "Ocurrió un error interno en el Agente. Por favor intente más tarde.",
+            "detail": "An internal error occurred in the Agent. Please try again later.",
             "error_id": error_id
         },
     )

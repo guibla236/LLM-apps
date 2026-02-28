@@ -15,7 +15,7 @@ async def get_similar_tickets_tool(description: str) -> str:
     Returns a string representation of similar tickets found.
     """
     if not await is_tool_enabled("enable_rag_tool"):
-        return "El acceso a la base de datos de tickets similares está temporalmente desactivado por el administrador."
+        return "The access to similar tickets database is temporarily disabled by the administrator."
 
     url = f"{API_BASE_URL}/api/get_similar_tickets"
     if APP_API_KEY is None:

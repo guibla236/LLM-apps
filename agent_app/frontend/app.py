@@ -20,7 +20,7 @@ def get_config(key, default):
 API_MAIN_URL = get_config("API_MAIN_URL", os.getenv("API_BASE_URL", "http://localhost:8000"))
 AGENT_BACKEND_URL = get_config("API_AGENT_URL", "http://localhost:8001")
 
-st.set_page_config(page_title="Agente de Resolución de Tickets", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="IT Support Agent System", page_icon="🤖", layout="wide")
 
 # --- Mermaid Graph Helper ---
 def render_mermaid(trace):
@@ -34,8 +34,8 @@ def render_mermaid(trace):
     
     # Tool labels map
     FRIENDLY_NAMES = {
-        "get_similar_tickets_tool": "Tickets Similares",
-        "search_web_tool": "Búsqueda Web"
+        "get_similar_tickets_tool": "Similar Tickets",
+        "search_web_tool": "Web Search"
     }
     
     for step in trace:
@@ -58,7 +58,7 @@ def render_mermaid(trace):
     # Start building Mermaid code
     mermaid_code = """
     graph TD
-    Start([Inicio]) --> Agent[Agente]
+    Start([Start]) --> Agent[Agent]
     """
     
     # Add tool nodes
@@ -66,7 +66,7 @@ def render_mermaid(trace):
         mermaid_code += f"\n    Agent --> {clean_id}[{label}]"
         mermaid_code += f"\n    {clean_id} --> Agent"
     
-    mermaid_code += "\n    Agent --> Final([Respuesta])"
+    mermaid_code += "\n    Agent --> Final([Answer])"
     
     # Styles
     mermaid_code += "\n\n    classDef active fill:#28a745,stroke:#28a745,color:#fff;"
@@ -224,12 +224,12 @@ def logout():
 
 # --- Login Logic ---
 if not st.session_state['token']:
-    st.title("🔐 Ingreso al Sistema de Agente")
+    st.title("🔐 Login to Agent System")
     
     with st.form("login_form"):
-        username = st.text_input("Usuario")
-        password = st.text_input("Contraseña", type="password")
-        submit = st.form_submit_button("Ingresar")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
         
         if submit:
             try:
@@ -246,29 +246,29 @@ if not st.session_state['token']:
                     # Set persistent cookie (expires in 7 days by default if not specified, or session)
                     cookie_manager.set("auth_token", token)
                     
-                    st.success("¡Ingreso exitoso!")
+                    st.success("Login successful!")
                     time.sleep(1) # Wait for cookie to set
                     st.rerun()
                 else:
-                    st.error("Credenciales incorrectas")
+                    st.error("Authentication failed. Please check your credentials.")
             except Exception as e:
-                st.error(f"Error de conexión: {str(e)}")
+                st.error(f"Connection Error: {str(e)}")
     st.stop()
 
 # --- Main Page After Login ---
 st.sidebar.title(f"👤 {st.session_state['username']}")
-if st.sidebar.button("Cerrar Sesión"):
+if st.sidebar.button("Logout"):
     logout()
 
 st.sidebar.markdown("---")
 # New Conversation Button
-if st.sidebar.button("➕ Nueva Conversación"):
+if st.sidebar.button("➕ New Conversation"):
     st.session_state['messages'] = []
     st.session_state['chat_session_id'] = str(uuid.uuid4())
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📜 Historial")
+st.sidebar.subheader("📜 History")
 
 # Load past sessions
 if st.session_state['token']:
@@ -280,7 +280,7 @@ if st.session_state['token']:
             
             # --- Empty State Message ---
             if not sessions:
-                st.sidebar.info("No hay historial.")
+                st.sidebar.info("No history.")
             
             for s in sessions:
                 # s is now a dict: {session_id, thread_id, title, last_updated}
@@ -302,7 +302,7 @@ if st.session_state['token']:
                         st.rerun()
                 
                 with col2:
-                    if st.button("🗑️", key=f"del_{session_id}", help="Eliminar conversación"):
+                    if st.button("🗑️", key=f"del_{session_id}", help="Delete Conversation"):
                         # Delete session
                         del_headers = {"Authorization": f"Bearer {st.session_state['token']}"}
                         try:
@@ -313,7 +313,7 @@ if st.session_state['token']:
                                 st.session_state['messages'] = []
                                 st.session_state['chat_session_id'] = str(uuid.uuid4())
                             
-                            st.toast("Conversación eliminada correctamente! 🗑️")
+                            st.toast("Conversation deleted successfully! 🗑️")
                             time.sleep(2) # Give time for toast to show
                             st.rerun()
                         except Exception as e:
@@ -321,9 +321,9 @@ if st.session_state['token']:
     except Exception as e:
         st.sidebar.error(f"Connection error: {e}")
 
-st.title("🤖 Chat de Soporte IT")
+st.title("🤖 IT Support Chat")
 st.markdown("""
-Describe tu problema técnico y el agente te ayudará utilizando la base de conocimientos y búsqueda web.
+Describe your technical problem and the agent will help you using the knowledge base and web search.
 """)
 
 # Display chat history
@@ -332,19 +332,19 @@ for message in st.session_state['messages']:
         st.markdown(message["content"])
         # If assistant has a trace, show it in an expander
         if message["role"] == "assistant" and message.get("trace"):
-            with st.expander("🔍 Ver proceso de pensamiento del agente"):
+            with st.expander("🔍 View thinking process"):
                 m_code = render_mermaid(message["trace"])
                 # Use a unique ID based on role and trace length/index
                 u_id = f"hist_{str(hash(str(message['content'])))[-6:]}"
                 st_mermaid(m_code, u_id)
                 # Show steps breakdown
-                st.markdown("### Pasos ejecutados:")
+                st.markdown("### Steps Executed: ")
                 for i, step in enumerate(message["trace"]):
                     node_icon = "🧠" if step["node"] == "agent" else "🛠️"
                     st.write(f"{i+1}. {node_icon} {step['description']}")
 
 # Chat input
-if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
+if prompt := st.chat_input("What can I help you today?"):
     # Add user message to state
     st.session_state['messages'].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -352,7 +352,7 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
 
     # Get response from agent
     with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
+        with st.spinner("Thinking..."):
             try:
                 headers = {"Authorization": f"Bearer {st.session_state['token']}"}
                 response = requests.post(
@@ -373,10 +373,10 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
                     
                     # Show trace for the current response immediately
                     if trace:
-                        with st.expander("🔍 Ver proceso de pensamiento del agente", expanded=False):
+                        with st.expander("🔍 View thinking process", expanded=False):
                             m_code = render_mermaid(trace)
                             st_mermaid(m_code, f"curr_{int(time.time())}")
-                            st.markdown("### Pasos ejecutados:")
+                            st.markdown("### Steps executed:")
                             for i, step in enumerate(trace):
                                 node_icon = "🧠" if step["node"] == "agent" else "🛠️"
                                 st.write(f"{i+1}. {node_icon} {step['description']}")
@@ -391,4 +391,4 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
                 else:
                     st.error(f"Error ({response.status_code}): {response.text}")
             except Exception as e:
-                st.error(f"Error inesperado: {str(e)}")
+                st.error(f"Unexpected error: {str(e)}")
