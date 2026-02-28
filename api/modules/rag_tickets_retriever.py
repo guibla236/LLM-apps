@@ -1,12 +1,12 @@
 """
-Módulo para la funcionalidad de resumen de noticias.
-Este archivo contiene la estructura mock para que implementes la funcionalidad.
+Module for the support tickets summary functionality.
+This file contains the mock structure for you to implement the functionality.
 """
 
-from pydantic import BaseModel, Field
-from enum import Enum
 from typing import List
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store
+from .utils import extract_json_from_llm_response
+from ..models.tickets import TicketModel
 import sys
 import os
 import json
@@ -28,24 +28,6 @@ TICKET_SUMMARIZER_SYSTEM_MESSAGE = """
     }
     ```
 """
-
-class TicketPriority(str, Enum):
-    """Enum para las prioridades de los tickets."""
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    URGENT = "Urgent"
-
-
-class TicketModel(BaseModel):
-    """Modelo de un ticket de soporte."""
-    ticketId: str = Field(..., description="ID único del ticket (ej. SOFT-20251211-001)")
-    creationDate: str = Field(..., description="Fecha de creación en formato YYYY-MM-DD")
-    priority: TicketPriority
-    owner: str = Field(..., description="Nombre y departamento del solicitante")
-    description: str = Field(..., description="Descripción detallada del problema")
-    impact: str = Field(..., description="Impacto del problema en la productividad")
-    actions: str = Field(..., description="Acciones tomadas por el solicitante antes de reportar")
 
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
@@ -107,9 +89,8 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
             "contacts": []
         }
 
-    message = await groq_llm_client.chat.completions.create(
-        model=CHAT_MODEL_NAME,
-        messages=[
+    response = await groq_llm_client.ainvoke(
+        input=[
             {
                 "role": "system",
                 "content": TICKET_SUMMARIZER_SYSTEM_MESSAGE
@@ -128,29 +109,31 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
         temperature=0
     )
 
-    choice = message.choices[0]
-    if choice.message is None or choice.message.content is None:
-        return {
-            "answer": "The LLM did not return any content.",
-            "contacts": []
-        }
-    summary_text = choice.message.content.split("```json")[1].split("```")[0]
+    chat_response = response.content
 
-    try:
-        # Intentar parsear la respuesta como JSON
-        response_data = json.loads(summary_text)
-        summary = response_data.get("answer", "")
-        if (not summary or len(summary) == 0 ):
-            summary = response_data.get("'answer'", "")
+    if not chat_response:
         return {
-            "answer": summary,
+            "answer": "LLM did not return a valid response",
             "contacts": list(set([t.owner for t in relevant_tickets]))
         }
-    except json.JSONDecodeError:
-        # Fallback si el LLM no devuelve JSON válido
-        sys.stderr.write(f"DEBUG: Error on parsing JSON from LLM. Using fallback.\n")
-        unique_owners = list(set([t.owner for t in relevant_tickets]))
+
+    clean_content = extract_json_from_llm_response(str(chat_response))
+    parsed_json = None
+    try:
+        parsed_json = json.loads(clean_content)
+    except Exception:
+        parsed_json = None
+
+    owners = list(set([t.owner for t in relevant_tickets]))
+
+    if isinstance(parsed_json, dict):
         return {
-            "answer": summary_text,
-            "contacts": unique_owners
+            "answer": parsed_json.get("answer", ""),
+            "contacts": parsed_json.get("contacts", owners)
         }
+
+    # Fallback if JSON parsing fails
+    return {
+        "answer": str(chat_response),
+        "contacts": owners
+    }
