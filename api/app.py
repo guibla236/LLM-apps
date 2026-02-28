@@ -1,3 +1,11 @@
+import sys
+import shutil
+import os
+import uuid
+import traceback
+import zipfile
+import tempfile
+from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,13 +21,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime, timedelta
-import sys
-import shutil
-import os
-import uuid
-import traceback
-import zipfile
-import tempfile
+from jose import jwt
+from modules.security import SECRET_KEY, ALGORITHM
 
 app = FastAPI()
 app.state.limiter = limiter
