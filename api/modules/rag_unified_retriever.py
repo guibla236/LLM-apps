@@ -8,9 +8,12 @@ import os
 import json
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from langchain_community.retrievers import BM25Retriever
+from langchain_core.documents import Document
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
+from .utils import extract_json_from_llm_response
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
@@ -31,36 +34,94 @@ class SearchResult(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos adicionales")
     score: float = Field(..., description="Puntuación de relevancia")
 
-async def search_tickets(query: str, k: int = 5) -> List[SearchResult]:
+# --- Global BM25 Retrievers ---
+_TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
+_KB_BM25_RETRIEVER: Optional[BM25Retriever] = None
+
+def _init_bm25_retrievers():
+    """Inicializa los retrievers BM25 cargando el índice pre-computado."""
+    global _TICKET_BM25_RETRIEVER, _KB_BM25_RETRIEVER
+    
+    if _TICKET_BM25_RETRIEVER is not None:
+        return
+
+    index_path = os.path.join(os.path.dirname(__file__), "..", "static", "bm25_index.json")
+    if not os.path.exists(index_path):
+        sys.stderr.write(f"DEBUG: BM25 index not found at {index_path}\n")
+        return
+
+    try:
+        with open(index_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Tickets
+        ticket_docs = [
+            Document(page_content=f"{t['ticketId']} {t['description']}", metadata=t)
+            for t in data.get("tickets", [])
+        ]
+        if ticket_docs:
+            _TICKET_BM25_RETRIEVER = BM25Retriever.from_documents(ticket_docs)
+        
+        # KB
+        kb_docs = [
+            Document(page_content=d["content"], metadata=d)
+            for d in data.get("kb", [])
+        ]
+        if kb_docs:
+            _KB_BM25_RETRIEVER = BM25Retriever.from_documents(kb_docs)
+
+        sys.stderr.write(f"DEBUG: BM25 Retrievers initialized successfully.\n")
+    except Exception as e:
+        sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
+
+async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
     """
     Busca tickets relevantes basados en una consulta.
     
     Args:
         query (str): Consulta de búsqueda
         k (int): Número máximo de resultados
+        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
         
     Returns:
         List[SearchResult]: Lista de tickets relevantes
     """
     try:
-        raw_results = await vector_store.asimilarity_search(query, k=k)
-        if not raw_results:
-            return []
+        # 1. Búsqueda Vectorial (Semántica)
+        raw_vector_results = await vector_store.asimilarity_search(query, k=k)
         
+        # 2. Búsqueda BM25 (Palabras Clave)
+        bm25_results = []
+        if hybrid_search:
+            _init_bm25_retrievers()
+            if _TICKET_BM25_RETRIEVER:
+                # BM25Retriever de LangChain es síncrono
+                bm25_results = _TICKET_BM25_RETRIEVER.invoke(query)
+        
+        # 3. Combinar y mapear a SearchResult
+        seen_ids = set()
         results = []
-        for result in raw_results:
-            # Verificar si el resultado es un ticket
-            if 'ticketId' in result.metadata:
-                ticket = TicketModel(**result.metadata)
-                search_result = SearchResult(
-                    source="ticket",
-                    id=ticket.ticketId,
-                    title=f"Ticket {ticket.ticketId}",
-                    content=ticket.description,
-                    metadata=ticket.model_dump(),
-                    score=0.8
-                )
-                results.append(search_result)
+        
+        # Priorizar vectoriales primero por ahora (podríamos hacer RRF más adelante)
+        for doc in raw_vector_results:
+            if 'ticketId' in doc.metadata:
+                tid = doc.metadata['ticketId']
+                if tid not in seen_ids:
+                    seen_ids.add(tid)
+                    results.append(SearchResult(
+                        source="ticket", id=tid, title=f"Ticket {tid}",
+                        content=doc.page_content, metadata=doc.metadata, score=0.75
+                    ))
+        
+        # Agregar resultados de BM25 que no estén ya
+        for doc in bm25_results[:k]:
+            tid = doc.metadata['ticketId']
+            if tid not in seen_ids:
+                seen_ids.add(tid)
+                results.append(SearchResult(
+                    source="ticket", id=tid, title=f"Ticket {tid}",
+                    content=doc.page_content, metadata=doc.metadata, score=0.8
+                ))
         
         return results
         
@@ -71,36 +132,51 @@ async def search_tickets(query: str, k: int = 5) -> List[SearchResult]:
         sys.stderr.flush()
         return []
 
-async def search_kb_documents(query: str, k: int = 5) -> List[SearchResult]:
+async def search_kb_documents(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
     """
     Busca documentos Knowledge Base relevantes basados en una consulta.
     
     Args:
         query (str): Consulta de búsqueda
         k (int): Número máximo de resultados
+        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
         
     Returns:
         List[SearchResult]: Lista de documentos KB relevantes
     """
     try:
-        raw_results = await kb_vector_store.asimilarity_search(query, k=k)
-        if not raw_results:
-            return []
+        # 1. Búsqueda Vectorial
+        raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
         
+        # 2. Búsqueda BM25
+        bm25_results = []
+        if hybrid_search:
+            _init_bm25_retrievers()
+            if _KB_BM25_RETRIEVER:
+                bm25_results = _KB_BM25_RETRIEVER.invoke(query)
+        
+        # 3. Combinar
+        seen_ids = set()
         results = []
-        for result in raw_results:
-            # Verificar si el resultado es un documento KB
-            if 'fileId' in result.metadata:
-                metadata = result.metadata
-                search_result = SearchResult(
-                    source="kb",
-                    id=metadata['fileId'],
-                    title=f"KB {metadata['fileId']}",
-                    content=result.page_content,
-                    metadata=metadata,
-                    score=0.8  # Placeholder para score real
-                )
-                results.append(search_result)
+        
+        for doc in raw_vector_results:
+            if 'fileId' in doc.metadata:
+                fid = doc.metadata['fileId']
+                if fid not in seen_ids:
+                    seen_ids.add(fid)
+                    results.append(SearchResult(
+                        source="kb", id=fid, title=f"KB {fid}",
+                        content=doc.page_content, metadata=doc.metadata, score=0.75
+                    ))
+        
+        for doc in bm25_results[:k]:
+            fid = doc.metadata['fileId']
+            if fid not in seen_ids:
+                seen_ids.add(fid)
+                results.append(SearchResult(
+                    source="kb", id=fid, title=f"KB {fid}",
+                    content=doc.page_content, metadata=doc.metadata, score=0.8
+                ))
         
         return results
         
@@ -111,7 +187,7 @@ async def search_kb_documents(query: str, k: int = 5) -> List[SearchResult]:
         sys.stderr.flush()
         return []
 
-async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10) -> List[SearchResult]:
+async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> List[SearchResult]:
     """
     Búsqueda unificada que combina tickets y documentos KB.
     
@@ -119,6 +195,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         query (str): Consulta de búsqueda
         search_type (SearchType): Tipo de búsqueda a realizar
         k (int): Número total de resultados
+        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
         
     Returns:
         List[SearchResult]: Resultados combinados y ordenados
@@ -127,11 +204,11 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         results = []
         
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k)
+            ticket_results = await search_tickets(query, k, hybrid_search)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
-            kb_results = await search_kb_documents(query, k)
+            kb_results = await search_kb_documents(query, k, hybrid_search)
             results.extend(kb_results)
         
         # Ordenar por score (placeholder) y limitar resultados
@@ -145,7 +222,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         sys.stderr.flush()
         return []
 
-async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10) -> dict:
+async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> dict:
     """
     Using an LLM, process the search results to generate a summary and suggested actions.
     
@@ -153,6 +230,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         query (str): Original query
         search_type (SearchType): Search type to perform
         k (int): Number of results to retrieve and process
+        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
         
     Returns:
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
@@ -171,7 +249,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             }
         
         # Get search results from both tickets and KB
-        search_results = await unified_search(query, search_type, k)
+        search_results = await unified_search(query, search_type, k, hybrid_search)
         
         if not search_results:
             return {
@@ -214,43 +292,51 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             }
         """
 
-        try:
-            message = await groq_llm_client.chat.completions.create(
-                model=CHAT_MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": context}
-                ],
-                temperature=0
-            )
-            
-            if message.choices[0].message and message.choices[0].message.content:
-                content = message.choices[0].message.content
-                
-                # Extract JSON from content
-                if "```json" in content:
-                    json_part = content.split("```json")[1].split("```")[0]
-                else:
-                    json_part = content
-                
-                response_data = json.loads(json_part)
+        response = await groq_llm_client.ainvoke(
+            input=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": context}
+            ],
+            temperature=0
+        )
+        
+        if response and response.content:
+            # Clean the LLM response from markdown and extract the JSON block
+            clean_content = extract_json_from_llm_response(str(response.content))
+
+            # El extractor devuelve siempre str: intentar parsear JSON
+            parsed_json = None
+            try:
+                parsed_json = json.loads(clean_content)
+            except Exception:
+                parsed_json = None
+
+            if isinstance(parsed_json, dict):
                 return {
-                    "summary": response_data.get("summary", ""),
-                    "contacts": response_data.get("contacts", []),
+                    "summary": parsed_json.get("summary", ""),
+                    "contacts": parsed_json.get("contacts", []),
                     "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
                     "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
-                    "suggested_actions": response_data.get("suggested_actions", [])
+                    "suggested_actions": parsed_json.get("suggested_actions", [])
                 }
-            
-        except json.JSONDecodeError:
-            # Fallback if LLM does not return valid JSON
+
+            # Fallback si no se pudo parsear el JSON
             return {
-                "summary": f"Found {len(search_results)} relevant results. Check the tickets and KB documents for more details.",
+                "summary": str(response.content),
                 "contacts": ticket_owners,
                 "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
                 "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
                 "suggested_actions": ["Review the KB documents and tickets mentioned to get more details"]
             }
+
+        # Si la LLM no devolvió respuesta válida (response es falsy), devolver fallback explícito
+        return {
+            "summary": "Something went wrong: LLM did not return a valid response",
+            "contacts": ticket_owners,
+            "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
+            "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
+            "suggested_actions": ["Something went wrong"]
+        }
         
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR in augment_search_results_with_tickets_and_kbs ==========\n")
