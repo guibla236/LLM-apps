@@ -22,10 +22,10 @@ async def generate_session_title(first_message: str, first_response: str) -> str
         if isinstance(response.content, str):
             title = response.content.strip().replace('"', '')
             return title
-        return "Nueva Conversación"
+        return "New Conversation"
     except Exception as e:
         print(f"Error generating title: {e}")
-        return "Nueva Conversación"
+        return "New Conversation"
 
 async def get_user_sessions(username: str):
     """Retrieves all chat sessions for a given username from the sessions collection."""
