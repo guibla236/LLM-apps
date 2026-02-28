@@ -5,36 +5,17 @@ This module defines the TicketModel and functions to load tickets from a JSON fi
 
 import sys
 import json
-from pydantic import BaseModel, Field
-from enum import Enum
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List
 from .third_party_clients import vector_store_instance as vector_store
 from .unified_logger import log_execution, log_error
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from ..models.tickets import TicketModel
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=200,
     chunk_overlap=20,
     add_start_index=True
 )
-
-class TicketPriority(str, Enum):
-    """Enum para las prioridades de los tickets."""
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    URGENT = "Urgent"
-
-
-class TicketModel(BaseModel):
-    """Modelo de un ticket de soporte."""
-    ticketId: str = Field(..., description="ID único del ticket (ej. SOFT-20251211-001)")
-    creationDate: str = Field(..., description="Fecha de creación en formato YYYY-MM-DD")
-    priority: TicketPriority
-    owner: str = Field(..., description="Nombre y departamento del solicitante")
-    description: str = Field(..., min_length=10, max_length=5000, description="Descripción detallada del problema")
-    impact: str = Field(..., max_length=500, description="Impacto del problema en la productividad")
-    actions: str = Field(..., max_length=1000, description="Acciones tomadas por el solicitante antes de reportar")
 
 def load_support_tickets(file_path: str) -> List[TicketModel]:
     """

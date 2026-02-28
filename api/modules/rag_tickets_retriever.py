@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store
+from ..models.tickets import TicketModel
 import sys
 import os
 import json
@@ -28,24 +29,6 @@ TICKET_SUMMARIZER_SYSTEM_MESSAGE = """
     }
     ```
 """
-
-class TicketPriority(str, Enum):
-    """Enum para las prioridades de los tickets."""
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    URGENT = "Urgent"
-
-
-class TicketModel(BaseModel):
-    """Modelo de un ticket de soporte."""
-    ticketId: str = Field(..., description="ID único del ticket (ej. SOFT-20251211-001)")
-    creationDate: str = Field(..., description="Fecha de creación en formato YYYY-MM-DD")
-    priority: TicketPriority
-    owner: str = Field(..., description="Nombre y departamento del solicitante")
-    description: str = Field(..., description="Descripción detallada del problema")
-    impact: str = Field(..., description="Impacto del problema en la productividad")
-    actions: str = Field(..., description="Acciones tomadas por el solicitante antes de reportar")
 
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
