@@ -84,6 +84,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_db_client():
     await connect_to_mongo()
+    print("DEBUG: MongoDB connection established.")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
