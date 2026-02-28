@@ -26,8 +26,11 @@ elif [ -d "../venv" ]; then
     source ../venv/bin/activate
 fi
 
-# Configurar PYTHONPATH para el API
-export PYTHONPATH="$PROJECT_ROOT/api:$PYTHONPATH"
+# Conffiguration of PYTHONPATH for the API
+export PYTHONPATH="$PROJECT_ROOT/api"
+echo "PYTHONPATH set to: $PYTHONPATH"
+
+# Execute the API
 python3 main.py &
 API_PID=$!
 cd "$PROJECT_ROOT"
@@ -42,7 +45,7 @@ if [ -d "backend_venv" ]; then
     source "backend_venv/bin/activate"
 fi
 
-# Configurar PYTHONPATH para el agent backend
+# Configuration of PYTHONPATH for the agent's backend
 export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
 python3 main.py &
 AGENT_BACKEND_PID=$!
@@ -58,7 +61,7 @@ if [ -d "frontend_venv" ]; then
     source "frontend_venv/bin/activate"
 fi
 
-# Configurar PYTHONPATH para el frontend
+# Configuration of PYTHONPATH for the agent's frontend (note: uses same backend path for imports)
 export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
 streamlit run app.py &
 FRONTEND_PID=$!

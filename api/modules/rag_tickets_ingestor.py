@@ -9,7 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List
 from .third_party_clients import vector_store_instance as vector_store
 from .unified_logger import log_execution, log_error
-from ..models.tickets import TicketModel
+from models.tickets import TicketModel
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=200,
