@@ -236,6 +236,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
     """
     try:
+        system_message = load_system_message()
 
         if CHAT_MODEL_NAME is None:
             return {
@@ -281,17 +282,6 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         for kb in kb_results[:KBS_TO_CONSIDER]:
             context += f"- {kb.id}: {kb.content[:200]}...\n"
         
-        # System prompt
-        system_message = """
-            You are an expert assistant in IT technical support. Based on the provided tickets and knowledge base documents, generate a useful summary and suggested actions.
-            Your response must be in JSON format with the following structure:
-            {
-                "summary": "Concise summary of the relevant information found",
-                "contacts": ["List of relevant contacts from the tickets' owners"],
-                "suggested_actions": ["List of suggested actions based on the information"]
-            }
-        """
-
         response = await groq_llm_client.ainvoke(
             input=[
                 {"role": "system", "content": system_message},
@@ -351,6 +341,17 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             "ticket_references": [],
             "suggested_actions": []
         }
+
+def load_system_message():
+    """
+    Load the system message from the rag_system_prompt.md file.
+    """
+    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "rag_system_prompt.md")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as file:
+            return file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"System prompt file not found at {prompt_path}")
 
 # Funciones de compatibilidad con el sistema existente
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
