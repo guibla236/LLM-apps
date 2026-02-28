@@ -9,7 +9,12 @@ from langchain_pinecone import PineconeVectorStore
 
 
 load_dotenv()
+
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+
+AVAILABLE_CHAT_MODELS = [
+    os.getenv("CHAT_MODEL_NAME"),
+]
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not CHAT_MODEL_NAME:

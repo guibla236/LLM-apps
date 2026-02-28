@@ -1,4 +1,5 @@
 import re
+from .third_party_clients import AVAILABLE_CHAT_MODELS
 
 def extract_json_from_llm_response(raw_content: str) -> str:
     """
@@ -22,3 +23,8 @@ def extract_json_from_llm_response(raw_content: str) -> str:
     
     # Case 1 or fallback: Return as is
     return raw_content.strip()
+
+
+def list_models():
+    """Helper to list available models from the API."""
+    return AVAILABLE_CHAT_MODELS
