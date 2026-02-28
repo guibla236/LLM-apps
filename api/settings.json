@@ -3,5 +3,17 @@
   
   "pylance.analysis.extraPaths": [
     "${workspaceFolder}/tarea2/lib/python3.12/site-packages"
-  ]
+  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.packageIndexDepths": 3,
+  "python.analysis.extraPaths": [
+    "./api",
+    "./agent_app",
+    "./api/modules"
+  ],
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  }
 }
