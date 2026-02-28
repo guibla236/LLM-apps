@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime, timedelta
 from jose import jwt
 from modules.security import SECRET_KEY, ALGORITHM
+from modules.utils import list_models
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -529,6 +530,14 @@ async def augment_ticket_information_endpoint(ticket: TicketModel, request: Requ
     ```
     """
     return await augment_similar_tickets(ticket)
+
+
+@app.get("/api/models", dependencies=[Depends(validate_api_key_and_quota)])
+async def list_available_models():
+    """
+    Returns the list of available LLM models for the assistant.
+    """
+    return list_models()
 
 
 @app.post("/api/augment_search_results", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
