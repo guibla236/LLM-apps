@@ -9,6 +9,7 @@ import json
 from typing import List, Optional
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
+from langchain_core.prompts import PromptTemplate
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
 from .utils import extract_json_from_llm_response
@@ -58,7 +59,28 @@ def _init_bm25_retrievers():
     except Exception as e:
         sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
 
-async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def generate_hypothetical_ticket(query: str) -> str:
+    """
+    Generates a hypothetical IT support ticket based on a vague user query.
+    """
+
+    hyde_prompt = PromptTemplate.from_template("""
+            You are an expert IT support technician.
+            A user has reported the following problem in their own words: "{query}"
+
+            Write a hypothetical, fully resolved technical support ticket describing this issue.
+            Include the technical root cause and step-by-step resolution steps. Use professional IT networking and sysadmin jargon.
+            Do not include greetings or extraneous text, just the hypothetical ticket content.
+        """
+    )
+    chain = hyde_prompt | groq_llm_client
+    response = await chain.ainvoke({"query": query})
+
+    # Log the hypothetical ticket for debugging/tracing
+    sys.stderr.write(f"\n--- HyDE GENERATED TICKET ---\n {response.content[:200]}...\n ----------- \n")
+
+    sys.stderr.flush()
+    return str(response.content)
     """
     Search for relevant tickets based on a query.
     
