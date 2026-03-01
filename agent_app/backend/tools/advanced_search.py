@@ -70,6 +70,9 @@ async def advanced_search_tool(
             result_str += f"[{i+1}] ID: {t.get('id')}\nContent: {t.get('content')}\n\n --- \n"
         return result_str
     except httpx.HTTPStatusError as e:
-        return f"HTTP error during search: {e.response.status_code} - {e.response.text}"
+        return (
+            f"HTTP error during search (status code {e.response.status_code}). "
+            "Please try again later or contact an administrator if the problem persists."
+        )
     except Exception as e:
         return f"Error executing search: {str(e)}"
