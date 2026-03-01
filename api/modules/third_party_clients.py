@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from typing import Any
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from utils import get_model_details
+from .utils import get_model_details
 
 
 load_dotenv()
