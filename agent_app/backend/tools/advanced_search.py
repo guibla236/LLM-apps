@@ -23,7 +23,7 @@ async def advanced_search_tool(
     - query: Exact search terms or problem description
     - search_type: 'both' (default), 'tickets_only' (finds specific issues IDs), 'kb_only' (finds how-to guides).
     - search_method: 'hybrid' (vector+keywords), 'vector_only' (conceptual), 'bm25_only' (exact keywords like IDs).
-    - use_hyde: Set to True ONLY if the query is vague, non-technical, or conversational. Set to False if the query contains specific IDs, exact error codes, or techinical jargon.
+    - use_hyde: Set to True ONLY if the query is vague, non-technical, or conversational. Set to False if the query contains specific IDs, exact error codes, or technical jargon.
     """
     if not await is_tool_enabled("enable_rag_tool"):
         return "The knowledge base tool is temporarily disabled by the administrator."
