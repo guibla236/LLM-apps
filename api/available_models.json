@@ -1,0 +1,143 @@
+[
+  {
+    "name": "Llama 3.1 8B",
+    "provider": "Meta",
+    "token_limit_per_minute": 6000,
+    "id": "llama-3.1-8b-instant",
+    "enabled": true,
+    "default": true
+  },
+  {
+    "name": "Llama 3.3 70B",
+    "provider": "Meta",
+    "token_limit_per_minute": 12000,
+    "id": "llama-3.3-70b-versatile",
+    "enabled": true
+  },
+  {
+    "name": "Llama 4 Scout 17B 16E",
+    "provider": "Meta",
+    "token_limit_per_minute": 12000,
+    "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "enabled": true
+  },
+  {
+    "name": "ALLaM-2-7b",
+    "provider": "SDAIA",
+    "token_limit_per_minute": 6000,
+    "id": "allam-2-7b",
+    "enabled": true
+  },
+  {
+    "name": "Canopy Labs Orpheus Arabic Saudi",
+    "provider": "Canopy Labs",
+    "token_limit_per_minute": 1200,
+    "id": "canopylabs/orpheus-arabic-saudi",
+    "enabled": false
+  },
+  {
+    "name": "Canopy Labs Orpheus V1 English",
+    "provider": "Canopy Labs",
+    "token_limit_per_minute": 1200,
+    "id": "canopylabs/orpheus-v1-english",
+    "enabled": false
+  },
+  {
+    "name": "Compound",
+    "provider": "Groq",
+    "token_limit_per_minute": 70000,
+    "id": "groq/compound",
+    "enabled": true
+  },
+  {
+    "name": "Compound Mini",
+    "provider": "Groq",
+    "token_limit_per_minute": 70000,
+    "id": "groq/compound-mini",
+    "enabled": true
+  },
+  {
+    "name": "Llama 4 Maverick 17B 128E",
+    "provider": "Meta",
+    "token_limit_per_minute": 6000,
+    "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "enabled": false
+  },
+  {
+    "name": "Llama Guard 4 12B",
+    "provider": "Meta",
+    "token_limit_per_minute": 15000,
+    "id": "meta-llama/llama-guard-4-12b",
+    "enabled": false
+  },
+  {
+    "name": "Llama Prompt Guard 2 22M",
+    "provider": "Meta",
+    "token_limit_per_minute": 15000,
+    "id": "meta-llama/llama-prompt-guard-2-22m",
+    "enabled": true
+  },
+  {
+    "name": "Prompt Guard 2 86M",
+    "provider": "Meta",
+    "token_limit_per_minute": 15000,
+    "id": "meta-llama/llama-prompt-guard-2-86m",
+    "enabled": true
+  },
+  {
+    "name": "Kimi K2 Instruct",
+    "provider": "Moonshot AI",
+    "token_limit_per_minute": 10000,
+    "id": "moonshotai/kimi-k2-instruct",
+    "enabled": false
+  },
+  {
+    "name": "Kimi K2 0905",
+    "provider": "Moonshot AI",
+    "token_limit_per_minute": 10000,
+    "id": "moonshotai/kimi-k2-instruct-0905",
+    "enabled": true
+  },
+  {
+    "name": "GPT OSS 120B",
+    "provider": "OpenAI",
+    "token_limit_per_minute": 8000,
+    "id": "openai/gpt-oss-120b",
+    "enabled": true
+  },
+  {
+    "name": "GPT OSS 20B",
+    "provider": "OpenAI",
+    "token_limit_per_minute": 8000,
+    "id": "openai/gpt-oss-20b",
+    "enabled": true
+  },
+  {
+    "name": "Safety GPT OSS 20B",
+    "provider": "OpenAI",
+    "token_limit_per_minute": 8000,
+    "id": "openai/gpt-oss-safeguard-20b",
+    "enabled": true
+  },
+  {
+    "name": "Qwen3-32B",
+    "provider": "Alibaba Cloud",
+    "token_limit_per_minute": 6000,
+    "id": "qwen/qwen3-32b",
+    "enabled": true
+  },
+  {
+    "name": "Whisper",
+    "provider": "OpenAI",
+    "token_limit_per_minute": 15000,
+    "id": "whisper-large-v3",
+    "enabled": true
+  },
+  {
+    "name": "Whisper Large V3 Turbo",
+    "provider": "OpenAI",
+    "token_limit_per_minute": 15000,
+    "id": "whisper-large-v3-turbo",
+    "enabled": true
+  }
+]

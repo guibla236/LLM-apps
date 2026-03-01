@@ -1,7 +1,25 @@
 import re
 import os
-from .third_party_clients import AVAILABLE_CHAT_MODELS
+import json
 from functools import lru_cache
+
+# load available models once at import time
+_models_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "available_models.json")
+try:
+    with open(_models_path, "r", encoding="utf-8") as _f:
+        _AVAILABLE_MODELS = json.load(_f)
+except Exception:
+    # If the file cannot be read or parsed, fall back to empty list
+    _AVAILABLE_MODELS = []
+
+# create index for quick lookup by id
+# m.get("id") may return None; only include entries with a string id to
+# satisfy the annotated type.
+_MODEL_INDEX: dict[str, dict] = {
+    id_val: m
+    for m in _AVAILABLE_MODELS if isinstance(m, dict) and m.get("id")
+    for id_val in (m.get("id"),) if isinstance(id_val, str)
+}
 
 def extract_json_from_llm_response(raw_content: str) -> str:
     """
