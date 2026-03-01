@@ -1,6 +1,7 @@
 import re
-from .third_party_clients import AVAILABLE_CHAT_MODELS
 import os
+from .third_party_clients import AVAILABLE_CHAT_MODELS
+from functools import lru_cache
 
 def extract_json_from_llm_response(raw_content: str) -> str:
     """
@@ -33,6 +34,7 @@ def list_models():
     models = [{"id": str(m), "name": str(m)} for m in clean]
     return {"models": models}
 
+@lru_cache(maxsize=10)
 def load_prompt(prompt_filename: str) -> str:
     """
     Load the required prompt file from the prompts folder.
