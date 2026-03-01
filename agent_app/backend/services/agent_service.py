@@ -24,7 +24,12 @@ async def chat_with_agent(
     """
     
     start_time = time.perf_counter()
-    config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+    config: RunnableConfig = {
+        "configurable": {
+            "thread_id": thread_id
+        }, 
+        "recursion_limit": 10
+    }
     
     try:
         await _manage_context_window(config)  # Ensure we manage the context window before invoking the agent
