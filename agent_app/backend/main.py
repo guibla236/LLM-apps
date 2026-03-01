@@ -1,11 +1,12 @@
+import uvicorn
+import os
+import warnings
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 import traceback
 from core.logger import agent_logger
 from services.agent_service import solve_ticket
 from dotenv import load_dotenv
-import uvicorn
-import os
 from schema.ticket import Item, TicketModel
 from core.security import get_authorized_user
 
@@ -27,8 +28,17 @@ app.include_router(history_router)
 async def root():
     return {"message": "Agent Backend is running", "status": "online"}
 
-@app.post("/solve_ticket", deprecated=True)
+@app.post(
+    "/solve_ticket", 
+    deprecated=True, 
+    summary="DEPRECATED: Use /chat/solve_ticket instead", 
+    description="This endpoint is deprecated. Please use /chat/solve_ticket for better performance and additional features."
+)
 async def solve_ticket_endpoint(item: Item, request: Request):
+    warnings.warn(
+        "The /solve_ticket endpoint is deprecated. Please use /chat/solve_ticket instead.",
+        DeprecationWarning
+    )
     user = await get_authorized_user(request)
     ticket_model = TicketModel(**item.ticket)
     solution = await solve_ticket(ticket_model, username=user["username"])

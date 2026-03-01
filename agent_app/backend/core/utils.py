@@ -1,29 +1,59 @@
 import httpx
 from core.config import get_env_var
+from functools import lru_cache
+from core.logger import agent_logger, log_background
+from prompts.model import PromptFileNames
 
-API_BASE_URL = get_env_var("API_BASE_URL")
+_API_BASE_URL = get_env_var("API_BASE_URL")
+_MAX_CHARS_CONTEXT_THRESHOLD = get_env_var("MAX_CHARS_CONTEXT_THRESHOLD")
 
 async def is_tool_enabled(flag_name: str) -> bool:
     """Helper to check if a specific tool is enabled via feature flags API."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
+            response = await client.get(f"{_API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
             if response.status_code == 200:
                 return response.json().get("enabled", True)
     except Exception:
-        pass
+        log_background(
+            kind='error',
+            user="system",
+            path="is_tool_enabled",
+            method="GET",
+            error_message=f"Failed to fetch feature flag '{flag_name}'. Defaulting to enabled.",
+            traceback_data=""
+        )
     return False # Default to disabled if API fails
 
-def get_system_prompt() -> str:
-    """Helper to read markdown file with the system prompt."""
-    # TODO: If any other prompts for the future, change this function to be able to retrieve any prompt from the prompts directory.
+@lru_cache(maxsize=10)    
+def get_prompt(prompt_name: PromptFileNames) -> str:
+    """Helper to read markdown file with a specific prompt."""
     try:
-        with open("prompts/system_prompt.md", "r") as f:
+        with open(f"prompts/{prompt_name}.md", "r") as f:
             return f.read()
-    except Exception:
-        raise FileNotFoundError("System prompt file not found.")
+    except FileNotFoundError:
+        # fire-and-forget; the caller is synchronous now
+        log_background(
+            kind='error',
+            user="system",
+            path="get_prompt",
+            method="GET",
+            error_message=f"Prompt file '{prompt_name}.md' not found.",
+            traceback_data=""
+        )
+        return ""
+    except Exception as e:
+        log_background(
+            kind='error',
+            user="system",
+            path="get_prompt",
+            method="GET",
+            error_message=f"Error reading prompt file '{prompt_name}.md'.",
+            traceback_data=str(e)
+        )
+        return ""
 
-TOOL_NAME_MAP = {
+_TOOL_NAME_MAP = {
     "advanced_search_tool": "Searching tickets and knowledge base for relevant information",
     "search_web_tool": "Searching the web for relevant information"
 }
@@ -39,7 +69,7 @@ def format_trace(messages: list) -> list:
             if hasattr(msg, 'tool_calls') and msg.tool_calls:
                 for tc in msg.tool_calls:
                     tool_name = tc.get("name")
-                    friendly_name = TOOL_NAME_MAP.get(tool_name, f"Executing tool: {tool_name}")
+                    friendly_name = _TOOL_NAME_MAP.get(tool_name, f"Executing tool: {tool_name}")
                     trace.append({
                         "node": "agent",
                         "event": "thought",
@@ -74,3 +104,18 @@ def format_trace(messages: list) -> list:
             })
             
     return trace
+
+async def get_chars_context_threshold():
+    try:
+        if _MAX_CHARS_CONTEXT_THRESHOLD is not None:
+            return int(_MAX_CHARS_CONTEXT_THRESHOLD)
+        else:
+            raise ValueError("MAX_CHARS_CONTEXT_THRESHOLD is not set.")
+    except (ValueError, TypeError) as e:
+        await agent_logger.log_error(
+            user="system",
+            path="get_chars_context_threshold",
+            method="GET",
+            error_message="Invalid MAX_CHARS_CONTEXT_THRESHOLD value. Please ensure it's set to a valid integer.",
+            traceback_data=str(e)
+        )

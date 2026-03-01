@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from schema.chat import ChatRequest
 from core.security import get_authorized_user
 from services.agent_service import chat_with_agent
+from core.database import get_db
+
 
 router = APIRouter(
     prefix="/chat",
@@ -9,7 +11,11 @@ router = APIRouter(
 )
 
 @router.post("/")
-async def chat_endpoint(request: ChatRequest, http_request: Request):
+async def chat_endpoint(
+    request: ChatRequest, 
+    http_request: Request,
+    db=Depends(get_db)
+):
     """
     Chat endpoint that processes user messages through the agent.
     
@@ -29,7 +35,8 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
     
     response, trace = await chat_with_agent(
         message=request.message, 
-        thread_id=thread_id
+        thread_id=thread_id,
+        db=db
     )
     
     return {"response": response, "trace": trace}
