@@ -21,7 +21,7 @@ async def search_web_tool(query: str) -> str:
         response = await tavily_search.ainvoke({"query": query})
         output = []
         for res in response['results']:
-            output.append(f"Source: {res['url']}\nContent: {res['content']}")
+            output.append(f"Source: {res['url']}\nContent: {res['content'][:500]}...")  # Limiting content to first 500 chars for brevity
         return "\n\n".join(output)
     except Exception as e:
         return f"Error searching web: {str(e)}"
