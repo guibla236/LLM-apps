@@ -18,7 +18,7 @@ async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
     """
     
     start_time = time.perf_counter()
-    config = {"configurable": {"thread_id": thread_id}}
+    config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
     
     try:
         # LangGraph rehydrates state from memory based on thread_id
