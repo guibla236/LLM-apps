@@ -6,40 +6,24 @@ This module allows searching and combining results from both sources for a more 
 import sys
 import os
 import json
-from pydantic import BaseModel, Field
-from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
 from .utils import extract_json_from_llm_response
+from models.search import SearchResult, SearchType, SearchMethod
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
-
-class SearchType(str, Enum):
-    """Tipos de búsqueda disponibles."""
-    TICKETS_ONLY = "tickets_only"
-    KB_ONLY = "kb_only"
-    BOTH = "both"
-
-class SearchResult(BaseModel):
-    """Modelo para resultados de búsqueda unificados."""
-    source: str = Field(..., description="Fuente del resultado (ticket o kb)")
-    id: str = Field(..., description="ID del documento/ticket")
-    title: str = Field(..., description="Título o nombre del documento")
-    content: str = Field(..., description="Contenido relevante")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos adicionales")
-    score: float = Field(..., description="Puntuación de relevancia")
 
 # --- Global BM25 Retrievers ---
 _TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
 _KB_BM25_RETRIEVER: Optional[BM25Retriever] = None
 
 def _init_bm25_retrievers():
-    """Inicializa los retrievers BM25 cargando el índice pre-computado."""
+    """Initialize BM25 retrievers by loading the pre-computed index."""
     global _TICKET_BM25_RETRIEVER, _KB_BM25_RETRIEVER
     
     if _TICKET_BM25_RETRIEVER is not None:
@@ -74,35 +58,38 @@ def _init_bm25_retrievers():
     except Exception as e:
         sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
 
-async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
+async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
-    Busca tickets relevantes basados en una consulta.
+    Search for relevant tickets based on a query.
     
     Args:
-        query (str): Consulta de búsqueda
-        k (int): Número máximo de resultados
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        query (str): Query to search for
+        k (int): Maximum number of results
+        search_method (SearchMethod): Search strategy; one of SearchMethod.VECTOR_ONLY ("vector_only"),
+            SearchMethod.BM25_ONLY ("bm25_only"), or SearchMethod.HYBRID ("hybrid")
         
     Returns:
-        List[SearchResult]: Lista de tickets relevantes
+        List[SearchResult]: List of relevant tickets
     """
     try:
-        # 1. Búsqueda Vectorial (Semántica)
-        raw_vector_results = await vector_store.asimilarity_search(query, k=k)
-        
-        # 2. Búsqueda BM25 (Palabras Clave)
+        # 1. Vector search (Semantic)
+        raw_vector_results = []
+        if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
+            raw_vector_results = await vector_store.asimilarity_search(query, k=k)
+
+        # 2. BM25 search (Keywords)
         bm25_results = []
-        if hybrid_search:
+        if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
             _init_bm25_retrievers()
             if _TICKET_BM25_RETRIEVER:
-                # BM25Retriever de LangChain es síncrono
+                # BM25Retriever from LangChain is synchronous
                 bm25_results = _TICKET_BM25_RETRIEVER.invoke(query)
         
-        # 3. Combinar y mapear a SearchResult
+        # 3. Combine and map to SearchResult
         seen_ids = set()
         results = []
         
-        # Priorizar vectoriales primero por ahora (podríamos hacer RRF más adelante)
+        # Prioritize vectorials first for now (we could do RRF later)
         for doc in raw_vector_results:
             if 'ticketId' in doc.metadata:
                 tid = doc.metadata['ticketId']
@@ -113,7 +100,7 @@ async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> 
                         content=doc.page_content, metadata=doc.metadata, score=0.75
                     ))
         
-        # Agregar resultados de BM25 que no estén ya
+        # Add BM25 results that are not already present
         for doc in bm25_results[:k]:
             tid = doc.metadata['ticketId']
             if tid not in seen_ids:
@@ -126,36 +113,38 @@ async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> 
         return results
         
     except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR en search_tickets ==========\n")
-        sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
-        sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
+        sys.stderr.write(f"\n========== DEBUG: ERROR in search_tickets ==========\n")
+        sys.stderr.write(f"DEBUG: Error type: {type(e).__name__}\n")
+        sys.stderr.write(f"DEBUG: Error message: {str(e)}\n")
         sys.stderr.flush()
         return []
 
-async def search_kb_documents(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
+async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
-    Busca documentos Knowledge Base relevantes basados en una consulta.
+    Search for relevant Knowledge Base documents based on a query.
     
     Args:
-        query (str): Consulta de búsqueda
-        k (int): Número máximo de resultados
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        query (str): Query to search for
+        k (int): Maximum number of results
+        search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
         
     Returns:
-        List[SearchResult]: Lista de documentos KB relevantes
+        List[SearchResult]: List of relevant KB documents
     """
     try:
-        # 1. Búsqueda Vectorial
-        raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
+        # 1. Vector search
+        raw_vector_results = []
+        if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
+            raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
         
-        # 2. Búsqueda BM25
+        # 2. BM25 search
         bm25_results = []
-        if hybrid_search:
+        if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
             _init_bm25_retrievers()
             if _KB_BM25_RETRIEVER:
                 bm25_results = _KB_BM25_RETRIEVER.invoke(query)
         
-        # 3. Combinar
+        # 3. Combine
         seen_ids = set()
         results = []
         
@@ -181,37 +170,36 @@ async def search_kb_documents(query: str, k: int = 5, hybrid_search: bool = True
         return results
         
     except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR en search_kb_documents ==========\n")
-        sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
-        sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
+        sys.stderr.write(f"\n========== DEBUG: ERROR in search_kb_documents ==========\n")
+        sys.stderr.write(f"DEBUG: Error type: {type(e).__name__}\n")
+        sys.stderr.write(f"DEBUG: Error message: {str(e)}\n")
         sys.stderr.flush()
         return []
 
-async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> List[SearchResult]:
+async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
-    Búsqueda unificada que combina tickets y documentos KB.
-    
+    Unified search that combines tickets and KB documents.
     Args:
-        query (str): Consulta de búsqueda
-        search_type (SearchType): Tipo de búsqueda a realizar
-        k (int): Número total de resultados
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        query(str): Query to search for
+        search_type(SearchType): Type of search to perform
+        k(int): Number of results to retrieve
+        search_method(SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY)
         
     Returns:
-        List[SearchResult]: Resultados combinados y ordenados
+        List[SearchResult]: Combined and ordered results
     """
     try:
         results = []
         
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k, hybrid_search)
+            ticket_results = await search_tickets(query, k, search_method)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
-            kb_results = await search_kb_documents(query, k, hybrid_search)
+            kb_results = await search_kb_documents(query, k, search_method)
             results.extend(kb_results)
         
-        # Ordenar por score (placeholder) y limitar resultados
+        # Sort by score (placeholder) and limit results
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:2*k]
         
@@ -230,7 +218,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         query (str): Original query
         search_type (SearchType): Search type to perform
         k (int): Number of results to retrieve and process
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        hybrid_search (bool): If True, perform hybrid search (Vector + BM25)
         
     Returns:
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
@@ -248,9 +236,10 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 "answer": "Both TICKETS_TO_CONSIDER and KBS_TO_CONSIDER env vars are set to 0 or less. No results will be considered for the answer generation.",
                 "contacts": []
             }
+        search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
         
         # Get search results from both tickets and KB
-        search_results = await unified_search(query, search_type, k, hybrid_search)
+        search_results = await unified_search(query, search_type, k, search_method)
         
         if not search_results:
             return {
@@ -294,7 +283,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             # Clean the LLM response from markdown and extract the JSON block
             clean_content = extract_json_from_llm_response(str(response.content))
 
-            # El extractor devuelve siempre str: intentar parsear JSON
+            # The extractor always returns str: try to parse JSON
             parsed_json = None
             try:
                 parsed_json = json.loads(clean_content)
@@ -310,7 +299,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                     "suggested_actions": parsed_json.get("suggested_actions", [])
                 }
 
-            # Fallback si no se pudo parsear el JSON
+            # Fallback if JSON could not be parsed
             return {
                 "summary": str(response.content),
                 "contacts": ticket_owners,
@@ -319,7 +308,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 "suggested_actions": ["Review the KB documents and tickets mentioned to get more details"]
             }
 
-        # Si la LLM no devolvió respuesta válida (response es falsy), devolver fallback explícito
+        # Fallback if LLM did not return a valid response (response is falsy)
         return {
             "summary": "Something went wrong: LLM did not return a valid response",
             "contacts": ticket_owners,
