@@ -3,7 +3,7 @@ import httpx
 from fastapi import Request
 from core.config import get_env_var
 
-API_MAIN_URL = get_env_var("API_BASE_URL")
+_API_MAIN_URL = get_env_var("API_BASE_URL")
 
 async def get_authorized_user(request: Request):
     auth_header = request.headers.get("Authorization")
@@ -14,7 +14,7 @@ async def get_authorized_user(request: Request):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
-                f"{API_MAIN_URL}/api/me",
+                f"{_API_MAIN_URL}/api/me",
                 headers={"Authorization": f"Bearer {token}"}
             )
             if response.status_code != 200:
@@ -26,7 +26,7 @@ async def get_authorized_user(request: Request):
                 raise HTTPException(status_code=response.status_code, detail=detail)
             return response.json()
         except httpx.RequestError as e:
-            print(f"Error connecting to auth service at {API_MAIN_URL}: {str(e)}")
+            print(f"Error connecting to auth service at {_API_MAIN_URL}: {str(e)}")
             raise HTTPException(status_code=401, detail="Could not connect to auth service")
         except HTTPException:
             raise

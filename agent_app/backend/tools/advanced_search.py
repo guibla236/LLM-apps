@@ -4,11 +4,11 @@ from core.config import get_env_var
 from core.utils import is_tool_enabled
 import httpx
 
-API_BASE_URL = get_env_var("API_BASE_URL")
-APP_API_KEY = get_env_var("APP_API_KEY")
+_API_BASE_URL = get_env_var("API_BASE_URL")
+_APP_API_KEY = get_env_var("APP_API_KEY")
 
-VALID_SEARCH_TYPES = ("both", "tickets_only", "kb_only")
-VALID_SEARCH_METHODS = ("hybrid", "vector_only", "bm25_only")
+_VALID_SEARCH_TYPES = ("both", "tickets_only", "kb_only")
+_VALID_SEARCH_METHODS = ("hybrid", "vector_only", "bm25_only")
 
 @tool
 async def advanced_search_tool(
@@ -29,26 +29,26 @@ async def advanced_search_tool(
         return "The knowledge base tool is temporarily disabled by the administrator."
 
     
-    if APP_API_KEY is None:
+    if _APP_API_KEY is None:
         return "The API key is not configured."
 
-    if not API_BASE_URL:
+    if not _API_BASE_URL:
         return "The API base URL is not configured."
     
-    if search_type not in VALID_SEARCH_TYPES:
+    if search_type not in _VALID_SEARCH_TYPES:
         return (
             f"Invalid search_type '{search_type}'. "
-            f"Accepted values: {', '.join(VALID_SEARCH_TYPES)}."
+            f"Accepted values: {', '.join(_VALID_SEARCH_TYPES)}."
         )
 
-    if search_method not in VALID_SEARCH_METHODS:
+    if search_method not in _VALID_SEARCH_METHODS:
         return (
             f"Invalid search_method '{search_method}'. "
-            f"Accepted values: {', '.join(VALID_SEARCH_METHODS)}."
+            f"Accepted values: {', '.join(_VALID_SEARCH_METHODS)}."
         )
 
-    url = f"{API_BASE_URL}/api/raw_unified_search"
-    headers = {"X-API-KEY": APP_API_KEY}
+    url = f"{_API_BASE_URL}/api/raw_unified_search"
+    headers = {"X-API-KEY": _APP_API_KEY}
     
     payload = {
         "query": query,
