@@ -365,17 +365,6 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             "suggested_actions": []
         }
 
-def load_system_message():
-    """
-    Load the system message from the rag_system_prompt.md file.
-    """
-    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "rag_system_prompt.md")
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as file:
-            return file.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"System prompt file not found at {prompt_path}")
-
 # Funciones de compatibilidad con el sistema existente
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:
     """
