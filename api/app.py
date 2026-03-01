@@ -15,7 +15,8 @@ from modules.rag_unified_retriever import (
     augment_search_results_with_tickets_and_kbs,
     SearchType,
     retrieve_relevant_tickets,
-    augment_similar_tickets
+    augment_similar_tickets,
+    unified_search
 )
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
 from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, validate_api_key_only, is_admin
@@ -27,6 +28,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 from modules.security import SECRET_KEY, ALGORITHM
 from modules.utils import list_models
+from models.search import RawSearchRequest
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -559,3 +561,25 @@ async def augment_search_results_endpoint(search_req: SearchRequest, request: Re
         k=10,
         hybrid_search=search_req.hybrid_search
     )
+
+@app.post('/api/raw_unified_search', dependencies=[Depends(validate_api_key_and_quota)])
+@limiter.limit("10/minute")
+async def raw_unified_search_endpoint(req: RawSearchRequest, request: Request):
+    """
+    Returns raw search results (without LLM augmentation) 
+    for other agents to consume.
+    """
+
+    results = await unified_search(
+        query=req.query,
+        search_type=req.search_type,
+        search_method=req.search_method,
+        k=req.k
+    )
+
+    # Convert SearchResult objects to dicts for JSON serialization
+    return {
+        "results": [
+            {"id": r.id, "content": r.content, "score": r.score} for r in results
+        ]
+    }
