@@ -4,16 +4,18 @@ from datetime import datetime
 from services.agent_executor_service import agent_executor
 from core.logger import agent_logger
 from schema.ticket import TicketModel
-from core.database import get_db
 from core.config import get_llm
 from services.session_service import generate_session_title
 from langchain_core.runnables.config import RunnableConfig
 from core.utils import format_trace, get_prompt, get_chars_context_threshold
 from prompts.model import PromptFileNames
 
-db = get_db()
 
-async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
+async def chat_with_agent(
+        message: str, 
+        thread_id: str, 
+        db
+    ) -> tuple[str, list]:
     """
     Handles a conversation with the agent using LangGraph state persistence.
     Includes context window management to avoid reaching LLM token limits
