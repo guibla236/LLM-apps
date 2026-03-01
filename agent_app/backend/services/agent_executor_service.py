@@ -1,5 +1,5 @@
 from langchain.agents import create_agent
-from core.utils import get_system_prompt
+from core.utils import get_prompt
 from tools.advanced_search import advanced_search_tool
 from tools.search_web import search_web_tool
 from core.database import get_db, get_checkpointer
@@ -16,4 +16,4 @@ db = get_db()
 tools_list = [advanced_search_tool, search_web_tool]
 
 # Create the agent using LangGraph with checkpointer
-agent_executor = create_agent(llm, tools_list, system_prompt=get_system_prompt(), checkpointer=checkpointer)
+agent_executor = create_agent(llm, tools_list, system_prompt=get_prompt("system_prompt"), checkpointer=checkpointer)
