@@ -1,3 +1,5 @@
+import uvicorn
+import os
 import warnings
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -5,8 +7,6 @@ import traceback
 from core.logger import agent_logger
 from services.agent_service import solve_ticket
 from dotenv import load_dotenv
-import uvicorn
-import os
 from schema.ticket import Item, TicketModel
 from core.security import get_authorized_user
 
