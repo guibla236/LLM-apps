@@ -485,7 +485,11 @@ async def ingest_kb_md_endpoint(file: UploadFile = File(...)):
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("20/minute")
-async def get_similar_tickets_endpoint(ticket: TicketModel, model_name: str):
+async def get_similar_tickets_endpoint(
+        ticket: TicketModel, 
+        model_name: str, 
+        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+    ):
     """
     Endpoint POST that returns tickets similar to a given ticket received as a parameter.
     
@@ -510,7 +514,11 @@ async def get_similar_tickets_endpoint(ticket: TicketModel, model_name: str):
 
 @app.post("/api/augment_ticket_information", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
-async def augment_ticket_information_endpoint(ticket: TicketModel, model_name: str):
+async def augment_ticket_information_endpoint(
+        ticket: TicketModel, 
+        model_name: str, 
+        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+    ):
     """
     Endpoint POST that augments the information of a given ticket received as a parameter.
     
@@ -562,7 +570,10 @@ async def augment_search_results_endpoint(search_req: SearchRequest, request: Re
 
 @app.post("/api/raw_unified_search", dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
-async def raw_unified_search_endpoint(req: RawSearchRequest):
+async def raw_unified_search_endpoint(
+        req: RawSearchRequest, 
+        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+    ):
     """
     Returns raw search results (without LLM augmentation) 
     for other agents to consume.
