@@ -25,68 +25,7 @@ async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
     config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
     
     try:
-        # --- PREVIOUS STATE AND CONTEXT WINDOW MANAGEMENT ---
-        state = await agent_executor.aget_state(config)
-        existing_messages = state.values.get("messages", []) if state.values else []
-        
-        # Estimate character length roughly mapping to tokens
-        total_chars = sum(len(msg.content) for msg in existing_messages if hasattr(msg, "content") and type(msg.content) == str)
-        
-        # If conversation is getting too long, summarize older parts and keep only recent context
-        max_chars = await get_chars_context_threshold()
-        if max_chars is None:
-            await agent_logger.log_error(
-                user="system",
-                path="chat_with_agent",
-                method="POST",
-                error_message="MAX_CHARS_CONTEXT_THRESHOLD is not set. Skipping context management.",
-                traceback_data=""
-            )
-            return "Error: System configuration issue. Please contact support.", []
-        if total_chars > max_chars and len(existing_messages) > 4:
-            # We preserve the last 4 messages exactly as they are to not lose the immediate conversational flow
-            messages_to_summarize = existing_messages[:-4]
-            
-            # Format text for the LLM to summarize
-            text_to_summarize = ""
-            for msg in messages_to_summarize:
-                role = getattr(msg, "type", "unknown")
-                content = getattr(msg, "content", "")
-                if isinstance(content, str):
-                    text_to_summarize += f"[{role.upper()}]: {content}\n"
-            try:
-                # Call our existing LLM
-                llm = get_llm()
-                summary_response = await llm.ainvoke([
-                    SystemMessage(content=get_prompt("summary_prompt")),
-                    HumanMessage(content=f"Previous interactions to summarize: \n{text_to_summarize}")
-                ])
-                
-                # Save space: Reuse the ID of the first message to have LangGraph replace it
-                # precisely at the start (head) of our tracked message memory stream.
-                first_msg_id = getattr(messages_to_summarize[0], "id", None)
-                new_summary_msg = SystemMessage(
-                    content=f"=== Summary of past interactions ===\n{summary_response.content}",
-                    id=first_msg_id,
-                    name="context_summary"
-                )
-            except Exception as e:
-                # Log error but continue without summarization to avoid breaking the user experience
-                await agent_logger.log_error(
-                    user="system",
-                    path="chat_with_agent",
-                    method="POST",
-                    error_message="Error during context summarization. Proceeding without summarization.",
-                    traceback_data=str(e)
-                )
-            
-            # Prepare instructions to destroy the rest of the old messages we summarized
-            to_remove = [RemoveMessage(id=m.id) for m in messages_to_summarize[1:] if getattr(m, "id", None)]
-            
-            # Execute the surgical pruning to the checkpointer database
-            await agent_executor.aupdate_state(config, {"messages": [new_summary_msg] + to_remove})
-        
-        # --- END CONTEXT WINDOW MANAGEMENT ---
+        await _manage_context_window(config)  # Ensure we manage the context window before invoking the agent
 
         # LangGraph rehydrates state from memory based on thread_id
         response = await agent_executor.ainvoke(
@@ -215,3 +154,64 @@ async def solve_ticket(ticket_to_resolve: TicketModel, username: str = "anonymou
             error_message=error_msg
         )
         return f"Error running agent: {error_msg}", []
+    
+async def _manage_context_window(config: RunnableConfig):
+    state = await agent_executor.aget_state(config)
+    existing_messages = state.values.get("messages", []) if state.values else []
+    
+    # Estimate character length roughly mapping to tokens
+    total_chars = sum(len(msg.content) for msg in existing_messages if hasattr(msg, "content") and isinstance(msg.content, str))
+    
+    # If conversation is getting too long, summarize older parts and keep only recent context
+    max_chars = await get_chars_context_threshold()
+    if max_chars is None:
+        await agent_logger.log_error(
+            user="system",
+            path="chat_with_agent",
+            method="POST",
+            error_message="MAX_CHARS_CONTEXT_THRESHOLD is not set. Skipping context management.",
+            traceback_data=""
+        )
+        return "Error: System configuration issue. Please contact support.", []
+    if total_chars > max_chars and len(existing_messages) > 4:
+        # We preserve the last 4 messages exactly as they are to not lose the immediate conversational flow
+        messages_to_summarize = existing_messages[:-4]
+        
+        # Format text for the LLM to summarize
+        text_to_summarize = ""
+        for msg in messages_to_summarize:
+            role = getattr(msg, "type", "unknown")
+            content = getattr(msg, "content", "")
+            if isinstance(content, str):
+                text_to_summarize += f"[{role.upper()}]: {content}\n"
+        try:
+            # Call our existing LLM
+            llm = get_llm()
+            summary_response = await llm.ainvoke([
+                SystemMessage(content=await get_prompt(PromptFileNames.SUMMARY_PROMPT)),
+                HumanMessage(content=f"Previous interactions to summarize: \n{text_to_summarize}")
+            ])
+            
+            # Save space: Reuse the ID of the first message to have LangGraph replace it
+            # precisely at the start (head) of our tracked message memory stream.
+            first_msg_id = getattr(messages_to_summarize[0], "id", None)
+            new_summary_msg = SystemMessage(
+                content=f"=== Summary of past interactions ===\n{summary_response.content}",
+                id=first_msg_id,
+                name="context_summary"
+            )
+        except Exception as e:
+            # Log error but continue without summarization to avoid breaking the user experience
+            await agent_logger.log_error(
+                user="system",
+                path="chat_with_agent",
+                method="POST",
+                error_message="Error during context summarization. Proceeding without summarization.",
+                traceback_data=str(e)
+            )
+        
+        # Prepare instructions to destroy the rest of the old messages we summarized
+        to_remove = [RemoveMessage(id=m.id) for m in messages_to_summarize[1:] if getattr(m, "id", None)]
+        
+        # Execute the surgical pruning to the checkpointer database
+        await agent_executor.aupdate_state(config, {"messages": [new_summary_msg] + to_remove})
