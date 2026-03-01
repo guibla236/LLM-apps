@@ -21,6 +21,7 @@ class SearchRequest(BaseModel):
     description: str = Field(..., min_length=5, max_length=2000, description="Description of the support problem to search for")
     search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
     hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
+    use_hyde: bool = Field(default=False, description="If True, uses HyDE for semantic search")
 
 
 class SearchMethod(str, Enum):
@@ -33,3 +34,4 @@ class RawSearchRequest(BaseModel):
     search_type: SearchType = SearchType.BOTH
     search_method: SearchMethod = SearchMethod.HYBRID
     k: int = 5
+    use_hyde: bool = False
