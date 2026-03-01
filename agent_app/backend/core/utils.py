@@ -15,7 +15,13 @@ async def is_tool_enabled(flag_name: str) -> bool:
             if response.status_code == 200:
                 return response.json().get("enabled", True)
     except Exception:
-        pass
+        await agent_logger.log_error(
+            user="system",
+            path="is_tool_enabled",
+            method="GET",
+            error_message=f"Failed to fetch feature flag '{flag_name}'. Defaulting to enabled.",
+            traceback_data=""
+        )
     return False # Default to disabled if API fails
 
 @lru_cache(maxsize=10)    
@@ -24,6 +30,24 @@ async def get_prompt(prompt_name: PromptFileNames) -> str:
     try:
         with open(f"prompts/{prompt_name}.md", "r") as f:
             return f.read()
+    except FileNotFoundError:
+        await agent_logger.log_error(
+            user="system",
+            path="get_prompt",
+            method="GET",
+            error_message=f"Prompt file '{prompt_name}.md' not found.",
+            traceback_data=""
+        )
+        return ""
+    except Exception as e:
+        await agent_logger.log_error(
+            user="system",
+            path="get_prompt",
+            method="GET",
+            error_message=f"Error reading prompt file '{prompt_name}.md'.",
+            traceback_data=str(e)
+        )
+        return ""
 
 _TOOL_NAME_MAP = {
     "advanced_search_tool": "Searching tickets and knowledge base for relevant information",
