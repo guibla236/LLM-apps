@@ -1,7 +1,7 @@
 import httpx
 from core.config import get_env_var
 from functools import lru_cache
-from core.logger import agent_logger
+from core.logger import agent_logger, log_background
 from prompts.model import PromptFileNames
 
 _API_BASE_URL = get_env_var("API_BASE_URL")
@@ -15,7 +15,8 @@ async def is_tool_enabled(flag_name: str) -> bool:
             if response.status_code == 200:
                 return response.json().get("enabled", True)
     except Exception:
-        await agent_logger.log_error(
+        log_background(
+            kind='error',
             user="system",
             path="is_tool_enabled",
             method="GET",
@@ -25,13 +26,15 @@ async def is_tool_enabled(flag_name: str) -> bool:
     return False # Default to disabled if API fails
 
 @lru_cache(maxsize=10)    
-async def get_prompt(prompt_name: PromptFileNames) -> str:
+def get_prompt(prompt_name: PromptFileNames) -> str:
     """Helper to read markdown file with a specific prompt."""
     try:
         with open(f"prompts/{prompt_name}.md", "r") as f:
             return f.read()
     except FileNotFoundError:
-        await agent_logger.log_error(
+        # fire-and-forget; the caller is synchronous now
+        log_background(
+            kind='error',
             user="system",
             path="get_prompt",
             method="GET",
@@ -40,7 +43,8 @@ async def get_prompt(prompt_name: PromptFileNames) -> str:
         )
         return ""
     except Exception as e:
-        await agent_logger.log_error(
+        log_background(
+            kind='error',
             user="system",
             path="get_prompt",
             method="GET",

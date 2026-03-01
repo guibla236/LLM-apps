@@ -188,7 +188,7 @@ async def _manage_context_window(config: RunnableConfig):
             # Call our existing LLM
             llm = get_llm()
             summary_response = await llm.ainvoke([
-                SystemMessage(content=await get_prompt(PromptFileNames.SUMMARY_PROMPT)),
+                SystemMessage(content=get_prompt(PromptFileNames.SUMMARY_PROMPT)),
                 HumanMessage(content=f"Previous interactions to summarize: \n{text_to_summarize}")
             ])
             
