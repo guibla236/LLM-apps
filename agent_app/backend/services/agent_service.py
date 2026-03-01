@@ -53,21 +53,31 @@ async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
                 content = getattr(msg, "content", "")
                 if isinstance(content, str):
                     text_to_summarize += f"[{role.upper()}]: {content}\n"
-            
-            # Call our existing LLM
-            llm = get_llm()
-            summary_response = await llm.ainvoke([
-                SystemMessage(content=get_prompt("summary_prompt")),
-                HumanMessage(content=f"Previous interactions to summarize: \n{text_to_summarize}")
-            ])
-            
-            # Save space: Reuse the ID of the first message to have LangGraph replace it
-            # precisely at the start (head) of our tracked message memory stream.
-            new_summary_msg = SystemMessage(
-                content=f"=== Summary of past interactions ===\n{summary_response.content}",
-                id=messages_to_summarize[0].id,
-                name="context_summary"
-            )
+            try:
+                # Call our existing LLM
+                llm = get_llm()
+                summary_response = await llm.ainvoke([
+                    SystemMessage(content=get_prompt("summary_prompt")),
+                    HumanMessage(content=f"Previous interactions to summarize: \n{text_to_summarize}")
+                ])
+                
+                # Save space: Reuse the ID of the first message to have LangGraph replace it
+                # precisely at the start (head) of our tracked message memory stream.
+                first_msg_id = getattr(messages_to_summarize[0], "id", None)
+                new_summary_msg = SystemMessage(
+                    content=f"=== Summary of past interactions ===\n{summary_response.content}",
+                    id=first_msg_id,
+                    name="context_summary"
+                )
+            except Exception as e:
+                # Log error but continue without summarization to avoid breaking the user experience
+                await agent_logger.log_error(
+                    user="system",
+                    path="chat_with_agent",
+                    method="POST",
+                    error_message="Error during context summarization. Proceeding without summarization.",
+                    traceback_data=str(e)
+                )
             
             # Prepare instructions to destroy the rest of the old messages we summarized
             to_remove = [RemoveMessage(id=m.id) for m in messages_to_summarize[1:] if getattr(m, "id", None)]
