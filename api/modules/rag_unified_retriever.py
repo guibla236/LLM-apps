@@ -19,8 +19,6 @@ from models.search import SearchResult, SearchType, SearchMethod
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
-RAG_SYSTEM_PROMPT = load_prompt("rag_system_prompt.md")
-HYDE_PROMPT = load_prompt("hyde_ticket.md")
 
 # --- Global BM25 Retrievers ---
 _TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
@@ -68,7 +66,7 @@ async def generate_hypothetical_ticket(query: str) -> str:
     """
 
     # load the template from disk to keep prompts maintainable
-    hyde_prompt = PromptTemplate.from_template(HYDE_PROMPT)
+    hyde_prompt = PromptTemplate.from_template(load_prompt("hyde_ticket.md"))
     chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=512)
     response = await chain.ainvoke({"query": query})
 
@@ -267,11 +265,6 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 "answer": "Both TICKETS_TO_CONSIDER and KBS_TO_CONSIDER env vars are set to 0 or less. No results will be considered for the answer generation.",
                 "contacts": []
             }
-        if RAG_SYSTEM_PROMPT is None:
-            return {
-                "answer": "The system prompt for RAG is not loaded. Please ensure the rag_system_prompt.md file exists in the prompts folder and is properly loaded.",
-                "contacts": []
-            }
         search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
         
         # Get search results from both tickets and KB
@@ -309,7 +302,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         
         response = await groq_llm_client.ainvoke(
             input=[
-                {"role": "system", "content": RAG_SYSTEM_PROMPT},
+                {"role": "system", "content": load_prompt("rag_system_prompt.md")},
                 {"role": "user", "content": context}
             ],
             temperature=0
