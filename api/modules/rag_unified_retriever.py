@@ -72,10 +72,6 @@ async def generate_hypothetical_ticket(query: str) -> str:
     chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=512)
     response = await chain.ainvoke({"query": query})
 
-    # Log the hypothetical ticket for debugging/tracing
-    sys.stderr.write(f"\n--- HyDE GENERATED TICKET ---\n {response.content[:200]}...\n ----------- \n")
-
-    sys.stderr.flush()
     return str(response.content)
 
 async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
