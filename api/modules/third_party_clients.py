@@ -10,19 +10,16 @@ from langchain_pinecone import PineconeVectorStore
 
 load_dotenv()
 
-CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+_DEFAULT_CHAT_MODEL_NAME = os.getenv("DEFAULT_CHAT_MODEL_NAME")
 
-AVAILABLE_CHAT_MODELS = [
-    os.getenv("CHAT_MODEL_NAME"),
-]
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if not CHAT_MODEL_NAME:
-    raise ValueError("CHAT_MODEL_NAME must be defined in the environment variables.")
+if not _DEFAULT_CHAT_MODEL_NAME:
+    raise ValueError("DEFAULT_CHAT_MODEL_NAME must be defined in the environment variables.")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
 else:
-    groq_llm_client = ChatGroq(model=CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
+    default_groq_llm_client = ChatGroq(model=_DEFAULT_CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
 
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
