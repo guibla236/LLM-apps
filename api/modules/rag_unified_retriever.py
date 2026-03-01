@@ -6,33 +6,17 @@ This module allows searching and combining results from both sources for a more 
 import sys
 import os
 import json
-from pydantic import BaseModel, Field
-from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
 from .utils import extract_json_from_llm_response
+from models.search import SearchResult, SearchType, SearchMethod
 
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
-
-class SearchType(str, Enum):
-    """Tipos de búsqueda disponibles."""
-    TICKETS_ONLY = "tickets_only"
-    KB_ONLY = "kb_only"
-    BOTH = "both"
-
-class SearchResult(BaseModel):
-    """Modelo para resultados de búsqueda unificados."""
-    source: str = Field(..., description="Fuente del resultado (ticket o kb)")
-    id: str = Field(..., description="ID del documento/ticket")
-    title: str = Field(..., description="Título o nombre del documento")
-    content: str = Field(..., description="Contenido relevante")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos adicionales")
-    score: float = Field(..., description="Puntuación de relevancia")
 
 # --- Global BM25 Retrievers ---
 _TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
