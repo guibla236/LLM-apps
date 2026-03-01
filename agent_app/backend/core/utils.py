@@ -24,7 +24,7 @@ def get_system_prompt() -> str:
         raise FileNotFoundError("System prompt file not found.")
 
 TOOL_NAME_MAP = {
-    "get_similar_tickets_tool": "Checking similar tickets from history",
+    "advanced_search_tool": "Searching tickets and knowledge base for relevant information",
     "search_web_tool": "Searching the web for relevant information"
 }
 
@@ -60,7 +60,7 @@ def format_trace(messages: list) -> list:
             
             # Map tool result descriptions
             RESULT_DESCRIPTIONS = {
-                "get_similar_tickets_tool": "Similar tickets information has been processed.",
+                "advanced_search_tool": "Knowledge base search results have been processed.",
                 "search_web_tool": "Web search results have been processed."
             }
             friendly_desc = RESULT_DESCRIPTIONS.get(tool_name, "Tool result has been processed.") if tool_name else "Tool result has been processed."
