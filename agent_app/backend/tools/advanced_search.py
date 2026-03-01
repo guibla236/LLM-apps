@@ -54,6 +54,7 @@ async def advanced_search_tool(
         "query": query,
         "search_type": search_type,
         "search_method": search_method,
+        "k": 3,  # Limit to top 3 results for brevity
         "use_hyde": use_hyde
     }
 
@@ -69,7 +70,8 @@ async def advanced_search_tool(
             
         result_str = f"Found {len(results)} similar records:\n\n"
         for i, t in enumerate(results):
-            result_str += f"[{i+1}] ID: {t.get('id')}\nContent: {t.get('content')}\n\n --- \n"
+            content_snippet = str(t.get("content", ""))[:500]  # Limit content snippet to 500 chars
+            result_str += f"[{i+1}] ID: {t.get('id')}\nContent: {content_snippet}\n\n --- \n"
         return result_str
     except httpx.HTTPStatusError as e:
         return (
