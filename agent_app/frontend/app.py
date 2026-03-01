@@ -34,7 +34,7 @@ def render_mermaid(trace):
     
     # Tool labels map
     FRIENDLY_NAMES = {
-        "get_similar_tickets_tool": "Similar Tickets",
+        "advanced_search_tool": "Advanced Search Tool",
         "search_web_tool": "Web Search"
     }
     
