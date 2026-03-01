@@ -1,5 +1,6 @@
 import re
 from .third_party_clients import AVAILABLE_CHAT_MODELS
+import os
 
 def extract_json_from_llm_response(raw_content: str) -> str:
     """
@@ -24,7 +25,6 @@ def extract_json_from_llm_response(raw_content: str) -> str:
     # Case 1 or fallback: Return as is
     return raw_content.strip()
 
-
 def list_models():
     """Helper to list available models from the API."""
     # Ensure we always return a consistent JSON shape for the frontend.
@@ -32,3 +32,14 @@ def list_models():
     clean = [m for m in AVAILABLE_CHAT_MODELS if m]
     models = [{"id": str(m), "name": str(m)} for m in clean]
     return {"models": models}
+
+def load_prompt(prompt_filename: str) -> str:
+    """
+    Load the the required prompt file from the prompts folder.
+    """
+    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", f"{prompt_filename}")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as file:
+            return file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"System prompt file not found at {prompt_path}")
