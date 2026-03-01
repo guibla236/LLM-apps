@@ -35,7 +35,7 @@ def list_models():
 
 def load_prompt(prompt_filename: str) -> str:
     """
-    Load the the required prompt file from the prompts folder.
+    Load the required prompt file from the prompts folder.
     """
     prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", f"{prompt_filename}")
     try:
