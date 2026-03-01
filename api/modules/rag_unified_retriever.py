@@ -58,24 +58,27 @@ def _init_bm25_retrievers():
     except Exception as e:
         sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
 
-async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
+async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
     Search for relevant tickets based on a query.
     
     Args:
         query (str): Query to search for
         k (int): Maximum number of results
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        search_method (str): Either "vector", "bm25", or "hybrid"
         
     Returns:
         List[SearchResult]: List of relevant tickets
     """
     try:
         # 1. Vector search (Semantic)
+        raw_vector_results = []
+        if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
+            raw_vector_results = await vector_store.asimilarity_search(query, k=k)
 
         # 2. BM25 search (Keywords)
         bm25_results = []
-        if hybrid_search:
+        if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
             _init_bm25_retrievers()
             if _TICKET_BM25_RETRIEVER:
                 # BM25Retriever from LangChain is synchronous
@@ -115,24 +118,27 @@ async def search_tickets(query: str, k: int = 5, hybrid_search: bool = True) -> 
         sys.stderr.flush()
         return []
 
-async def search_kb_documents(query: str, k: int = 5, hybrid_search: bool = True) -> List[SearchResult]:
+async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
     Search for relevant Knowledge Base documents based on a query.
     
     Args:
         query (str): Query to search for
         k (int): Maximum number of results
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
         
     Returns:
         List[SearchResult]: List of relevant KB documents
     """
     try:
         # 1. Vector search
+        raw_vector_results = []
+        if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
+            raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
         
         # 2. BM25 search
         bm25_results = []
-        if hybrid_search:
+        if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
             _init_bm25_retrievers()
             if _KB_BM25_RETRIEVER:
                 bm25_results = _KB_BM25_RETRIEVER.invoke(query)
@@ -163,20 +169,20 @@ async def search_kb_documents(query: str, k: int = 5, hybrid_search: bool = True
         return results
         
     except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR en search_kb_documents ==========\n")
-        sys.stderr.write(f"DEBUG: Tipo de error: {type(e).__name__}\n")
-        sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
+        sys.stderr.write(f"\n========== DEBUG: ERROR in search_kb_documents ==========\n")
+        sys.stderr.write(f"DEBUG: Error type: {type(e).__name__}\n")
+        sys.stderr.write(f"DEBUG: Error message: {str(e)}\n")
         sys.stderr.flush()
         return []
 
-async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> List[SearchResult]:
+async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
     """
     Unified search that combines tickets and KB documents.
     Args:
         query(str): Query to search for
         search_type(SearchType): Type of search to perform
         k(int): Number of results to retrieve
-        hybrid_search (bool): Si es True, realiza búsqueda híbrida (Vector + BM25)
+        search_method(SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY)
         
     Returns:
         List[SearchResult]: Combined and ordered results
@@ -185,11 +191,11 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         results = []
         
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k, hybrid_search)
+            ticket_results = await search_tickets(query, k, search_method)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
-            kb_results = await search_kb_documents(query, k, hybrid_search)
+            kb_results = await search_kb_documents(query, k, search_method)
             results.extend(kb_results)
         
         # Sort by score (placeholder) and limit results
@@ -229,9 +235,10 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
                 "answer": "Both TICKETS_TO_CONSIDER and KBS_TO_CONSIDER env vars are set to 0 or less. No results will be considered for the answer generation.",
                 "contacts": []
             }
+        search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
         
         # Get search results from both tickets and KB
-        search_results = await unified_search(query, search_type, k, hybrid_search)
+        search_results = await unified_search(query, search_type, k, search_method)
         
         if not search_results:
             return {
