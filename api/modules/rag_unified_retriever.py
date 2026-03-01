@@ -12,12 +12,15 @@ from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
-from .utils import extract_json_from_llm_response
+from .utils import extract_json_from_llm_response, load_prompt
 from models.search import SearchResult, SearchType, SearchMethod
 
+# Environment variables and constants loading
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
+RAG_SYSTEM_PROMPT = load_prompt("rag_system_prompt.md")
+HYDE_PROMPT = load_prompt("hyde_ticket.md")
 
 # --- Global BM25 Retrievers ---
 _TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
@@ -64,16 +67,9 @@ async def generate_hypothetical_ticket(query: str) -> str:
     Generates a hypothetical IT support ticket based on a vague user query.
     """
 
-    hyde_prompt = PromptTemplate.from_template("""
-            You are an expert IT support technician.
-            A user has reported the following problem in their own words: "{query}"
-
-            Write a hypothetical, fully resolved technical support ticket describing this issue.
-            Include the technical root cause and step-by-step resolution steps. Use professional IT networking and sysadmin jargon.
-            Do not include greetings or extraneous text, just the hypothetical ticket content.
-        """
-    )
-    chain = hyde_prompt | groq_llm_client
+    # load the template from disk to keep prompts maintainable
+    hyde_prompt = PromptTemplate.from_template(HYDE_PROMPT)
+    chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=500)
     response = await chain.ainvoke({"query": query})
 
     # Log the hypothetical ticket for debugging/tracing
@@ -259,8 +255,6 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
     """
     try:
-        system_message = load_system_message()
-
         if CHAT_MODEL_NAME is None:
             return {
                 "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
@@ -269,6 +263,11 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         if TICKETS_TO_CONSIDER <= 0 and KBS_TO_CONSIDER <= 0:
             return {
                 "answer": "Both TICKETS_TO_CONSIDER and KBS_TO_CONSIDER env vars are set to 0 or less. No results will be considered for the answer generation.",
+                "contacts": []
+            }
+        if RAG_SYSTEM_PROMPT is None:
+            return {
+                "answer": "The system prompt for RAG is not loaded. Please ensure the rag_system_prompt.md file exists in the prompts folder and is properly loaded.",
                 "contacts": []
             }
         search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
@@ -308,7 +307,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         
         response = await groq_llm_client.ainvoke(
             input=[
-                {"role": "system", "content": system_message},
+                {"role": "system", "content": RAG_SYSTEM_PROMPT},
                 {"role": "user", "content": context}
             ],
             temperature=0
