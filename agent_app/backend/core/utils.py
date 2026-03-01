@@ -3,6 +3,7 @@ from core.config import get_env_var
 from functools import lru_cache
 
 API_BASE_URL = get_env_var("API_BASE_URL")
+MAX_CHARS_CONTEXT_THRESHOLD = int(get_env_var("MAX_CHARS_CONTEXT_THRESHOLD") or 6000) # Default to 6000 if not set
 
 async def is_tool_enabled(flag_name: str) -> bool:
     """Helper to check if a specific tool is enabled via feature flags API."""
