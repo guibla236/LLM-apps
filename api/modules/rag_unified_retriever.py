@@ -65,7 +65,8 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
     Args:
         query (str): Query to search for
         k (int): Maximum number of results
-        search_method (str): Either "vector", "bm25", or "hybrid"
+        search_method (SearchMethod): Search strategy; one of SearchMethod.VECTOR_ONLY ("vector_only"),
+            SearchMethod.BM25_ONLY ("bm25_only"), or SearchMethod.HYBRID ("hybrid")
         
     Returns:
         List[SearchResult]: List of relevant tickets
