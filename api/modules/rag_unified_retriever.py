@@ -74,7 +74,7 @@ async def generate_hypothetical_ticket(query: str) -> str:
 
     return str(response.content)
 
-async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
+async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False, precomputed_hyde_query: Optional[str] = None) -> List[SearchResult]:
     """
     Search for relevant tickets based on a query.
     
@@ -84,6 +84,7 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
         search_method (SearchMethod): Search strategy; one of SearchMethod.VECTOR_ONLY ("vector_only"),
             SearchMethod.BM25_ONLY ("bm25_only"), or SearchMethod.HYBRID ("hybrid")
         use_hyde (bool): Whether to use hypothetical document generation
+        precomputed_hyde_query (Optional[str]): Pre-generated HyDE query to avoid redundant LLM calls
         
     Returns:
         List[SearchResult]: List of relevant tickets
@@ -92,8 +93,9 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
         # 1. Vector search (Semantic)
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            vector_query = query
-            if use_hyde:
+            vector_query = precomputed_hyde_query if precomputed_hyde_query else query
+            # If not precomputed but use_hyde is True, compute it here (fallback)
+            if not precomputed_hyde_query and use_hyde:
                 vector_query = await generate_hypothetical_ticket(query)
 
             raw_vector_results = await vector_store.asimilarity_search(vector_query, k=k)
@@ -148,7 +150,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         query (str): Query to search for
         k (int): Maximum number of results
         search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
-        use_hyde (bool): Whether to use hypothetical document generation
+        use_hyde (bool): Whether to use hypothetical document generation (IGNORE FOR KB)
         
     Returns:
         List[SearchResult]: List of relevant KB documents
@@ -157,10 +159,8 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         # 1. Vector search
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            vector_query = query
-            if use_hyde:
-                vector_query = await generate_hypothetical_ticket(query)
-            raw_vector_results = await kb_vector_store.asimilarity_search(vector_query, k=k)
+            # HyDE is disabled for KB search as technical tickets don't match manual styles
+            raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
         
         # 2. BM25 search
         bm25_results = []
@@ -209,7 +209,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         search_type(SearchType): Type of search to perform
         k(int): Number of results to retrieve
         search_method(SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY)
-        use_hyde(bool): Whether to use hypothetical document generation for KB search
+        use_hyde(bool): Whether to use hypothetical document generation for both ticket and KB vector searches
         
     Returns:
         List[SearchResult]: Combined and ordered results
@@ -217,11 +217,17 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
     try:
         results = []
         
+        # Centralized HyDE generation to avoid redundant LLM calls
+        hyde_query = None
+        if use_hyde:
+            hyde_query = await generate_hypothetical_ticket(query)
+        
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k, search_method, use_hyde=use_hyde)
+            ticket_results = await search_tickets(query, k, search_method, use_hyde=use_hyde, precomputed_hyde_query=hyde_query)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
+            # search_kb_documents ignores use_hyde internal logic
             kb_results = await search_kb_documents(query, k, search_method, use_hyde=use_hyde)
             results.extend(kb_results)
         
