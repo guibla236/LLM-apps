@@ -195,11 +195,24 @@ async def _manage_context_window(config: RunnableConfig):
             # Save space: Reuse the ID of the first message to have LangGraph replace it
             # precisely at the start (head) of our tracked message memory stream.
             first_msg_id = getattr(messages_to_summarize[0], "id", None)
-            new_summary_msg = SystemMessage(
-                content=f"=== Summary of past interactions ===\n{summary_response.content}",
-                id=first_msg_id,
-                name="context_summary"
-            )
+            if first_msg_id is None:
+                await agent_logger.log_error(
+                    user="system",
+                    path="chat_with_agent",
+                    method="POST",
+                    error_message="First message in context has no ID. The summary is added as last message without replacing the old context.",
+                    traceback_data=""
+                )
+                new_summary_msg = SystemMessage(
+                    content=f"=== Summary of past interactions ===\n{summary_response.content}",
+                    name="context_summary"
+                )
+            else:    
+                new_summary_msg = SystemMessage(
+                    content=f"=== Summary of past interactions ===\n{summary_response.content}",
+                    id=first_msg_id,
+                    name="context_summary"
+                )
         except Exception as e:
             # Log error but continue without summarization to avoid breaking the user experience
             await agent_logger.log_error(
