@@ -69,7 +69,7 @@ async def generate_hypothetical_ticket(query: str) -> str:
 
     # load the template from disk to keep prompts maintainable
     hyde_prompt = PromptTemplate.from_template(HYDE_PROMPT)
-    chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=500)
+    chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=512)
     response = await chain.ainvoke({"query": query})
 
     # Log the hypothetical ticket for debugging/tracing
