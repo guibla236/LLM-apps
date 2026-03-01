@@ -24,7 +24,7 @@ def get_system_prompt() -> str:
         raise FileNotFoundError("System prompt file not found.")
 
 TOOL_NAME_MAP = {
-    "advanced_search_tool": "Checking similar tickets from history",
+    "advanced_search_tool": "Searching tickets and knowledge base for relevant information",
     "search_web_tool": "Searching the web for relevant information"
 }
 
