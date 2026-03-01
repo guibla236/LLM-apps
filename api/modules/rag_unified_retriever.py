@@ -9,11 +9,13 @@ import json
 from typing import List, Optional
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
+from langchain_core.prompts import PromptTemplate
 from .third_party_clients import groq_llm_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
-from .utils import extract_json_from_llm_response
+from .utils import extract_json_from_llm_response, load_prompt
 from models.search import SearchResult, SearchType, SearchMethod
 
+# Environment variables and constants loading
 CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
@@ -58,7 +60,19 @@ def _init_bm25_retrievers():
     except Exception as e:
         sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
 
-async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def generate_hypothetical_ticket(query: str) -> str:
+    """
+    Generates a hypothetical IT support ticket based on a vague user query.
+    """
+
+    # load the template from disk to keep prompts maintainable
+    hyde_prompt = PromptTemplate.from_template(load_prompt("hyde_ticket.md"))
+    chain = hyde_prompt | groq_llm_client.bind(temperature=0, max_tokens=512)
+    response = await chain.ainvoke({"query": query})
+
+    return str(response.content)
+
+async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False, precomputed_hyde_query: Optional[str] = None) -> List[SearchResult]:
     """
     Search for relevant tickets based on a query.
     
@@ -67,6 +81,8 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
         k (int): Maximum number of results
         search_method (SearchMethod): Search strategy; one of SearchMethod.VECTOR_ONLY ("vector_only"),
             SearchMethod.BM25_ONLY ("bm25_only"), or SearchMethod.HYBRID ("hybrid")
+        use_hyde (bool): Whether to use hypothetical document generation
+        precomputed_hyde_query (Optional[str]): Pre-generated HyDE query to avoid redundant LLM calls
         
     Returns:
         List[SearchResult]: List of relevant tickets
@@ -75,7 +91,12 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
         # 1. Vector search (Semantic)
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            raw_vector_results = await vector_store.asimilarity_search(query, k=k)
+            vector_query = precomputed_hyde_query if precomputed_hyde_query else query
+            # If not precomputed but use_hyde is True, compute it here (fallback)
+            if not precomputed_hyde_query and use_hyde:
+                vector_query = await generate_hypothetical_ticket(query)
+
+            raw_vector_results = await vector_store.asimilarity_search(vector_query, k=k)
 
         # 2. BM25 search (Keywords)
         bm25_results = []
@@ -119,7 +140,7 @@ async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = S
         sys.stderr.flush()
         return []
 
-async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
     Search for relevant Knowledge Base documents based on a query.
     
@@ -127,6 +148,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         query (str): Query to search for
         k (int): Maximum number of results
         search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
+        use_hyde (bool): Whether to use hypothetical document generation (IGNORE FOR KB)
         
     Returns:
         List[SearchResult]: List of relevant KB documents
@@ -135,6 +157,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         # 1. Vector search
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
+            # HyDE is disabled for KB search as technical tickets don't match manual styles
             raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
         
         # 2. BM25 search
@@ -176,7 +199,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         sys.stderr.flush()
         return []
 
-async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
     Unified search that combines tickets and KB documents.
     Args:
@@ -184,6 +207,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         search_type(SearchType): Type of search to perform
         k(int): Number of results to retrieve
         search_method(SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY)
+        use_hyde(bool): Whether to use hypothetical document generation for both ticket and KB vector searches
         
     Returns:
         List[SearchResult]: Combined and ordered results
@@ -191,12 +215,18 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
     try:
         results = []
         
+        # Centralized HyDE generation to avoid redundant LLM calls
+        hyde_query = None
+        if use_hyde:
+            hyde_query = await generate_hypothetical_ticket(query)
+        
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k, search_method)
+            ticket_results = await search_tickets(query, k, search_method, use_hyde=use_hyde, precomputed_hyde_query=hyde_query)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
-            kb_results = await search_kb_documents(query, k, search_method)
+            # search_kb_documents ignores use_hyde internal logic
+            kb_results = await search_kb_documents(query, k, search_method, use_hyde=use_hyde)
             results.extend(kb_results)
         
         # Sort by score (placeholder) and limit results
@@ -210,7 +240,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         sys.stderr.flush()
         return []
 
-async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> dict:
+async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True, use_hyde: bool = False) -> dict:
     """
     Using an LLM, process the search results to generate a summary and suggested actions.
     
@@ -219,13 +249,12 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         search_type (SearchType): Search type to perform
         k (int): Number of results to retrieve and process
         hybrid_search (bool): If True, perform hybrid search (Vector + BM25)
+        use_hyde (bool): Whether to use hypothetical ticket generation
         
     Returns:
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
     """
     try:
-        system_message = load_system_message()
-
         if CHAT_MODEL_NAME is None:
             return {
                 "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
@@ -239,7 +268,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
         
         # Get search results from both tickets and KB
-        search_results = await unified_search(query, search_type, k, search_method)
+        search_results = await unified_search(query, search_type, k, search_method, use_hyde=use_hyde)
         
         if not search_results:
             return {
@@ -273,7 +302,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         
         response = await groq_llm_client.ainvoke(
             input=[
-                {"role": "system", "content": system_message},
+                {"role": "system", "content": load_prompt("rag_system_prompt.md")},
                 {"role": "user", "content": context}
             ],
             temperature=0
@@ -330,17 +359,6 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
             "ticket_references": [],
             "suggested_actions": []
         }
-
-def load_system_message():
-    """
-    Load the system message from the rag_system_prompt.md file.
-    """
-    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "rag_system_prompt.md")
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as file:
-            return file.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"System prompt file not found at {prompt_path}")
 
 # Funciones de compatibilidad con el sistema existente
 async def retrieve_relevant_tickets(inputTicket: TicketModel) -> List[TicketModel]:

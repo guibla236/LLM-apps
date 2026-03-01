@@ -15,6 +15,7 @@ async def advanced_search_tool(
     query: str,
     search_type: Literal["both", "tickets_only", "kb_only"] = "both",
     search_method: Literal["hybrid", "vector_only", "bm25_only"] = "hybrid",
+    use_hyde: bool = False
 ) -> str:
     """
     Searches the IT knowledge base and tickets database
@@ -22,6 +23,7 @@ async def advanced_search_tool(
     - query: Exact search terms or problem description
     - search_type: 'both' (default), 'tickets_only' (finds specific issues IDs), 'kb_only' (finds how-to guides).
     - search_method: 'hybrid' (vector+keywords), 'vector_only' (conceptual), 'bm25_only' (exact keywords like IDs).
+    - use_hyde: Set to True ONLY if the query is vague, non-technical, or conversational. Set to False if the query contains specific IDs, exact error codes, or technical jargon.
     """
     if not await is_tool_enabled("enable_rag_tool"):
         return "The knowledge base tool is temporarily disabled by the administrator."
@@ -52,7 +54,8 @@ async def advanced_search_tool(
         "query": query,
         "search_type": search_type,
         "search_method": search_method,
-        "k": 5,
+        "k": 3,  # Limit to top 3 results for brevity
+        "use_hyde": use_hyde
     }
 
     try:
@@ -67,7 +70,8 @@ async def advanced_search_tool(
             
         result_str = f"Found {len(results)} similar records:\n\n"
         for i, t in enumerate(results):
-            result_str += f"[{i+1}] ID: {t.get('id')}\nContent: {t.get('content')}\n\n --- \n"
+            content_snippet = str(t.get("content", ""))[:500]  # Limit content snippet to 500 chars
+            result_str += f"[{i+1}] ID: {t.get('id')}\nContent: {content_snippet}\n\n --- \n"
         return result_str
     except httpx.HTTPStatusError as e:
         return (

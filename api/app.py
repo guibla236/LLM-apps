@@ -553,7 +553,8 @@ async def augment_search_results_endpoint(search_req: SearchRequest, request: Re
         search_req.description,
         search_type=search_req.search_type,
         k=10,
-        hybrid_search=search_req.hybrid_search
+        hybrid_search=search_req.hybrid_search,
+        use_hyde=search_req.use_hyde
     )
 
 @app.post("/api/raw_unified_search", dependencies=[Depends(validate_api_key_and_quota)])
@@ -568,7 +569,8 @@ async def raw_unified_search_endpoint(req: RawSearchRequest, request: Request):
         query=req.query,
         search_type=req.search_type,
         search_method=req.search_method,
-        k=req.k
+        k=req.k,
+        use_hyde=req.use_hyde
     )
 
     # Convert SearchResult objects to dicts for JSON serialization
