@@ -251,7 +251,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         search_type (SearchType): Search type to perform
         k (int): Number of results to retrieve and process
         hybrid_search (bool): If True, perform hybrid search (Vector + BM25)
-        use_hyde (bool): Whether to use hypothetical document generation for KB search
+        use_hyde (bool): Whether to use hypothetical ticket generation
         
     Returns:
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
