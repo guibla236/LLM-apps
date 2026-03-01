@@ -3,14 +3,14 @@ from core.config import get_env_var
 from functools import lru_cache
 from core.logger import agent_logger
 
-API_BASE_URL = get_env_var("API_BASE_URL")
-MAX_CHARS_CONTEXT_THRESHOLD = get_env_var("MAX_CHARS_CONTEXT_THRESHOLD")
+_API_BASE_URL = get_env_var("API_BASE_URL")
+_MAX_CHARS_CONTEXT_THRESHOLD = get_env_var("MAX_CHARS_CONTEXT_THRESHOLD")
 
 async def is_tool_enabled(flag_name: str) -> bool:
     """Helper to check if a specific tool is enabled via feature flags API."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
+            response = await client.get(f"{_API_BASE_URL}/api/flags/{flag_name}", timeout=5.0)
             if response.status_code == 200:
                 return response.json().get("enabled", True)
     except Exception:
@@ -43,7 +43,7 @@ def format_trace(messages: list) -> list:
             if hasattr(msg, 'tool_calls') and msg.tool_calls:
                 for tc in msg.tool_calls:
                     tool_name = tc.get("name")
-                    friendly_name = TOOL_NAME_MAP.get(tool_name, f"Executing tool: {tool_name}")
+                    friendly_name = _TOOL_NAME_MAP.get(tool_name, f"Executing tool: {tool_name}")
                     trace.append({
                         "node": "agent",
                         "event": "thought",
@@ -81,8 +81,8 @@ def format_trace(messages: list) -> list:
 
 async def get_chars_context_threshold():
     try:
-        if MAX_CHARS_CONTEXT_THRESHOLD is not None:
-            return int(MAX_CHARS_CONTEXT_THRESHOLD)
+        if _MAX_CHARS_CONTEXT_THRESHOLD is not None:
+            return int(_MAX_CHARS_CONTEXT_THRESHOLD)
         else:
             raise ValueError("MAX_CHARS_CONTEXT_THRESHOLD is not set.")
     except (ValueError, TypeError) as e:
