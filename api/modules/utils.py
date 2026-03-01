@@ -45,12 +45,28 @@ def extract_json_from_llm_response(raw_content: str) -> str:
     return raw_content.strip()
 
 def list_models():
-    """Helper to list available models from the API."""
-    # Ensure we always return a consistent JSON shape for the frontend.
-    # Normalize environment-provided model names into objects with `id` and `name`.
-    clean = [m for m in AVAILABLE_CHAT_MODELS if m]
-    models = [{"id": str(m), "name": str(m)} for m in clean]
-    return {"models": models}
+    """Return the minimal model list for the frontend.
+
+    This helper no longer reads the JSON file on every call; it uses the
+    preloaded ``_AVAILABLE_MODELS`` list. Only entries with ``enabled``
+    truthy are included, and the output shape matches the previous
+    implementation (`{"models": [{"id": ..., "name": ...}, ...]}`).
+    """
+    result = []
+    for entry in _AVAILABLE_MODELS:
+        if entry.get("enabled"):
+            result.append({"id": entry.get("id"), "name": entry.get("name")})
+    return {"models": result}
+
+
+def get_model_details(model_id: str) -> dict[str, str | bool] | None:
+    """Lookup the full record for a given model id.
+
+    Returns the original dictionary from ``available_models.json`` if the
+    identifier is found, otherwise ``None``.
+    """
+    return _MODEL_INDEX.get(model_id)
+
 
 @lru_cache(maxsize=10)
 def load_prompt(prompt_filename: str) -> str:
