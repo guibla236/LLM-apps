@@ -81,6 +81,8 @@ async def generate_hypothetical_ticket(query: str) -> str:
 
     sys.stderr.flush()
     return str(response.content)
+
+async def search_tickets(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
     Search for relevant tickets based on a query.
     
@@ -89,6 +91,7 @@ async def generate_hypothetical_ticket(query: str) -> str:
         k (int): Maximum number of results
         search_method (SearchMethod): Search strategy; one of SearchMethod.VECTOR_ONLY ("vector_only"),
             SearchMethod.BM25_ONLY ("bm25_only"), or SearchMethod.HYBRID ("hybrid")
+        use_hyde (bool): Whether to use hypothetical document generation
         
     Returns:
         List[SearchResult]: List of relevant tickets
@@ -97,7 +100,11 @@ async def generate_hypothetical_ticket(query: str) -> str:
         # 1. Vector search (Semantic)
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            raw_vector_results = await vector_store.asimilarity_search(query, k=k)
+            vector_query = query
+            if use_hyde:
+                vector_query = await generate_hypothetical_ticket(query)
+
+            raw_vector_results = await vector_store.asimilarity_search(vector_query, k=k)
 
         # 2. BM25 search (Keywords)
         bm25_results = []
@@ -141,7 +148,7 @@ async def generate_hypothetical_ticket(query: str) -> str:
         sys.stderr.flush()
         return []
 
-async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
     Search for relevant Knowledge Base documents based on a query.
     
@@ -149,6 +156,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         query (str): Query to search for
         k (int): Maximum number of results
         search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
+        use_hyde (bool): Whether to use hypothetical document generation
         
     Returns:
         List[SearchResult]: List of relevant KB documents
@@ -157,7 +165,10 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         # 1. Vector search
         raw_vector_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
+            vector_query = query
+            if use_hyde:
+                vector_query = await generate_hypothetical_ticket(query)
+            raw_vector_results = await kb_vector_store.asimilarity_search(vector_query, k=k)
         
         # 2. BM25 search
         bm25_results = []
@@ -198,7 +209,7 @@ async def search_kb_documents(query: str, k: int = 5, search_method: SearchMetho
         sys.stderr.flush()
         return []
 
-async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID) -> List[SearchResult]:
+async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
     Unified search that combines tickets and KB documents.
     Args:
@@ -206,6 +217,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         search_type(SearchType): Type of search to perform
         k(int): Number of results to retrieve
         search_method(SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY)
+        use_hyde(bool): Whether to use hypothetical document generation for KB search
         
     Returns:
         List[SearchResult]: Combined and ordered results
@@ -214,11 +226,11 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         results = []
         
         if search_type in [SearchType.TICKETS_ONLY, SearchType.BOTH]:
-            ticket_results = await search_tickets(query, k, search_method)
+            ticket_results = await search_tickets(query, k, search_method, use_hyde=use_hyde)
             results.extend(ticket_results)
         
         if search_type in [SearchType.KB_ONLY, SearchType.BOTH]:
-            kb_results = await search_kb_documents(query, k, search_method)
+            kb_results = await search_kb_documents(query, k, search_method, use_hyde=use_hyde)
             results.extend(kb_results)
         
         # Sort by score (placeholder) and limit results
@@ -232,7 +244,7 @@ async def unified_search(query: str, search_type: SearchType = SearchType.BOTH, 
         sys.stderr.flush()
         return []
 
-async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True) -> dict:
+async def augment_search_results_with_tickets_and_kbs(query: str, search_type: SearchType = SearchType.BOTH, k: int = 10, hybrid_search: bool = True, use_hyde: bool = False) -> dict:
     """
     Using an LLM, process the search results to generate a summary and suggested actions.
     
@@ -241,6 +253,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         search_type (SearchType): Search type to perform
         k (int): Number of results to retrieve and process
         hybrid_search (bool): If True, perform hybrid search (Vector + BM25)
+        use_hyde (bool): Whether to use hypothetical document generation for KB search
         
     Returns:
         dict: Dict containing summary, contacts, references, and suggested actions based on the search results.
@@ -261,7 +274,7 @@ async def augment_search_results_with_tickets_and_kbs(query: str, search_type: S
         search_method = SearchMethod.HYBRID if hybrid_search else SearchMethod.VECTOR_ONLY
         
         # Get search results from both tickets and KB
-        search_results = await unified_search(query, search_type, k, search_method)
+        search_results = await unified_search(query, search_type, k, search_method, use_hyde=use_hyde)
         
         if not search_results:
             return {
