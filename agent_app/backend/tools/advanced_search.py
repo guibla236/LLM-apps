@@ -1,3 +1,4 @@
+from typing import Literal
 from langchain_core.tools import tool
 from core.config import get_env_var
 from core.utils import is_tool_enabled
@@ -6,8 +7,15 @@ import httpx
 API_BASE_URL = get_env_var("API_BASE_URL")
 APP_API_KEY = get_env_var("APP_API_KEY")
 
+VALID_SEARCH_TYPES = ("both", "tickets_only", "kb_only")
+VALID_SEARCH_METHODS = ("hybrid", "vector_only", "bm25_only")
+
 @tool
-async def advanced_search_tool(query: str, search_type: str = "both", search_method: str = "hybrid") -> str:
+async def advanced_search_tool(
+    query: str,
+    search_type: Literal["both", "tickets_only", "kb_only"] = "both",
+    search_method: Literal["hybrid", "vector_only", "bm25_only"] = "hybrid",
+) -> str:
     """
     Searches the IT knowledge base and tickets database
     Parameters:
@@ -25,6 +33,18 @@ async def advanced_search_tool(query: str, search_type: str = "both", search_met
     if not API_BASE_URL:
         return "The API base URL is not configured."
     
+    if search_type not in VALID_SEARCH_TYPES:
+        return (
+            f"Invalid search_type '{search_type}'. "
+            f"Accepted values: {', '.join(VALID_SEARCH_TYPES)}."
+        )
+
+    if search_method not in VALID_SEARCH_METHODS:
+        return (
+            f"Invalid search_method '{search_method}'. "
+            f"Accepted values: {', '.join(VALID_SEARCH_METHODS)}."
+        )
+
     url = f"{API_BASE_URL}/api/raw_unified_search"
     headers = {"X-API-KEY": APP_API_KEY}
     
