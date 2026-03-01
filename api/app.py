@@ -556,7 +556,7 @@ async def augment_search_results_endpoint(search_req: SearchRequest, request: Re
         hybrid_search=search_req.hybrid_search
     )
 
-@app.post('/api/raw_unified_search', dependencies=[Depends(validate_api_key_and_quota)])
+@app.post("/api/raw_unified_search", dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
 async def raw_unified_search_endpoint(req: RawSearchRequest, request: Request):
     """
