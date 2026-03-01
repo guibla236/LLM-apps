@@ -1,9 +1,10 @@
 import httpx
 from core.config import get_env_var
 from functools import lru_cache
+from core.logger import agent_logger
 
 API_BASE_URL = get_env_var("API_BASE_URL")
-MAX_CHARS_CONTEXT_THRESHOLD = int(get_env_var("MAX_CHARS_CONTEXT_THRESHOLD") or 6000) # Default to 6000 if not set
+MAX_CHARS_CONTEXT_THRESHOLD = get_env_var("MAX_CHARS_CONTEXT_THRESHOLD")
 
 async def is_tool_enabled(flag_name: str) -> bool:
     """Helper to check if a specific tool is enabled via feature flags API."""
@@ -77,3 +78,18 @@ def format_trace(messages: list) -> list:
             })
             
     return trace
+
+async def get_chars_context_threshold():
+    try:
+        if MAX_CHARS_CONTEXT_THRESHOLD is not None:
+            return int(MAX_CHARS_CONTEXT_THRESHOLD)
+        else:
+            raise ValueError("MAX_CHARS_CONTEXT_THRESHOLD is not set.")
+    except (ValueError, TypeError) as e:
+        await agent_logger.log_error(
+            user="system",
+            path="get_chars_context_threshold",
+            method="GET",
+            error_message="Invalid MAX_CHARS_CONTEXT_THRESHOLD value. Please ensure it's set to a valid integer.",
+            traceback_data=str(e)
+        )

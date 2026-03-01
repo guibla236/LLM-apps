@@ -8,7 +8,7 @@ from core.database import get_db
 from core.config import get_llm
 from services.session_service import generate_session_title
 from langchain_core.runnables.config import RunnableConfig
-from core.utils import format_trace, get_prompt, MAX_CHARS_CONTEXT_THRESHOLD
+from core.utils import format_trace, get_prompt, get_chars_context_threshold
 
 db = get_db()
 
@@ -32,7 +32,17 @@ async def chat_with_agent(message: str, thread_id: str) -> tuple[str, list]:
         total_chars = sum(len(msg.content) for msg in existing_messages if hasattr(msg, "content") and type(msg.content) == str)
         
         # If conversation is getting too long, summarize older parts and keep only recent context
-        if total_chars > MAX_CHARS_CONTEXT_THRESHOLD and len(existing_messages) > 4:
+        max_chars = await get_chars_context_threshold()
+        if max_chars is None:
+            await agent_logger.log_error(
+                user="system",
+                path="chat_with_agent",
+                method="POST",
+                error_message="MAX_CHARS_CONTEXT_THRESHOLD is not set. Skipping context management.",
+                traceback_data=""
+            )
+            return "Error: System configuration issue. Please contact support.", []
+        if total_chars > max_chars and len(existing_messages) > 4:
             # We preserve the last 4 messages exactly as they are to not lose the immediate conversational flow
             messages_to_summarize = existing_messages[:-4]
             
