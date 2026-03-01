@@ -80,7 +80,13 @@ async def chat_with_agent(
                         {"$set": update_data}
                     )
         except Exception as session_e:
-            print(f"Error updating session metadata: {session_e}")
+            await agent_logger.log_error(
+                user="system",
+                path="chat_with_agent",
+                method="POST",
+                error_message="Error updating session metadata. This does not affect the agent response but may impact session tracking features.",
+                traceback_data=str(session_e)
+            )
         
         # Log execution
         await agent_logger.log_execution(
