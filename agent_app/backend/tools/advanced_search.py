@@ -21,6 +21,9 @@ async def advanced_search_tool(query: str, search_type: str = "both", search_met
     
     if APP_API_KEY is None:
         return "The API key is not configured."
+
+    if not API_BASE_URL:
+        return "The API base URL is not configured."
     
     url = f"{API_BASE_URL}/api/raw_unified_search"
     headers = {"X-API-KEY": APP_API_KEY}
