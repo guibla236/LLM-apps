@@ -17,6 +17,11 @@ class SearchResult(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     score: float = Field(..., description="Relevance score")
 
+class SearchRequest(BaseModel):
+    description: str = Field(..., min_length=5, max_length=2000, description="Description of the support problem to search for")
+    search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
+    hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
+
 
 class SearchMethod(str, Enum):
     VECTOR_ONLY = "vector_only"
