@@ -9,6 +9,7 @@ from core.config import get_llm
 from services.session_service import generate_session_title
 from langchain_core.runnables.config import RunnableConfig
 from core.utils import format_trace, get_prompt, get_chars_context_threshold
+from prompts.model import PromptFileNames
 
 db = get_db()
 
