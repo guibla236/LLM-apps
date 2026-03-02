@@ -2,6 +2,7 @@ import re
 import os
 import json
 from functools import lru_cache
+from fastapi import HTTPException
 
 # load available models once at import time
 _models_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "available_models.json")
@@ -66,6 +67,31 @@ def get_model_details(model_id: str) -> dict[str, str | bool] | None:
     identifier is found, otherwise ``None``.
     """
     return _MODEL_INDEX.get(model_id)
+
+def validate_model_name(model_name: str) -> str:
+    """Ensure the provided model name exists and is enabled.
+
+    This helper is intended for use in FastAPI endpoints.  It raises an
+    ``HTTPException`` with status 400 if the model is unknown or disabled, so
+    that clients immediately receive a clear error message about the new
+    contract requirement.  The function returns the original name on success,
+    which allows it to be convenient as a dependency or inline check.
+
+    Args:
+        model_name: Identifier of the LLM model requested by the caller.
+    Returns:
+        The same ``model_name`` string if validation passes.
+    """
+    details = get_model_details(model_name)
+    if details is None or not details.get("enabled", False):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Model '{model_name}' is not available or is currently disabled. "
+                "Use /api/models to see valid options."
+            ),
+        )
+    return model_name
 
 
 @lru_cache(maxsize=10)
