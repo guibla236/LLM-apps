@@ -2,6 +2,7 @@ import re
 import os
 import json
 from functools import lru_cache
+from typing import Any
 from fastapi import HTTPException
 
 # load available models once at import time
@@ -13,13 +14,10 @@ except Exception:
     # If the file cannot be read or parsed, fall back to empty list
     _AVAILABLE_MODELS = []
 
-# create index for quick lookup by id
-# m.get("id") may return None; only include entries with a string id to
-# satisfy the annotated type.
-_MODEL_INDEX: dict[str, dict] = {
-    id_val: m
-    for m in _AVAILABLE_MODELS if isinstance(m, dict) and m.get("id")
-    for id_val in (m.get("id"),) if isinstance(id_val, str)
+_MODEL_INDEX: dict[str, Any] = {
+    m["id"]: m 
+    for m in _AVAILABLE_MODELS 
+    if isinstance(m, dict) and isinstance(m.get("id"), str)
 }
 
 def extract_json_from_llm_response(raw_content: str) -> str:
