@@ -18,7 +18,8 @@ async def advanced_search_tool(
     use_hyde: bool = False
 ) -> str:
     """
-    Searches the IT knowledge base and tickets database
+    Searches the IT knowledge base and tickets database.
+
     Parameters:
     - query: Exact search terms or problem description
     - search_type: 'both' (default), 'tickets_only' (finds specific issues IDs), 'kb_only' (finds how-to guides).
@@ -34,6 +35,10 @@ async def advanced_search_tool(
 
     if not _API_BASE_URL:
         return "The API base URL is not configured."
+    
+    model_name = get_env_var("CHAT_MODEL_NAME")
+    if model_name is None:
+        return "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done."
     
     if search_type not in _VALID_SEARCH_TYPES:
         return (
@@ -55,7 +60,8 @@ async def advanced_search_tool(
         "search_type": search_type,
         "search_method": search_method,
         "k": 3,  # Limit to top 3 results for brevity
-        "use_hyde": use_hyde
+        "use_hyde": use_hyde,
+        "model_name": model_name
     }
 
     try:

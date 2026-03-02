@@ -253,6 +253,10 @@ async function callGetSimilarTicketsEndpoint() {
         }
 
         let ticketData = JSON.parse(jsonText);
+        const modelSel = document.getElementById('modelSelectSearch');
+        if (modelSel) {
+            ticketData.model_name = modelSel.value;
+        }
         const response = await fetch('/api/get_similar_tickets', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -283,6 +287,10 @@ async function callAugmentEndpoint() {
         }
 
         let ticketData = JSON.parse(jsonText);
+        const modelSel = document.getElementById('modelSelectAugment');
+        if (modelSel) {
+            ticketData.model_name = modelSel.value;
+        }
         const response = await fetch('/api/augment_ticket_information', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -311,37 +319,42 @@ async function loadModels() {
             return;
         }
         const data = await response.json();
-        const select = document.getElementById('llmModelSelect');
-        if (!select) return;
-        select.innerHTML = '';
+        // function to fill a given <select> element with options
+        const populate = selectId => {
+            const selectEl = document.getElementById(selectId);
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
 
-        // Normalize response shapes:
-        // - API may return an array of strings: ["llama-3.1-8b-instant"]
-        // - Or an object: { models: [{ id, name }, ...] }
-        let modelsArray = [];
-        if (Array.isArray(data)) {
-            modelsArray = data;
-        } else if (data && Array.isArray(data.models)) {
-            modelsArray = data.models;
-        } else {
-            console.warn('Unexpected /api/models response shape', data);
-            return;
-        }
-
-        modelsArray.forEach(m => {
-            const option = document.createElement('option');
-            if (typeof m === 'string') {
-                option.value = m;
-                option.textContent = m;
-            } else if (m && m.id) {
-                option.value = m.id;
-                option.textContent = m.name || m.id;
+            let modelsArray = [];
+            if (Array.isArray(data)) {
+                modelsArray = data;
+            } else if (data && Array.isArray(data.models)) {
+                modelsArray = data.models;
             } else {
-                option.value = String(m);
-                option.textContent = String(m);
+                console.warn('Unexpected /api/models response shape', data);
+                return;
             }
-            select.appendChild(option);
-        });
+
+            modelsArray.forEach(m => {
+                const option = document.createElement('option');
+                if (typeof m === 'string') {
+                    option.value = m;
+                    option.textContent = m;
+                } else if (m && m.id) {
+                    option.value = m.id;
+                    option.textContent = m.name || m.id;
+                } else {
+                    option.value = String(m);
+                    option.textContent = String(m);
+                }
+                selectEl.appendChild(option);
+            });
+        };
+
+        // populate all selectors we care about
+        populate('llmModelSelect');
+        populate('modelSelectSearch');
+        populate('modelSelectAugment');
     } catch (e) {
         console.warn('Could not load models:', e);
     }
@@ -358,15 +371,19 @@ async function callSupportAssistantEndpoint() {
 
         const searchType = document.getElementById('searchTypeSelect').value;
         const hybridSearch = document.getElementById('hybridSearchCheck').checked;
+        const llmModel = document.getElementById('llmModelSelect')?.value;
+
+        const payload = {
+            description: description,
+            search_type: searchType,
+            hybrid_search: hybridSearch
+        };
+        if (llmModel) payload.model_name = llmModel;
 
         const response = await fetch('/api/augment_search_results', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-                description: description,
-                search_type: searchType,
-                hybrid_search: hybridSearch
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
@@ -458,6 +475,24 @@ function showResponse(data, isError = false) {
 function showLoading(isLoading) {
     const loading = document.getElementById('loading');
     if (loading) isLoading ? loading.classList.add('active') : loading.classList.remove('active');
+
+    // when a request starts we want to disable all form controls so the user
+    // can't interact with the form until the response arrives. once loading
+    // completes, controls are re‑enabled.
+    toggleFormControls(isLoading);
+}
+
+// helper to enable/disable all inputs, selects, textareas and buttons in the
+// UI. controls marked with the data-ignore-disable attribute will be skipped
+// (logout button, admin panel, etc.).
+function toggleFormControls(disabled) {
+    document.querySelectorAll('input, textarea, select, button').forEach(el => {
+        // skip elements that should remain active even while a request is pending
+        if (el.dataset.ignoreDisable === 'true') {
+            return;
+        }
+        el.disabled = disabled;
+    });
 }
 
 function clearResponse() {

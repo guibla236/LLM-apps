@@ -15,7 +15,7 @@ This directory contains the production-ready Ticket Resolution Agent, capable of
 - **Session Management**: Multi-session support with auto-generated titles, deletion capabilities, and cookie-based login persistence.
 - **Tools**:
     - `get_similar_tickets_tool`: Queries the Part 1 API to find historical context (respects Feature Flags).
-    - `search_web_tool`: Searches the web via Tavily (respects Feature Flags).
+  *New:* this tool now sends a `model_name` field with every request; the default value is derived from the `CHAT_MODEL_NAME` environment variable, but callers (and tests) may override it if necessary. Valid identifiers can be fetched from the `/api/models` endpoint on the RAG API.
 
 ## Requirements
 
@@ -28,8 +28,10 @@ This directory contains the production-ready Ticket Resolution Agent, capable of
    ```env
    GROQ_API_KEY=your_groq_api_key
    TAVILY_API_KEY=your_tavily_api_key
-   CHAT_MODEL_NAME=llama-3.1-8b-instant
+   CHAT_MODEL_NAME=llama-3.1-8b-instant  # default LLM used by the agent; also sent as 'model_name' to API requests if not overridden
    API_BASE_URL=http://localhost:8000
+   PORT=8001  # backend listens on this port (default 8001)
+   APP_API_KEY=your_api_key  # key that frontend/tools use to call Part 1 API
    MONGODB_URI=your_mongodb_uri
    MONGODB_DB_NAME=ticket_system
    ```
@@ -52,6 +54,24 @@ Or start manually:
 1. **Backend**: `cd backend && python3 main.py` (Port 8001)
 2. **Frontend**: `cd frontend && streamlit run app.py` (Port 8501)
 
+## Backend API Endpoints
+The agent backend exposes the following authenticated routes (JWT required):
+
+* `POST /chat/` – send a message to the agent, returns `response` and tool `trace`.
+* `GET /sessions/` – list your active session IDs.
+* `GET /history/{session_id}` – retrieve messages for a session.
+* `DELETE /history/{session_id}` – delete a session.
+* `POST /solve_ticket` – **deprecated** legacy endpoint; returns solution for a ticket. Please use `/chat/solve_ticket` or call `/chat/` directly.
+
+These same endpoints are used by the Streamlit frontend in `frontend/app.py`.
+
+## Testing Backend
+Automated tests for the backend live in `backend/tests`. Execute them with:
+```bash
+cd agent_app/backend
+python -m pytest tests
+```
+The set includes agent capability tests and search tool validations (model_name, HyDE routing, etc.).
 ## Security & Usage
 
 1. **Login**: Access `http://localhost:8501` and log in with your API credentials.

@@ -42,4 +42,7 @@ Although each service resides on a different platform, deployment is performed d
 1. **Start the API (Part 1)**: The API must be running on port 8000 to provide historical context.
 2. **Start the Agent (Part 2)**: Launch the agent backend and its graphical interface to begin resolving tickets.
 
-For specific technical details, dependencies, and environment variable configuration, please consult the respective `README.md` of each module.
+For specific technical details, dependencies, environment variable configuration or test execution, please consult the respective `README.md` of each module:
+- `api/README.md` contains instructions for running the service and the API test suite.
+- `agent_app/README.md` describes how to launch the agent and run its backend tests.
+
