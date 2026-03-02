@@ -6,23 +6,31 @@ from dotenv import load_dotenv
 from typing import Any
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
+from .utils import get_model_details
 
 
 load_dotenv()
 
-CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+_DEFAULT_CHAT_MODEL_NAME = os.getenv("DEFAULT_CHAT_MODEL_NAME")
 
-AVAILABLE_CHAT_MODELS = [
-    os.getenv("CHAT_MODEL_NAME"),
-]
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if not CHAT_MODEL_NAME:
-    raise ValueError("CHAT_MODEL_NAME must be defined in the environment variables.")
+if not _DEFAULT_CHAT_MODEL_NAME:
+    raise ValueError("DEFAULT_CHAT_MODEL_NAME must be defined in the environment variables.")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
 else:
-    groq_llm_client = ChatGroq(model=CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
+    default_groq_llm_client = ChatGroq(model=_DEFAULT_CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
+
+def get_groq_client(model_name: str) -> ChatGroq:
+    if not GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
+    model_details = get_model_details(model_name)
+    if model_details is None:
+        raise ValueError(f"The specified model '{model_name}' is not available or it is disabled. Please check the model configuration.")
+    if not model_details.get("enabled", False):
+        raise ValueError(f"The specified model '{model_name}' is currently disabled. Please try with another model.")
+    return ChatGroq(model=model_name, api_key=SecretStr(GROQ_API_KEY))
 
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
@@ -59,3 +67,9 @@ vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=ge
 
 # Instance for Knowledge Base (KB)
 kb_vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_kb_pinecone_index())
+
+def get_default_chat_model_name():
+    """Returns the default chat model name from environment variables."""
+    if not _DEFAULT_CHAT_MODEL_NAME:
+        raise ValueError("DEFAULT_CHAT_MODEL_NAME must be defined in the environment variables.")
+    return _DEFAULT_CHAT_MODEL_NAME

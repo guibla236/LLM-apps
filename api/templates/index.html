@@ -14,12 +14,13 @@
         <button
           id="admin-btn"
           class="btn-admin"
+          data-ignore-disable="true"
           style="display: none"
           onclick="window.location.href = '/admin'"
         >
           Admin Panel
         </button>
-        <button class="btn-logout" onclick="logout()">Logout</button>
+        <button class="btn-logout" data-ignore-disable="true" onclick="logout()">Logout</button>
       </div>
       <h1>🚀 RAG UI</h1>
 
@@ -223,8 +224,15 @@
             ></textarea>
           </div>
 
+          <div class="form-group">
+            <label for="modelSelectSearch">Model:</label>
+            <select id="modelSelectSearch" class="form-input">
+              <option value="" disabled selected>Loading models...</option>
+            </select>
+          </div>
+
           <button class="btn-primary" onclick="callGetSimilarTicketsEndpoint()">
-            Buscar Similares
+            Look for Similar Tickets
           </button>
         </div>
       </div>

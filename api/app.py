@@ -5,7 +5,7 @@ import uuid
 import traceback
 import zipfile
 import tempfile
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +28,7 @@ from jose import jwt
 from modules.security import SECRET_KEY, ALGORITHM
 from modules.utils import list_models
 from models.search import RawSearchRequest, SearchRequest
+from modules.decorators import handle_value_error
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -484,13 +485,19 @@ async def ingest_kb_md_endpoint(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error processing the KB document: {str(e)}")
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
+@handle_value_error
 @limiter.limit("20/minute")
-async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
+async def get_similar_tickets_endpoint(
+        ticket: TicketModel, 
+        request: Request, # Note: Do not remove! @limiter.limit decorator requires this.
+        model_name: str = Query(..., description="Name of the model to use for similarity search (must be one of the available models)")
+    ):
     """
     Endpoint POST that returns tickets similar to a given ticket received as a parameter.
     
     **Required parameters:**
     - `ticket` (TicketModel): TicketModel object to ingest.
+    - `model_name` (str): Name of the model to use for similarity search (must be one of the available models).
     
     **Example JSON body:**
     ```json
@@ -505,16 +512,22 @@ async def get_similar_tickets_endpoint(ticket: TicketModel, request: Request):
     }
     ```
     """
-    return await retrieve_relevant_tickets(ticket)
+    return await retrieve_relevant_tickets(ticket, model_name=model_name)
 
 @app.post("/api/augment_ticket_information", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
+@handle_value_error
 @limiter.limit("10/minute")
-async def augment_ticket_information_endpoint(ticket: TicketModel, request: Request):
+async def augment_ticket_information_endpoint(
+        ticket: TicketModel, 
+        request: Request, # Note: Do not remove! @limiter.limit decorator requires this.
+        model_name: str = Query(..., description="Name of the model to use for augmentation (must be one of the available models)"), 
+    ):
     """
     Endpoint POST that augments the information of a given ticket received as a parameter.
     
     **Required parameters:**
     - `ticket` (TicketModel): TicketModel object to ingest.
+    - `model_name` (str): Name of the model to use for augmentation (must be one of the available models).
     
     **Example JSON body:**
     ```json
@@ -529,7 +542,7 @@ async def augment_ticket_information_endpoint(ticket: TicketModel, request: Requ
     }
     ```
     """
-    return await augment_similar_tickets(ticket)
+    return await augment_similar_tickets(ticket, model_name=model_name)
 
 
 @app.get("/api/models", dependencies=[Depends(validate_api_key_only)])
@@ -554,15 +567,28 @@ async def augment_search_results_endpoint(search_req: SearchRequest, request: Re
         search_type=search_req.search_type,
         k=10,
         hybrid_search=search_req.hybrid_search,
-        use_hyde=search_req.use_hyde
+        use_hyde=search_req.use_hyde,
+        model_name=search_req.model_name
     )
 
 @app.post("/api/raw_unified_search", dependencies=[Depends(validate_api_key_and_quota)])
 @limiter.limit("10/minute")
-async def raw_unified_search_endpoint(req: RawSearchRequest, request: Request):
+async def raw_unified_search_endpoint(
+        req: RawSearchRequest, 
+        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+    ):
     """
     Returns raw search results (without LLM augmentation) 
     for other agents to consume.
+    Args:
+    - `query` (str): The search query/problem description.
+    - `search_type` (SearchType): Type of search to perform (tickets_only, kb_only, both).
+    - `search_method` (SearchMethod): Method to use for search (HYBRID, VECTOR_ONLY, BM25_ONLY).
+    - `k` (int): Number of results to retrieve.
+    - `use_hyde` (bool): Whether to use HyDE for semantic search (only relevant if search_method includes VECTOR_ONLY or HYBRID).
+    - `model_name` (str): Model to use for HyDE augmentation if enabled (only relevant if use_hyde is True).
+    Returns:
+    - A dictionary with a "results" key containing a list of search results, where each result is a dictionary with "id", "content", and "score" keys.
     """
 
     results = await unified_search(
@@ -570,7 +596,8 @@ async def raw_unified_search_endpoint(req: RawSearchRequest, request: Request):
         search_type=req.search_type,
         search_method=req.search_method,
         k=req.k,
-        use_hyde=req.use_hyde
+        use_hyde=req.use_hyde,
+        model_name=req.model_name
     )
 
     # Convert SearchResult objects to dicts for JSON serialization
