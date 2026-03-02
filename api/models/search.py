@@ -1,7 +1,8 @@
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any
 from modules.third_party_clients import get_default_chat_model_name
+from modules.utils import validate_model_name
 
 class SearchType(str, Enum):
     """Available search types."""
@@ -23,7 +24,11 @@ class SearchRequest(BaseModel):
     search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
     hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
     use_hyde: bool = Field(default=False, description="If True, uses HyDE for semantic search")
-    model_name: str = Field(default=get_default_chat_model_name(), description="Model to use for HyDE augmentation if enabled")
+    model_name: str = Field(default_factory=get_default_chat_model_name, description="Model to use for HyDE augmentation if enabled")
+
+    @field_validator("model_name")
+    def _validate_model(cls, v: str) -> str:
+        return validate_model_name(v)
 
 
 class SearchMethod(str, Enum):
@@ -37,4 +42,4 @@ class RawSearchRequest(BaseModel):
     search_method: SearchMethod = SearchMethod.HYBRID
     k: int = 5
     use_hyde: bool = False
-    model_name: str = Field(default=get_default_chat_model_name(), description="Model to use for HyDE augmentation if enabled")
+    model_name: str = Field(default_factory=get_default_chat_model_name, description="Model to use for HyDE augmentation if enabled")
