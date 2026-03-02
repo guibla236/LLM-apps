@@ -58,7 +58,7 @@ This API is configured for deployment on **Vercel** as a series of Serverless Fu
 - `POST /api/register`: New user registration (Limit: 3/day/IP).
 - `POST /api/login`: JWT token acquisition.
 - `POST /api/summarize_news`: AI news summary.
-- `POST /api/get_similar_tickets`: Vector search in previous tickets.
+- `POST /api/get_similar_tickets`: Vector search in previous tickets. Requires `model_name` in payload. **Now requires** a `model_name` field in the JSON body to select which LLM model will power the HyDE augmentation. Check `/api/models` for valid identifiers.
 
 ### Administrative (Protected)
 - `GET /admin`: Dashboard UI.
