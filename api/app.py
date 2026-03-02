@@ -5,7 +5,7 @@ import uuid
 import traceback
 import zipfile
 import tempfile
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -487,8 +487,8 @@ async def ingest_kb_md_endpoint(file: UploadFile = File(...)):
 @limiter.limit("20/minute")
 async def get_similar_tickets_endpoint(
         ticket: TicketModel, 
-        model_name: str, 
-        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+        request: Request, # Note: Do not remove! @limiter.limit decorator requires this.
+        model_name: str = Query(..., description="Name of the model to use for similarity search (must be one of the available models)")
     ):
     """
     Endpoint POST that returns tickets similar to a given ticket received as a parameter.
@@ -516,8 +516,8 @@ async def get_similar_tickets_endpoint(
 @limiter.limit("10/minute")
 async def augment_ticket_information_endpoint(
         ticket: TicketModel, 
-        model_name: str, 
-        request: Request # Note: Do not remove! @limiter.limit decorator requires this.
+        request: Request, # Note: Do not remove! @limiter.limit decorator requires this.
+        model_name: str = Query(..., description="Name of the model to use for augmentation (must be one of the available models)"), 
     ):
     """
     Endpoint POST that augments the information of a given ticket received as a parameter.
