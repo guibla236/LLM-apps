@@ -253,6 +253,10 @@ async function callGetSimilarTicketsEndpoint() {
         }
 
         let ticketData = JSON.parse(jsonText);
+        const modelSel = document.getElementById('modelSelectSearch');
+        if (modelSel) {
+            ticketData.model_name = modelSel.value;
+        }
         const response = await fetch('/api/get_similar_tickets', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -283,6 +287,10 @@ async function callAugmentEndpoint() {
         }
 
         let ticketData = JSON.parse(jsonText);
+        const modelSel = document.getElementById('modelSelectAugment');
+        if (modelSel) {
+            ticketData.model_name = modelSel.value;
+        }
         const response = await fetch('/api/augment_ticket_information', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -317,30 +325,30 @@ async function loadModels() {
             if (!selectEl) return;
             selectEl.innerHTML = '';
 
-        let modelsArray = [];
-        if (Array.isArray(data)) {
-            modelsArray = data;
-        } else if (data && Array.isArray(data.models)) {
-            modelsArray = data.models;
-        } else {
-            console.warn('Unexpected /api/models response shape', data);
-            return;
-        }
-
-        modelsArray.forEach(m => {
-            const option = document.createElement('option');
-            if (typeof m === 'string') {
-                option.value = m;
-                option.textContent = m;
-            } else if (m && m.id) {
-                option.value = m.id;
-                option.textContent = m.name || m.id;
+            let modelsArray = [];
+            if (Array.isArray(data)) {
+                modelsArray = data;
+            } else if (data && Array.isArray(data.models)) {
+                modelsArray = data.models;
             } else {
-                option.value = String(m);
-                option.textContent = String(m);
+                console.warn('Unexpected /api/models response shape', data);
+                return;
             }
+
+            modelsArray.forEach(m => {
+                const option = document.createElement('option');
+                if (typeof m === 'string') {
+                    option.value = m;
+                    option.textContent = m;
+                } else if (m && m.id) {
+                    option.value = m.id;
+                    option.textContent = m.name || m.id;
+                } else {
+                    option.value = String(m);
+                    option.textContent = String(m);
+                }
                 selectEl.appendChild(option);
-        });
+            });
         };
 
         // populate all selectors we care about
@@ -363,15 +371,19 @@ async function callSupportAssistantEndpoint() {
 
         const searchType = document.getElementById('searchTypeSelect').value;
         const hybridSearch = document.getElementById('hybridSearchCheck').checked;
+        const llmModel = document.getElementById('llmModelSelect')?.value;
+
+        const payload = {
+            description: description,
+            search_type: searchType,
+            hybrid_search: hybridSearch
+        };
+        if (llmModel) payload.model_name = llmModel;
 
         const response = await fetch('/api/augment_search_results', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-                description: description,
-                search_type: searchType,
-                hybrid_search: hybridSearch
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
