@@ -475,6 +475,24 @@ function showResponse(data, isError = false) {
 function showLoading(isLoading) {
     const loading = document.getElementById('loading');
     if (loading) isLoading ? loading.classList.add('active') : loading.classList.remove('active');
+
+    // when a request starts we want to disable all form controls so the user
+    // can't interact with the form until the response arrives. once loading
+    // completes, controls are re‑enabled.
+    toggleFormControls(isLoading);
+}
+
+// helper to enable/disable all inputs, selects, textareas and buttons in the
+// UI. controls marked with the data-ignore-disable attribute will be skipped
+// (logout button, admin panel, etc.).
+function toggleFormControls(disabled) {
+    document.querySelectorAll('input, textarea, select, button').forEach(el => {
+        // skip elements that should remain active even while a request is pending
+        if (el.dataset.ignoreDisable === 'true') {
+            return;
+        }
+        el.disabled = disabled;
+    });
 }
 
 function clearResponse() {
