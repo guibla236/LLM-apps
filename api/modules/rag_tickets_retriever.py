@@ -20,10 +20,9 @@ from .third_party_clients import default_groq_llm_client, vector_store_instance 
 from .utils import extract_json_from_llm_response
 from models.tickets import TicketModel
 import sys
-import os
 import json
 
-CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+# this module is deprecated and does not rely on environment variables for chat model
 
 TICKET_SUMMARIZER_SYSTEM_MESSAGE = """
     You are an assistant that helps to obtain solutions about IT support tickets.
@@ -92,12 +91,6 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
     if (len(relevant_tickets) == 0):
         return {
             "answer": "No similar tickets found in the system for the given input ticket.",
-            "contacts": []
-        }
-
-    if CHAT_MODEL_NAME is None:
-        return {
-            "answer": "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done.",
             "contacts": []
         }
 
