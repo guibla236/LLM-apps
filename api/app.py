@@ -28,6 +28,7 @@ from jose import jwt
 from modules.security import SECRET_KEY, ALGORITHM
 from modules.utils import list_models
 from models.search import RawSearchRequest, SearchRequest
+from modules.decorators import handle_value_error
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -484,6 +485,7 @@ async def ingest_kb_md_endpoint(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error processing the KB document: {str(e)}")
 
 @app.post("/api/get_similar_tickets", response_model=list[TicketModel], dependencies=[Depends(validate_api_key_and_quota)])
+@handle_value_error
 @limiter.limit("20/minute")
 async def get_similar_tickets_endpoint(
         ticket: TicketModel, 
@@ -513,6 +515,7 @@ async def get_similar_tickets_endpoint(
     return await retrieve_relevant_tickets(ticket, model_name=model_name)
 
 @app.post("/api/augment_ticket_information", response_model=dict, dependencies=[Depends(validate_api_key_and_quota)])
+@handle_value_error
 @limiter.limit("10/minute")
 async def augment_ticket_information_endpoint(
         ticket: TicketModel, 
