@@ -311,13 +311,12 @@ async function loadModels() {
             return;
         }
         const data = await response.json();
-        const select = document.getElementById('llmModelSelect');
-        if (!select) return;
-        select.innerHTML = '';
+        // function to fill a given <select> element with options
+        const populate = selectId => {
+            const selectEl = document.getElementById(selectId);
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
 
-        // Normalize response shapes:
-        // - API may return an array of strings: ["llama-3.1-8b-instant"]
-        // - Or an object: { models: [{ id, name }, ...] }
         let modelsArray = [];
         if (Array.isArray(data)) {
             modelsArray = data;
@@ -340,8 +339,14 @@ async function loadModels() {
                 option.value = String(m);
                 option.textContent = String(m);
             }
-            select.appendChild(option);
+                selectEl.appendChild(option);
         });
+        };
+
+        // populate all selectors we care about
+        populate('llmModelSelect');
+        populate('modelSelectSearch');
+        populate('modelSelectAugment');
     } catch (e) {
         console.warn('Could not load models:', e);
     }
