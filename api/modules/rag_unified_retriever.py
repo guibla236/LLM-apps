@@ -269,6 +269,44 @@ async def unified_search(
         sys.stderr.flush()
         return []
 
+async def context_retriever_for_unified_search(query: str, 
+        model_name: str,
+        search_type: SearchType = SearchType.BOTH, 
+        k: int = 10, 
+        search_method: SearchMethod = SearchMethod.HYBRID, 
+        use_hyde: bool = False) -> list[str]:
+    """
+    Context generator that creates a prompt for the LLM based on the results of a unified search across tickets and KB documents.
+    This function retrieves relevant tickets and KB documents, then formats them into a structured context that can be fed into 
+    an LLM for further processing (e.g., summarization, action suggestion). The context includes the original query, 
+    a list of similar tickets with their descriptions and metadata, and a list of relevant KB documents. 
+    The number of tickets and KB documents included in the context can be controlled via environment variables to manage token limits.
+    """
+    
+    unified_search_results = await unified_search(
+        query, 
+        model_name=model_name,
+        search_type=search_type,
+        k=k,
+        search_method=search_method,
+        use_hyde=use_hyde
+    )
+    unified_search_results = unified_search_results[:k]  # Limit to top k results
+    
+    ticket_results = [r for r in unified_search_results if r.source == "ticket"]
+    kb_results = [r for r in unified_search_results if r.source == "kb"]
+    tickets_to_return = []
+    for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
+        tickets_to_return.append(f"Ticket ID: {ticket.id}\nDescription: {ticket.content[:200]}..." + 
+                                 f"\nActions taken: {ticket.metadata.get('actions', 'No actions recorded')}\n" +
+                                 f"Owner: {ticket.metadata.get('owner', 'Unknown')}\n")
+    kbs_to_return = []
+    for kb in kb_results[:KBS_TO_CONSIDER]:
+        kbs_to_return.append(f"Knowledge Base Document ID {kb.id}: {kb.content[:200]}...\n")
+    
+    
+    return tickets_to_return + kbs_to_return
+
 async def augment_search_results_with_tickets_and_kbs(
         query: str, 
         model_name: str, 
