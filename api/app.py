@@ -15,7 +15,7 @@ from modules.rag_unified_retriever import (
     augment_search_results_with_tickets_and_kbs,
     retrieve_relevant_tickets,
     augment_similar_tickets,
-    unified_search
+    context_retriever_for_unified_search
 )
 from modules.database import connect_to_mongo, close_mongo_connection, get_database, is_feature_enabled
 from modules.security import get_current_user, limiter, get_password_hash, verify_password, create_access_token, generate_api_key, validate_api_key_and_quota, validate_api_key_only, is_admin
@@ -590,8 +590,7 @@ async def raw_unified_search_endpoint(
     Returns:
     - A dictionary with a "results" key containing a list of search results, where each result is a dictionary with "id", "content", and "score" keys.
     """
-
-    results = await unified_search(
+    return await context_retriever_for_unified_search(
         query=req.query,
         search_type=req.search_type,
         search_method=req.search_method,
@@ -599,10 +598,4 @@ async def raw_unified_search_endpoint(
         use_hyde=req.use_hyde,
         model_name=req.model_name
     )
-
-    # Convert SearchResult objects to dicts for JSON serialization
-    return {
-        "results": [
-            {"id": r.id, "content": r.content, "score": r.score} for r in results
-        ]
-    }
+    
