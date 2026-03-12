@@ -5,7 +5,7 @@ import uuid
 import traceback
 import zipfile
 import tempfile
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +29,8 @@ from modules.security import SECRET_KEY, ALGORITHM
 from modules.utils import list_models
 from models.search import RawSearchRequest, SearchRequest
 from modules.decorators import handle_value_error
+from modules.async_rag_evaluator import start_system_evaluation, get_evaluation_task_status, download_evaluation_results
+
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -599,3 +601,50 @@ async def raw_unified_search_endpoint(
         model_name=req.model_name
     )
     
+@app.post("/api/admin/evaluate/start", dependencies=[Depends(is_admin)])
+async def start_evaluation(
+    background_tasks: BackgroundTasks,
+    system_type: str = Query(...),
+    results_file: UploadFile = File(...),
+    golden_file: UploadFile = File(...)
+):
+    """
+    Endpoint POST for starting a model evaluation.
+    
+    **Required parameters:**
+    - `system_type` (str): Type of system to evaluate (FT or RAG).
+    - `results_file` (UploadFile): File containing the results of the model evaluation.
+    - `golden_file` (UploadFile): File containing the golden data for the model evaluation.
+    """
+    try:
+        return await start_system_evaluation(
+            system_type,
+            results_file,
+            golden_file,
+            background_tasks
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error starting model validation: {str(e)}")
+
+@app.get("/api/admin/evaluate/status/{task_id}", dependencies=[Depends(is_admin)])
+async def get_evaluation_status(task_id: str):
+    """
+    Endpoint GET for checking the status of a model evaluation.
+    
+    **Required parameters:**
+    - `task_id` (str): ID of the evaluation task.
+    
+    Returns:
+    - A dictionary with the status of the evaluation task.
+    """
+    try:
+        return await get_evaluation_task_status(task_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error getting model validation status: {str(e)}")
+
+@app.get('/api/admin/evaluate/download/{task_id}', dependencies=[Depends(is_admin)])
+async def download_evaluation_results(task_id: str):
+    try:
+        return await download_evaluation_results(task_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading model validation results: {str(e)}")
