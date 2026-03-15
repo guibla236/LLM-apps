@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import uuid
+import time
 import pandas as pd
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import GEval
@@ -13,7 +14,35 @@ from fastapi import UploadFile, BackgroundTasks
 # Dict in RAM to track tasks
 EVALUATION_TASKS = {}
 
+# Output directory for evaluation CSVs (relative to repo root by default)
+OUTPUT_DIR = os.getenv("EVAL_OUTPUT_DIR", "evaluation_results")
+# Clean up CSVs older than this many seconds (default: 24 hours)
+OUTPUT_CLEANUP_SECONDS = int(os.getenv("EVAL_OUTPUT_CLEANUP_SECONDS", 24 * 60 * 60))
+
 JUDGE_MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+
+def _ensure_output_dir():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+def _cleanup_old_csvs():
+    """Remove old evaluation CSVs to prevent disk growth."""
+    now = time.time()
+    if not os.path.isdir(OUTPUT_DIR):
+        return
+
+    for fname in os.listdir(OUTPUT_DIR):
+        if not fname.endswith(".csv"):
+            continue
+        path = os.path.join(OUTPUT_DIR, fname)
+        try:
+            age = now - os.path.getmtime(path)
+            if age > OUTPUT_CLEANUP_SECONDS:
+                os.remove(path)
+        except Exception:
+            # Best effort cleanup; ignore errors
+            pass
 
 class CustomDeepEval(DeepEvalBaseLLM):
     def __init__(self, model):
@@ -54,6 +83,10 @@ async def run_evaluation_task(
 
         total_questions = len(results_data)
         results = []
+
+        # Cleanup old CSVs before running a new evaluation
+        _ensure_output_dir()
+        _cleanup_old_csvs()
 
         # 3. Iterate and evaluate asynchronously
         for i, res_item in enumerate(results_data):
@@ -96,12 +129,12 @@ async def run_evaluation_task(
             if i < total_questions - 1:
                 await asyncio.sleep(30)
         
-        # 3. Finish and save CSV
-        filename = f"eval_{system_type}_{task_id[:8]}.csv"
-        pd.DataFrame(results).to_csv(filename, index=False)
+        filename = f"eval_{system_type}_{task_id[:8]}_{int(time.time())}.csv"
+        file_path = os.path.join(OUTPUT_DIR, filename)
+        pd.DataFrame(results).to_csv(file_path, index=False)
 
         EVALUATION_TASKS[task_id]["status"] = "completed"
-        EVALUATION_TASKS[task_id]["file"] = filename
+        EVALUATION_TASKS[task_id]["file"] = file_path
     
     except Exception as e:
         EVALUATION_TASKS[task_id]["status"] = "failed"
