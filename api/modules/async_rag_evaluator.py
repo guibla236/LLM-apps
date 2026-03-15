@@ -13,7 +13,7 @@ from fastapi import UploadFile, BackgroundTasks
 # Dict in RAM to track tasks
 EVALUATION_TASKS = {}
 
-JUDGE_MODEL_NAME = "llama-4-scout-17b-16e-instruct"
+JUDGE_MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 class CustomDeepEval(DeepEvalBaseLLM):
     def __init__(self, model):
