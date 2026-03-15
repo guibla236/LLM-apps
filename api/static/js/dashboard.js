@@ -277,8 +277,27 @@ async function pollEvaluationStatus() {
             document.getElementById('eval-status-text').style.color = "var(--admin-success)";
             const dlBtn = document.getElementById('eval-download-btn');
             dlBtn.style.display = 'inline-block';
-            dlBtn.onclick = () => {
-                window.location.href = `${API_BASE}/admin/evaluate/download/${currentEvalTaskId}?token=${adminToken}`;
+            dlBtn.onclick = async () => {
+                const response = await fetch(`${API_BASE}/admin/evaluate/download/${currentEvalTaskId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `eval_results_${currentEvalTaskId}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert("Download error");
+                }
             }
         } else if (task.status === "failed") {
             clearInterval(evalInterval);
