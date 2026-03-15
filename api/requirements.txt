@@ -41,7 +41,7 @@ docstring_parser==0.17.0
 ecdsa==0.19.1
 email-validator==2.3.0
 emoji==2.15.0
-en_core_web_sm==3.8.0
+en-core-web-sm
 execnet==2.1.2
 executing==2.2.1
 fastapi==0.124.1
