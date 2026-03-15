@@ -643,7 +643,7 @@ async def get_evaluation_status(task_id: str):
         raise HTTPException(status_code=400, detail=f"Error getting model validation status: {str(e)}")
 
 @app.get('/api/admin/evaluate/download/{task_id}', dependencies=[Depends(is_admin)])
-async def download_evaluation_results(task_id: str):
+async def get_evaluation_download(task_id: str):
     try:
         return await download_evaluation_results(task_id)
     except Exception as e:
