@@ -5,7 +5,12 @@ import uuid
 import time
 import pandas as pd
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-from deepeval.metrics import GEval
+from deepeval.metrics import (
+    GEval, FaithfulnessMetric, AnswerRelevancyMetric, 
+    ContextualPrecisionMetric, ContextualRecallMetric, 
+    ContextualRelevancyMetric, HallucinationMetric, 
+    ToxicityMetric, BiasMetric
+)
 from deepeval.models.base_model import DeepEvalBaseLLM
 from langchain_groq import ChatGroq
 from fastapi.responses import FileResponse
@@ -60,7 +65,8 @@ async def run_evaluation_task(
     task_id: str,
     results_data: list,
     golden_data: list,
-    system_type: str
+    system_type: str,
+    selected_metrics: list
 ):
     try:
         EVALUATION_TASKS[task_id]["status"] = "in_progress"
@@ -69,17 +75,33 @@ async def run_evaluation_task(
         llm = ChatGroq(model=JUDGE_MODEL_NAME, temperature = 0)
         deepeval_model = CustomDeepEval(llm)
 
-        # 2. Metrics
-        correctness_metric = GEval(
-            name="Correctness",
-            criteria="Determine whether the actual output is factually equivalent to the expected output.",
-            evaluation_params=[
-                LLMTestCaseParams.INPUT,
-                LLMTestCaseParams.ACTUAL_OUTPUT,
-                LLMTestCaseParams.EXPECTED_OUTPUT,
-            ],
-            model=deepeval_model
-        )
+        # 2. Instantiate selected metrics
+        active_metrics = []
+        for m in selected_metrics:
+            if m == "Correctness":
+                active_metrics.append((m, GEval(
+                    name="Correctness",
+                    criteria="Determine whether the actual output is factually equivalent to the expected output.",
+                    evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
+                    model=deepeval_model
+                )))
+            elif m == "Faithfulness":
+                active_metrics.append((m, FaithfulnessMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "AnswerRelevancy":
+                active_metrics.append((m, AnswerRelevancyMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "ContextualPrecision":
+                active_metrics.append((m, ContextualPrecisionMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "ContextualRecall":
+                active_metrics.append((m, ContextualRecallMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "ContextualRelevancy":
+                active_metrics.append((m, ContextualRelevancyMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "Hallucination":
+                active_metrics.append((m, HallucinationMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "Toxicity":
+                active_metrics.append((m, ToxicityMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+            elif m == "Bias":
+                active_metrics.append((m, BiasMetric(threshold=0.5, model=deepeval_model, include_reason=True)))
+
 
         total_questions = len(results_data)
         results = []
@@ -96,32 +118,37 @@ async def run_evaluation_task(
 
             # Get GT
             gt = next(
-                (g["expected_output"] if "expected_output" in g else g["answer"] for g in golden_data if g.get("question" == q, "No GT found")
-            ))
+                (g["expected_output"] if "expected_output" in g else g["answer"] for g in golden_data if g.get("question") == q),
+                "No GT found"
+            )
+
+            ctx = [gt] if system_type == "FT" else res_item.get("context", [])
 
             test_case = LLMTestCase(
                 input=q,
                 actual_output=ans,
                 expected_output=gt,
-                retrieval_context=["Conocimiento de Fine-Tuning"] if system_type == "FT" else res_item.get("context", [])
+                retrieval_context=ctx,
+                context=ctx
             )
 
-            try:
-                # Execute metric
-                correctness_metric.measure(test_case)
-                score = correctness_metric.score
-                reason = correctness_metric.reason
-            except Exception as e:
-                score = 0.0
-                reason = f"Error evaluating: {str(e)}"
-
-            results.append({
+            res_row = {
                 "Question": q,
                 "Actual Answer": ans,
-                "Expected Output": gt,
-                "Correctness Score": score,
-                "Judge reason": reason
-            })
+                "Expected Output": gt
+            }
+
+            for m_name, metric in active_metrics:
+                try:
+                    # metric.measure may perform blocking IO (LLM calls), so run it off the event loop
+                    await asyncio.to_thread(metric.measure, test_case)
+                    res_row[f"{m_name} Score"] = metric.score
+                    res_row[f"{m_name} Reason"] = metric.reason
+                except Exception as e:
+                    res_row[f"{m_name} Score"] = 0.0
+                    res_row[f"{m_name} Reason"] = f"Error evaluating: {str(e)}"
+
+            results.append(res_row)
 
             EVALUATION_TASKS[task_id]["progress"] = f"{i+1}/{total_questions}"
 
@@ -129,6 +156,7 @@ async def run_evaluation_task(
             if i < total_questions - 1:
                 await asyncio.sleep(30)
         
+        # 4. Finish and save CSV
         filename = f"eval_{system_type}_{task_id[:8]}_{int(time.time())}.csv"
         file_path = os.path.join(OUTPUT_DIR, filename)
         pd.DataFrame(results).to_csv(file_path, index=False)
@@ -143,6 +171,7 @@ async def run_evaluation_task(
 
 async def start_system_evaluation(
     system_type: str,
+    metrics_str: str,
     results_file: UploadFile,
     golden_file: UploadFile,
     background_tasks: BackgroundTasks
@@ -155,9 +184,58 @@ async def start_system_evaluation(
         gold_content = await golden_file.read()
         results_data = json.loads(res_content.decode('utf-8'))
         golden_data = json.loads(gold_content.decode('utf-8'))
+        
+        try:
+            selected_metrics = json.loads(metrics_str)
+        except Exception:
+            raise ValueError("Invalid metrics format")
+            
+        if not selected_metrics:
+            raise ValueError("At least one metric must be selected")
 
         if system_type not in ["FT", "RAG"]:
             raise ValueError("system_type must be 'FT' or 'RAG'")
+            
+        # --- Validation Logic ---
+        REQUIRED_FIELDS = {
+            "Correctness": ["input", "actual_output", "expected_output"],
+            "Faithfulness": ["actual_output", "retrieval_context"],
+            "AnswerRelevancy": ["input", "actual_output"],
+            "ContextualPrecision": ["input", "actual_output", "expected_output", "retrieval_context"],
+            "ContextualRecall": ["input", "actual_output", "expected_output", "retrieval_context"],
+            "ContextualRelevancy": ["input", "actual_output", "retrieval_context"],
+            "Hallucination": ["actual_output", "context"],
+            "Toxicity": ["input", "actual_output"],
+            "Bias": ["input", "actual_output"]
+        }
+
+        if not results_data or not golden_data:
+            raise ValueError("Empty datasets provided")
+            
+        first_res = results_data[0]
+        has_input = "question" in first_res or "query" in first_res
+        has_actual = "answer" in first_res or "result" in first_res
+        has_context = "context" in first_res or system_type == "FT"
+        
+        q = first_res.get("question", first_res.get("query", ""))
+        first_gt_item = next(
+            (g for g in golden_data if g.get("question") == q), 
+            None
+        )
+        has_expected = False
+        if first_gt_item:
+            has_expected = "expected_output" in first_gt_item or "answer" in first_gt_item
+
+        for m in selected_metrics:
+            reqs = REQUIRED_FIELDS.get(m, [])
+            if "input" in reqs and not has_input:
+                raise ValueError(f"Metric '{m}' requires 'input' (question/query field) in results JSON.")
+            if "actual_output" in reqs and not has_actual:
+                raise ValueError(f"Metric '{m}' requires 'actual_output' (answer/result field) in results JSON.")
+            if "expected_output" in reqs and not has_expected:
+                raise ValueError(f"Metric '{m}' requires 'expected_output' (expected_output/answer field matching question) in golden JSON.")
+            if ("retrieval_context" in reqs or "context" in reqs) and not has_context:
+                raise ValueError(f"Metric '{m}' requires 'context' field in results JSON.")
         
         task_id = str(uuid.uuid4())
         EVALUATION_TASKS[task_id] = {
@@ -173,7 +251,8 @@ async def start_system_evaluation(
             task_id,
             results_data,
             golden_data,
-            system_type
+            system_type,
+            selected_metrics
         )
 
         return {
