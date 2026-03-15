@@ -5,7 +5,7 @@ import uuid
 import traceback
 import zipfile
 import tempfile
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Query, BackgroundTasks, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -605,6 +605,7 @@ async def raw_unified_search_endpoint(
 async def start_evaluation(
     background_tasks: BackgroundTasks,
     system_type: str = Query(...),
+    metrics: str = Form(...),
     results_file: UploadFile = File(...),
     golden_file: UploadFile = File(...)
 ):
@@ -613,12 +614,14 @@ async def start_evaluation(
     
     **Required parameters:**
     - `system_type` (str): Type of system to evaluate (FT or RAG).
+    - `metrics` (str): JSON string containing a list of metric names.
     - `results_file` (UploadFile): File containing the results of the model evaluation.
     - `golden_file` (UploadFile): File containing the golden data for the model evaluation.
     """
     try:
         return await start_system_evaluation(
             system_type,
+            metrics,
             results_file,
             golden_file,
             background_tasks
