@@ -217,7 +217,7 @@
             <div id="user-info">
                 Admin: <span id="admin-name">Loading...</span>
                 <button onclick="initDashboard()" class="btn-view-more"
-                    style="margin-left: 15px; border-color: rgba(255,255,255,0.2); color: #fff;">🔄 Refrescar</button>
+                    style="margin-left: 15px; border-color: rgba(255,255,255,0.2); color: #fff;">🔄 Refresh</button>
             </div>
             <a href="/" style="color: #94a3b8; text-decoration: none;">Go back to Home</a>
         </header>
@@ -232,6 +232,39 @@
                         <small style="color: #64748b;">Prevents adding new tickets</small>
                     </div>
                     <button id="toggle-ingestion" class="toggle-btn toggle-off">Disabled</button>
+                </div>
+            </section>
+
+            <!-- Evaluation Async Section -->
+            <section class="card" style="grid-column: span 2;">
+                <h2>Model Evaluation (DeepEval)</h2>
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="color: #94a3b8; font-size: 0.9rem;">Evaluation Type</label><br>
+                            <select id="eval-type" style="width: 100%; padding: 0.5rem; border-radius: 5px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); margin-top: 5px;">
+                                <option value="RAG">RAG</option>
+                                <option value="FT">Fine-Tuning</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="color: #94a3b8; font-size: 0.9rem;">Golden Dataset (JSON)</label><br>
+                            <input type="file" id="golden-file" accept=".json" style="width: 100%; margin-top: 5px; color: #cbd5e1;">
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="color: #94a3b8; font-size: 0.9rem;">System Results (JSON)</label><br>
+                            <input type="file" id="results-file" accept=".json" style="width: 100%; margin-top: 5px; color: #cbd5e1;">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                        <button onclick="startEvaluation()" class="btn-save" style="padding: 0.6rem 1.2rem;">Start Analysis Asynchronously</button>
+                        <div id="eval-status-container" style="display: none; flex: 1; background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 8px; border-left: 3px solid var(--admin-primary);">
+                            <span id="eval-status-text" style="font-weight: 600; color: #818cf8;">Initializing...</span>
+                            <span id="eval-progress" style="margin-left: 10px; color: #cbd5e1;"></span>
+                            <button id="eval-download-btn" class="btn-save" style="display: none; background: var(--admin-success); float: right;" onclick="downloadEvalCSV()">Download CSV</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 

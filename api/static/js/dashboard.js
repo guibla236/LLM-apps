@@ -209,5 +209,108 @@ function showAgentDetail(id) {
     document.getElementById('error-modal').style.display = 'block';
 }
 
+// --- Evaluation Async System ---
+let currentEvalTaskId = null;
+let evalInterval = null;
+
+async function startEvaluation() {
+    const type = document.getElementById('eval-type').value;
+    const goldenFile = document.getElementById('golden-file').files[0];
+    const resultsFile = document.getElementById('results-file').files[0];
+
+    if (!goldenFile || !resultsFile) {
+        alert("Please upload both Golden Dataset and Results JSON files.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("system_type", type);
+    formData.append("golden_file", goldenFile);
+    formData.append("results_file", resultsFile);
+
+    document.getElementById('eval-status-container').style.display = 'block';
+    document.getElementById('eval-status-text').textContent = "Starting...";
+    document.getElementById('eval-download-btn').style.display = 'none';
+
+    try {
+        const response = await fetch(`${API_BASE}/admin/evaluate/start?system_type=${type}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || "Upload failed");
+        }
+
+        const data = await response.json();
+        currentEvalTaskId = data.task_id;
+        
+        // Empezar Polling cada 5 segundos
+        if (evalInterval) clearInterval(evalInterval);
+        evalInterval = setInterval(pollEvaluationStatus, 5000);
+        
+        document.getElementById('eval-status-text').textContent = "In Progress";
+        document.getElementById('eval-status-text').style.color = "#fbbf24"; // Amarillo
+        
+    } catch (e) {
+        alert("Evaluation Start Error: " + e.message);
+        document.getElementById('eval-status-container').style.display = 'none';
+    }
+}
+
+async function pollEvaluationStatus() {
+    if (!currentEvalTaskId) return;
+
+    try {
+        const response = await fetchAdmin(`${API_BASE}/admin/evaluate/status/${currentEvalTaskId}`);
+        if (!response.ok) return;
+        
+        const task = await response.json();
+        
+        document.getElementById('eval-progress').textContent = `(Question ${task.progress})`;
+
+        if (task.status === "completed") {
+            clearInterval(evalInterval);
+            document.getElementById('eval-status-text').textContent = "Analysis Complete ✅";
+            document.getElementById('eval-status-text').style.color = "var(--admin-success)";
+            const dlBtn = document.getElementById('eval-download-btn');
+            dlBtn.style.display = 'inline-block';
+            dlBtn.onclick = async () => {
+                const response = await fetch(`${API_BASE}/admin/evaluate/download/${currentEvalTaskId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `eval_results_${currentEvalTaskId}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert("Download error");
+                }
+            }
+        } else if (task.status === "failed") {
+            clearInterval(evalInterval);
+            document.getElementById('eval-status-text').textContent = "Failed ❌";
+            document.getElementById('eval-status-text').style.color = "var(--admin-danger)";
+            document.getElementById('eval-progress').textContent = `(${task.error})`;
+        }
+
+    } catch (e) {
+        console.error("Polling error:", e);
+    }
+}
+
+
 // Initialize
 initDashboard();
