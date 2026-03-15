@@ -218,6 +218,15 @@ async function startEvaluation() {
     const goldenFile = document.getElementById('golden-file').files[0];
     const resultsFile = document.getElementById('results-file').files[0];
 
+    // Gather selected metrics
+    const metricsCheckboxes = document.querySelectorAll('.metric-checkbox:checked');
+    const selectedMetrics = Array.from(metricsCheckboxes).map(cb => cb.value);
+
+    if (selectedMetrics.length === 0) {
+        alert("Please select at least one metric.");
+        return;
+    }
+
     if (!goldenFile || !resultsFile) {
         alert("Please upload both Golden Dataset and Results JSON files.");
         return;
@@ -227,6 +236,7 @@ async function startEvaluation() {
     formData.append("system_type", type);
     formData.append("golden_file", goldenFile);
     formData.append("results_file", resultsFile);
+    formData.append("metrics", JSON.stringify(selectedMetrics));
 
     document.getElementById('eval-status-container').style.display = 'block';
     document.getElementById('eval-status-text').textContent = "Starting...";
@@ -311,6 +321,16 @@ async function pollEvaluationStatus() {
     }
 }
 
+function switchTab(tabId) {
+    document.getElementById('tab-admin').style.display = tabId === 'tab-admin' ? 'grid' : 'none';
+    document.getElementById('tab-eval').style.display = tabId === 'tab-eval' ? 'grid' : 'none';
+    
+    document.getElementById('btn-tab-admin').style.background = tabId === 'tab-admin' ? 'var(--admin-primary)' : 'transparent';
+    document.getElementById('btn-tab-admin').style.color = tabId === 'tab-admin' ? 'white' : '#cbd5e1';
+    
+    document.getElementById('btn-tab-eval').style.background = tabId === 'tab-eval' ? 'var(--admin-primary)' : 'transparent';
+    document.getElementById('btn-tab-eval').style.color = tabId === 'tab-eval' ? 'white' : '#cbd5e1';
+}
 
 // Initialize
 initDashboard();
