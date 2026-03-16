@@ -1,7 +1,4 @@
 email-validator==2.3.0
-# Minimal runtime dependencies for the FastAPI service
-# Only include packages that are directly imported/used by the API code.
-
 fastapi==0.124.1
 uvicorn==0.24.0
 pydantic==2.12.5
@@ -22,6 +19,3 @@ deepeval==3.8.9
 pandas==3.0.1
 requests==2.32.5
 rank-bm25==0.2.2
-
-# Optional / development: add back if needed for testing or local tooling.
-# pytest
