@@ -3,7 +3,7 @@ import json
 import asyncio
 import uuid
 import time
-import pandas as pd
+import logging
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import (
     GEval, FaithfulnessMetric, AnswerRelevancyMetric, 
@@ -15,6 +15,19 @@ from deepeval.models.base_model import DeepEvalBaseLLM
 from langchain_groq import ChatGroq
 from fastapi.responses import FileResponse
 from fastapi import UploadFile, BackgroundTasks
+
+# Logger config
+LOGGER_NAME = os.getenv("EVAL_LOGGER_NAME", "async_rag_evaluator")
+EVAL_LOG_LEVEL = getattr(logging, os.getenv("EVAL_LOG_LEVEL", "INFO").upper(), logging.INFO)
+logger = logging.getLogger(LOGGER_NAME)
+
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logger.addHandler(handler)
+logger.setLevel(EVAL_LOG_LEVEL)
 
 # Dict in RAM to track tasks
 EVALUATION_TASKS = {}
@@ -139,18 +152,30 @@ async def run_evaluation_task(
             }
 
             for m_name, metric in active_metrics:
-                try:
-                    # metric.measure may perform blocking IO (LLM calls), so run it off the event loop
-                    await asyncio.to_thread(metric.measure, test_case)
-                    res_row[f"{m_name} Score"] = metric.score
-                    res_row[f"{m_name} Reason"] = metric.reason
-                except Exception as e:
+                            logger.warning(
+                                "task=%s q=%d/%d metric=%s retry=%d/%d delay=%.2fs error=%s",
+                                task_id[:8], i + 1, total_questions, m_name,
+                                attempt, EVAL_RETRY_MAX_ATTEMPTS, delay, str(e)[:240]
+                            )
+                        logger.error(
+                            "task=%s q=%d/%d metric=%s failed attempts=%d error=%s",
+                            task_id[:8], i + 1, total_questions, m_name, attempts_done, str(e)[:240]
+                        )
                     res_row[f"{m_name} Score"] = 0.0
                     res_row[f"{m_name} Reason"] = f"Error evaluating: {str(e)}"
 
             results.append(res_row)
 
             EVALUATION_TASKS[task_id]["progress"] = f"{i+1}/{total_questions}"
+            logger.info(
+                "task=%s progress=%d/%d question=%s ok_metrics=%s failed_metrics=%s",
+                task_id[:8],
+                i + 1,
+                total_questions,
+                (q or "")[:120],
+                ",".join(ok_metrics) if ok_metrics else "-",
+                ",".join(failed_metrics) if failed_metrics else "-"
+            )
 
             # Rate Limit
             if i < total_questions - 1:
@@ -162,7 +187,10 @@ async def run_evaluation_task(
         pd.DataFrame(results).to_csv(file_path, index=False)
 
         EVALUATION_TASKS[task_id]["status"] = "completed"
-        EVALUATION_TASKS[task_id]["file"] = file_path
+        logger.info(
+            "task=%s completed total_questions=%d output_csv=%s",
+            task_id[:8], total_questions, file_path
+        )
     
     except Exception as e:
         EVALUATION_TASKS[task_id]["status"] = "failed"
