@@ -3,6 +3,8 @@ import json
 import asyncio
 import uuid
 import time
+import re
+import random
 import logging
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import (
@@ -36,6 +38,12 @@ EVALUATION_TASKS = {}
 OUTPUT_DIR = os.getenv("EVAL_OUTPUT_DIR", "evaluation_results")
 # Clean up CSVs older than this many seconds (default: 24 hours)
 OUTPUT_CLEANUP_SECONDS = int(os.getenv("EVAL_OUTPUT_CLEANUP_SECONDS", 24 * 60 * 60))
+
+# Retry configuration for LLM calls during evaluation (exponential backoff)
+EVAL_RETRY_MAX_ATTEMPTS = int(os.getenv("EVAL_RETRY_MAX_ATTEMPTS", 4))
+EVAL_RETRY_BASE_SECONDS = float(os.getenv("EVAL_RETRY_BASE_SECONDS", 2.0))
+EVAL_RETRY_MAX_SECONDS = float(os.getenv("EVAL_RETRY_MAX_SECONDS", 40.0))
+EVAL_RETRY_JITTER_SECONDS = float(os.getenv("EVAL_RETRY_JITTER_SECONDS", 1.0))
 
 JUDGE_MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
 
@@ -73,6 +81,73 @@ class CustomDeepEval(DeepEvalBaseLLM):
         return self.generate(prompt)
     def get_model_name(self):
         return JUDGE_MODEL_NAME
+    
+def _extract_status_code(exc: Exception):
+    for attr in ("status_code", "http_status", "code"):
+        val = getattr(exc, attr, None)
+        if isinstance(val, int):
+            return val
+    response = getattr(exc, "response", None)
+    if response is not None:
+        status = getattr(response, "status_code", None)
+        if isinstance(status, int):
+            return status
+    
+    return None
+
+def _extract_retry_after_seconds(exc: Exception):
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None) if response is not None else None
+    if headers:
+        raw = headers.get("Retry-After") or headers.get("retry-after")
+        if raw:
+            try:
+                return max(0.0, float(raw))
+            except Exception:
+                pass
+    msg = str(exc).lower()
+    m = re.search(r"retry[- ]?after[: ]+([0-9]+(?:\.[0-9]+)?)", msg)
+    if m:
+        try:
+            return max(0.0, float(m.group(1)))
+        except Exception:
+            pass
+    return None
+
+def _is_retryable_llm_error(exc: Exception) -> bool:
+    code = _extract_status_code(exc)
+    if code == 429:
+        return True
+    if code in (500, 502, 503, 504):
+        return True
+    
+    msg = str(exc).lower()
+    retryable_tokens = [
+        "429",
+        "rate limit",
+        "too many requests",
+        "temporarily unavailable",
+        "timeout",
+        "timed out",
+        "connection reset",
+        "service unavailable",
+    ]
+    
+    return any(token in msg for token in retryable_tokens)
+
+def _retry_delay_seconds(attempt: int, exc: Exception) -> float:
+    # attempt: 1,2,3...
+    
+    retry_after = _extract_retry_after_seconds(exc)
+    if retry_after is not None:
+        base_delay = retry_after
+    else:
+        base_delay = min(
+            EVAL_RETRY_MAX_SECONDS,
+            EVAL_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+        )
+    jitter = random.uniform(0, EVAL_RETRY_JITTER_SECONDS)
+    return min(EVAL_RETRY_MAX_SECONDS, base_delay + jitter)
 
 async def run_evaluation_task(
     task_id: str,
@@ -117,12 +192,11 @@ async def run_evaluation_task(
 
 
         total_questions = len(results_data)
-        results = []
 
         # Cleanup old CSVs before running a new evaluation
         _ensure_output_dir()
         _cleanup_old_csvs()
-
+        
         # 3. Iterate and evaluate asynchronously
         for i, res_item in enumerate(results_data):
             # Search GT corresponding in Golden dataset (same order asumption)
@@ -152,20 +226,45 @@ async def run_evaluation_task(
             }
 
             for m_name, metric in active_metrics:
+                last_error = None
+                measured_ok = False
+                attempts_done = 0
+                
+                for attempt in range(1, EVAL_RETRY_MAX_ATTEMPTS + 1):
+                    attempts_done = attempt
+                    try:
+                        # metric.measure may perform blocking IO (LLM calls), so run it off the event loop
+                        await asyncio.to_thread(metric.measure, test_case)
+                        res_row[f"{m_name} Score"] = metric.score
+                        res_row[f"{m_name} Reason"] = metric.reason
+                        measured_ok = True
+                        break
+                    except Exception as e:
+                        last_error = e
+                        retryable = _is_retryable_llm_error(e)
+                        if retryable and attempt < EVAL_RETRY_MAX_ATTEMPTS:
+                            delay = _retry_delay_seconds(attempt, e)
                             logger.warning(
                                 "task=%s q=%d/%d metric=%s retry=%d/%d delay=%.2fs error=%s",
                                 task_id[:8], i + 1, total_questions, m_name,
                                 attempt, EVAL_RETRY_MAX_ATTEMPTS, delay, str(e)[:240]
                             )
+                            await asyncio.sleep(delay)
+                            continue
                         logger.error(
                             "task=%s q=%d/%d metric=%s failed attempts=%d error=%s",
                             task_id[:8], i + 1, total_questions, m_name, attempts_done, str(e)[:240]
                         )
+                        break
+                
+                if not measured_ok:
                     res_row[f"{m_name} Score"] = 0.0
-                    res_row[f"{m_name} Reason"] = f"Error evaluating: {str(e)}"
-
-            results.append(res_row)
-
+                    if last_error is None:
+                        res_row[f"{m_name} Reason"] = "Error evaluating: unknown error"
+                    else:
+                        res_row[f"{m_name} Reason"] = (
+                            f"Error evaluating after {attempts_done} attempt(s): {str(last_error)}"
+                        )
             EVALUATION_TASKS[task_id]["progress"] = f"{i+1}/{total_questions}"
             logger.info(
                 "task=%s progress=%d/%d question=%s ok_metrics=%s failed_metrics=%s",
@@ -181,11 +280,7 @@ async def run_evaluation_task(
             if i < total_questions - 1:
                 await asyncio.sleep(30)
         
-        # 4. Finish and save CSV
-        filename = f"eval_{system_type}_{task_id[:8]}_{int(time.time())}.csv"
-        file_path = os.path.join(OUTPUT_DIR, filename)
-        pd.DataFrame(results).to_csv(file_path, index=False)
-
+        # 4. Mark completed
         EVALUATION_TASKS[task_id]["status"] = "completed"
         logger.info(
             "task=%s completed total_questions=%d output_csv=%s",
