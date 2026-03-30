@@ -4,6 +4,7 @@ import asyncio
 import uuid
 import time
 import re
+import csv
 import random
 import logging
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
@@ -149,6 +150,32 @@ def _retry_delay_seconds(attempt: int, exc: Exception) -> float:
     jitter = random.uniform(0, EVAL_RETRY_JITTER_SECONDS)
     return min(EVAL_RETRY_MAX_SECONDS, base_delay + jitter)
 
+def _build_result_columns(metric_names: list) -> list:
+    cols = ["Question", "Actual Answer", "Expected Output"]
+    for m in metric_names:
+        cols.append(f"{m} Score")
+        cols.append(f"{m} Reason")
+    return cols
+def _append_result_row(file_path: str, row: dict, columns: list):
+    file_exists = os.path.exists(file_path)
+    with open(file_path, "a", encoding="utf-8", newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=columns, extrasaction='ignore')
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow({c: row.get(c, "") for c in columns})
+
+def _metric_ok_without_error(res_row: dict, metric_name: str) -> bool:
+    reason = str(res_row.get(f"{metric_name} Reason", "") or "").lower()
+    score: float | None = res_row.get(f"{metric_name} Score", None)
+    
+    if "error evaluating" in reason:
+        return False
+    try: 
+        float(score) # type: ignore
+        return True
+    except (ValueError, TypeError):
+        return False
+
 async def run_evaluation_task(
     task_id: str,
     results_data: list,
@@ -196,6 +223,15 @@ async def run_evaluation_task(
         # Cleanup old CSVs before running a new evaluation
         _ensure_output_dir()
         _cleanup_old_csvs()
+        
+        # Prepare output CSV file path once, then append rows incrementally
+        filename = f"eval_{system_type}_{task_id[:8]}_{int(time.time())}.csv"
+        file_path = os.path.join(OUTPUT_DIR, filename)
+        metric_names = [name for name, _ in active_metrics]
+        result_columns = _build_result_columns(metric_names)
+        
+        # Expose path from the beginning so partial progress can be inspected
+        EVALUATION_TASKS[task_id]["file"] = file_path
         
         # 3. Iterate and evaluate asynchronously
         for i, res_item in enumerate(results_data):
@@ -265,7 +301,20 @@ async def run_evaluation_task(
                         res_row[f"{m_name} Reason"] = (
                             f"Error evaluating after {attempts_done} attempt(s): {str(last_error)}"
                         )
+            
+            # Incremental save: append one row per evaluated item
+            _append_result_row(file_path, res_row, result_columns)
+            
             EVALUATION_TASKS[task_id]["progress"] = f"{i+1}/{total_questions}"
+            
+            ok_metrics = []
+            failed_metrics = []
+            for metric_name, _ in active_metrics:
+                if _metric_ok_without_error(res_row, metric_name):
+                    ok_metrics.append(metric_name)
+                else:
+                    failed_metrics.append(metric_name)
+
             logger.info(
                 "task=%s progress=%d/%d question=%s ok_metrics=%s failed_metrics=%s",
                 task_id[:8],
@@ -275,6 +324,11 @@ async def run_evaluation_task(
                 ",".join(ok_metrics) if ok_metrics else "-",
                 ",".join(failed_metrics) if failed_metrics else "-"
             )
+
+            # opcional: exponer en status endpoint
+            EVALUATION_TASKS[task_id]["last_question"] = q
+            EVALUATION_TASKS[task_id]["last_ok_metrics"] = ok_metrics
+            EVALUATION_TASKS[task_id]["last_failed_metrics"] = failed_metrics
 
             # Rate Limit
             if i < total_questions - 1:
