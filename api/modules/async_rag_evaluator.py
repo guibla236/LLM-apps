@@ -197,7 +197,10 @@ async def run_evaluation_task(
                 active_metrics.append((m, GEval(
                     name="Correctness",
                     criteria="Determine whether the actual output is factually equivalent to the expected output.",
-                    evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
+                    evaluation_params=[
+                        LLMTestCaseParams.INPUT, 
+                        LLMTestCaseParams.ACTUAL_OUTPUT, 
+                        LLMTestCaseParams.EXPECTED_OUTPUT],
                     model=deepeval_model
                 )))
             elif m == "Faithfulness":
