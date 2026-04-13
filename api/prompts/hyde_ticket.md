@@ -1,5 +1,3 @@
-# HyDE ticket generation prompt
-
 You are an expert IT support technician.
 A user has reported the following problem in their own words: "{query}"
 

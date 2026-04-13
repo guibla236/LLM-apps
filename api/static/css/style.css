@@ -110,6 +110,12 @@ h1 {
     font-weight: bold;
 }
 
+.tab-btn-dashboard.active {
+    color: white;
+    border-bottom: 3px solid #667eea;
+    font-weight: bold;
+}
+
 .section {
     animation: fadeIn 0.3s ease-in-out;
 }
