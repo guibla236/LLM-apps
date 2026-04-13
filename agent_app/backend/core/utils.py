@@ -29,7 +29,7 @@ async def is_tool_enabled(flag_name: str) -> bool:
 def get_prompt(prompt_name: PromptFileNames) -> str:
     """Helper to read markdown file with a specific prompt."""
     try:
-        with open(f"prompts/{prompt_name}.md", "r") as f:
+        with open(f"prompts/{prompt_name.value}.md", "r") as f:
             return f.read()
     except FileNotFoundError:
         # fire-and-forget; the caller is synchronous now
