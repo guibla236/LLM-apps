@@ -1,0 +1,152 @@
+[
+  {
+    "question": "¿Cuál es el procedimiento técnico para identificar la jerarquía de una cadena de bloqueo en SQL Server sin usar sp_who2?",
+    "answer": "ejecutar un script que consulte la vista sys.dm_exec_requests realizando un CROSS APPLY con sys.dm_exec_sql_text(sql_handle). Riesgo si no se aplica: degradacion de rendimiento y bloqueos prolongados en base de datos.",
+    "kb": "KB0001"
+  },
+  {
+    "question": "¿Qué validación es obligatoria realizar antes de ejecutar un comando KILL en una transacción de base de datos muy antigua?",
+    "answer": "Es imperativo verificar el estado de la transacción en sys.dm_tran_active_transactions. Riesgo si no se aplica: degradacion de rendimiento y bloqueos prolongados en base de datos.",
+    "kb": "KB0001"
+  },
+  {
+    "question": "Si una réplica secundaria de SQL Server está en estado SUSPENDED por corrupción lógica, ¿cómo se reinicializa correctamente?",
+    "answer": "eliminar la base de datos de la réplica secundaria, realizar un Backup de Log en la primaria, restaurar la base en la secundaria con NORECOVERY y reanudar la sincronización del grupo de disponibilidad. Riesgo si no se aplica: degradacion de rendimiento y bloqueos prolongados en base de datos.",
+    "kb": "KB0001"
+  },
+  {
+    "question": "¿Cómo se puede diferenciar un punto de acceso Wi-Fi vecino de una amenaza tipo Rogue AP en entornos Windows?",
+    "answer": "Utilizando el comando de PowerShell 'netsh wlan show networks mode=bssid' para identificar el BSSID sospechoso. Punto clave: netsh wlan show networks mode=bssid. Riesgo si no se aplica: exposicion de trafico y credenciales por acceso no autorizado.",
+    "kb": "KB1061"
+  },
+  {
+    "question": "¿Qué medida de contención inmediata debe aplicarse en la controladora Wi-Fi ante la detección de un Evil Twin?",
+    "answer": "activar la función 'Rogue AP Containment', enviando paquetes de de-autenticación para desconectar clientes y bloquear nuevas asociaciones al punto de acceso malicioso. Punto clave: Rogue AP Containment. Riesgo si no se aplica: exposicion de trafico y credenciales por acceso no autorizado.",
+    "kb": "KB1061"
+  },
+  {
+    "question": "Si se identifica un Rogue AP conectado físicamente a la red cableada, ¿qué acción debe realizar el administrador de red en el switch?",
+    "answer": "identificar el puerto mediante la tabla de direcciones MAC (show mac address-table) y ejecutar un comando de 'shutdown' inmediato en la interfaz correspondiente para neutralizar la conexión. Punto clave: shutdown. Riesgo si no se aplica: exposicion de trafico y credenciales por acceso no autorizado.",
+    "kb": "KB1061"
+  },
+  {
+    "question": "¿Cuál es el comando de PowerShell para bloquear el acceso de un usuario a Microsoft 365 de forma inmediata por una amenaza de seguridad?",
+    "answer": "ejecutar Set-MsolUser -UserPrincipalName 'usuario@empresa.com' -BlockCredential $true para bloquear el inicio de sesión de forma inmediata. Punto clave: Set-MsolUser -UserPrincipalName, -BlockCredential $true. Riesgo si no se aplica: fuga de informacion y compromiso de cuentas corporativas.",
+    "kb": "KB2500"
+  },
+  {
+    "question": "¿Cómo se puede mitigar una saturación de la red troncal causada por bucles de sincronización de OneDrive mediante GPOs?",
+    "answer": "configurar la directiva 'Limit sync throughput to a specific rate' y aplicar temporalmente un límite de transferencia de, por ejemplo, 100 KB/s para estabilizar el tráfico de red local. Punto clave: Limit sync throughput to a specific rate. Riesgo si no se aplica: fuga de informacion y compromiso de cuentas corporativas.",
+    "kb": "KB2500"
+  },
+  {
+    "question": "Ante un incidente de cumplimiento (DLP) donde se expuso información sensible públicamente en SharePoint, ¿qué se debe hacer con los enlaces?",
+    "answer": "localizar el sitio afectado y eliminar todos los 'Anonymous Access Links' para revocar de inmediato el acceso externo no controlado. Punto clave: Anonymous Access Links. Riesgo si no se aplica: fuga de informacion y compromiso de cuentas corporativas.",
+    "kb": "KB2500"
+  },
+  {
+    "question": "¿Qué debe hacer un agente de soporte si un usuario bloquea el PIN de su perfil de trabajo en un dispositivo móvil gestionado?",
+    "answer": "acceder a la consola MDM (Intune o Jamf), localizar el dispositivo del usuario y ejecutar el comando remoto 'Restablecer código de acceso del perfil de trabajo'. Punto clave: Restablecer código de acceso del perfil de trabajo. Riesgo si no se aplica: bloqueo de acceso seguro en dispositivos gestionados.",
+    "kb": "KB4500"
+  },
+  {
+    "question": "Un usuario no encuentra la opción para usar FaceID en Outlook corporativo. ¿Qué configuración debe verificar el técnico en la consola de administración?",
+    "answer": "verificar en la App Protection Policy que la opción 'Allow biometric trust' esté configurada en 'Yes'. Punto clave: Allow biometric trust. Riesgo si no se aplica: bloqueo de acceso seguro en dispositivos gestionados.",
+    "kb": "KB4500"
+  },
+  {
+    "question": "¿Cuál es la diferencia en el restablecimiento de contraseña de un Managed Apple ID frente a un ID de Apple personal?",
+    "answer": "A diferencia de los IDs personales, las contraseñas de los Managed Apple ID deben restablecerse exclusivamente desde el portal de Apple Business Manager (ABM) por un administrador. Riesgo si no se aplica: bloqueo de acceso seguro en dispositivos gestionados.",
+    "kb": "KB4500"
+  },
+  {
+    "question": "¿Qué pasos son necesarios para auditar quién eliminó un archivo confidencial en un entorno de SharePoint Cloud?",
+    "answer": "acceder al Centro de Cumplimiento de Microsoft Purview, ejecutar una búsqueda en el Registro de Auditoría Unificado y filtrar específicamente por la actividad 'FileDeleted'. Punto clave: FileDeleted. Riesgo si no se aplica: perdida de trazabilidad y riesgo de incumplimiento regulatorio.",
+    "kb": "KB6100"
+  },
+  {
+    "question": "¿Cómo se verifica la integridad de los datos en un ERP basado en SQL si se sospecha de modificaciones no autorizadas en las tablas de nómina?",
+    "answer": "consultar la tabla de auditoría (por ejemplo AuditTable), validar que los triggers de auditoría estén activos y revisar sys_audit_log para identificar cambios, usuario y fecha de modificación. Riesgo si no se aplica: perdida de trazabilidad y riesgo de incumplimiento regulatorio.",
+    "kb": "KB6100"
+  },
+  {
+    "question": "¿Qué medidas de seguridad se deben aplicar al entregar archivos de logs exportados (como PST o CSV) a un auditor?",
+    "answer": "proteger los archivos con cifrado y contraseña, compartirlos por canal seguro con expiración y entregar hash SHA-256 para validar integridad y cadena de custodia. Riesgo si no se aplica: perdida de trazabilidad y riesgo de incumplimiento regulatorio.",
+    "kb": "KB6100"
+  },
+  {
+    "question": "¿Cuál es el procedimiento correcto para limpiar la cola de impresión en Windows mediante la línea de comandos?",
+    "answer": "detener el servicio con 'net stop spooler', eliminar los archivos temporales en '%systemroot%\\System32\\Spool\\Printers\\*.*' y finalmente reiniciar el servicio con 'net start spooler'. Punto clave: net stop spooler, %systemroot%\\System32\\Spool\\Printers\\*.*. Riesgo si no se aplica: interrupcion operativa en servicios de impresion.",
+    "kb": "KB0003"
+  },
+  {
+    "question": "Si una impresora presenta líneas verticales solo al usar el alimentador automático (ADF), pero no en impresiones directas, ¿cuál es la solución?",
+    "answer": "La solución es limpiar la franja estrecha de cristal situada a la izquierda del cristal principal del escáner con un paño de microfibra. Riesgo si no se aplica: interrupcion operativa en servicios de impresion.",
+    "kb": "KB0003"
+  },
+  {
+    "question": "¿Por qué no se debe usar aire comprimido para limpiar el tóner residual dentro de una impresora?",
+    "answer": "no usar aire comprimido porque dispersa tóner en sensores y componentes internos; utilizar aspiradora antiestática o paño técnico para limpieza controlada. Riesgo si no se aplica: interrupcion operativa en servicios de impresion.",
+    "kb": "KB0003"
+  },
+  {
+    "question": "¿Qué métodos de validación de identidad son aceptables antes de resetear el MFA de un empleado?",
+    "answer": "realizar una validación visual mediante videollamada contra la foto de la ficha, solicitar datos no públicos como el ID de empleado o fecha de ingreso. Riesgo si no se aplica: acceso indebido por fallas en autenticacion multifactor.",
+    "kb": "KB1015"
+  },
+  {
+    "question": "¿Qué herramienta permite dar acceso temporal a un usuario que perdió su dispositivo MFA y necesita entrar urgentemente?",
+    "answer": "generar un Pase de Acceso Temporal (Temporary Access Pass o TAP) desde el portal de administración de Microsoft Entra, el cual funciona como un código de un solo uso con validez limitada. Riesgo si no se aplica: acceso indebido por fallas en autenticacion multifactor.",
+    "kb": "KB1015"
+  },
+  {
+    "question": "Si un usuario reporta que su código de la App Authenticator es rechazado constantemente, ¿qué configuración del dispositivo móvil se debe revisar?",
+    "answer": "confirmar que el móvil tenga 'Fecha y hora automática' activada y ejecutar la 'Sincronización de hora' en la app Authenticator para corregir desfases de TOTP. Punto clave: Fecha y hora automática, Sincronización de hora. Riesgo si no se aplica: acceso indebido por fallas en autenticacion multifactor.",
+    "kb": "KB1015"
+  },
+  {
+    "question": "Ante una vulnerabilidad Zero-day sin parche disponible, ¿qué medidas de endurecimiento se recomiendan para un servidor afectado?",
+    "answer": "el aislamiento de red en una VLAN de cuarentena, restringir el acceso mediante reglas de firewall (WAF/NSG) solo a IPs administrativas o desactivar temporalmente el servicio afectado. Riesgo si no se aplica: expansion del incidente de seguridad y movimiento lateral.",
+    "kb": "KB1088"
+  },
+  {
+    "question": "¿Cómo se debe configurar el acceso de las cuentas de servicio (ej. svc-sql) para prevenir movimientos laterales tras un compromiso?",
+    "answer": "Se deben configurar para denegar inicios de sesión interactivos, impidiendo que estas cuentas puedan loguearse localmente o mediante escritorio remoto (RDP). Riesgo si no se aplica: expansion del incidente de seguridad y movimiento lateral.",
+    "kb": "KB1088"
+  },
+  {
+    "question": "¿Qué comando permite localizar librerías Log4j vulnerables en un sistema de archivos Linux?",
+    "answer": "Se puede utilizar el comando: find / -name 'log4j-core-*.jar' para mapear todos los activos que utilicen versiones potencialmente vulnerables de la librería. Punto clave: log4j-core-*.jar, find / -name 'log4j-core-*.jar'. Riesgo si no se aplica: expansion del incidente de seguridad y movimiento lateral.",
+    "kb": "KB1088"
+  },
+  {
+    "question": "¿Por qué un consultor externo invitado puede recibir un error 'Access Denied' si ya tiene permisos asignados en SharePoint?",
+    "answer": "validar si el usuario sigue en estado 'Pending Acceptance', revisar políticas de acceso condicional y confirmar que no exista conflicto de identidad/PUID en invitaciones previas. Punto clave: Pending Acceptance. Riesgo si no se aplica: exfiltracion de datos por permisos o enlaces inseguros.",
+    "kb": "KB2210"
+  },
+  {
+    "question": "¿Qué acciones comprende el protocolo 'Kill-Switch' ante una fuga de datos PII detectada en una carpeta compartida?",
+    "answer": "Incluye romper la herencia de permisos de la biblioteca, eliminar grupos de acceso masivo (como 'Everyone' o 'All Users') y revocar todos los enlaces de tipo 'Anyone with the link'. Punto clave: Everyone, All Users. Riesgo si no se aplica: exfiltracion de datos por permisos o enlaces inseguros.",
+    "kb": "KB2210"
+  },
+  {
+    "question": "Para cumplir con la gobernanza de datos, ¿qué restricción se debe aplicar a los enlaces de compartición para colaboradores externos?",
+    "answer": "Se deben usar enlaces dirigidos a 'Personas específicas' y aplicar la restricción de 'Bloqueo de descarga' (View Only) para minimizar el riesgo de exfiltración. Punto clave: Personas específicas, Bloqueo de descarga. Riesgo si no se aplica: exfiltracion de datos por permisos o enlaces inseguros.",
+    "kb": "KB2210"
+  },
+  {
+    "question": "En caso de una fuga de secretos (Access Keys) en logs públicos de CI/CD, ¿cuáles son los pasos de remediación inmediata?",
+    "answer": "invalidar las llaves en la consola de IAM/Vault, luego rotar las credenciales en los pipelines y Kubernetes. Riesgo si no se aplica: compromiso de infraestructura por secretos o certificados expuestos.",
+    "kb": "KB3900"
+  },
+  {
+    "question": "¿Cómo se gestiona la renovación automática de certificados SSL/TLS en infraestructuras modernas de contenedores?",
+    "answer": "utilizar el componente Cert-Manager en Kubernetes para validar y renovar automáticamente los certificados, o en su defecto, ejecutar procesos de renovación vía Let's Encrypt. Riesgo si no se aplica: compromiso de infraestructura por secretos o certificados expuestos.",
+    "kb": "KB3900"
+  },
+  {
+    "question": "¿Qué archivo debe auditarse en un servidor Linux para detectar la inserción de llaves de acceso remoto no autorizadas tras un incidente?",
+    "answer": "inspeccionar el archivo 'authorized_keys' en los directorios .ssh de las cuentas críticas para verificar si existen llaves públicas desconocidas que permitan persistencia al atacante. Punto clave: authorized_keys. Riesgo si no se aplica: compromiso de infraestructura por secretos o certificados expuestos.",
+    "kb": "KB3900"
+  }
+]
