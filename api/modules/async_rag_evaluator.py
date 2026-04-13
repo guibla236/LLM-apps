@@ -151,7 +151,7 @@ def _retry_delay_seconds(attempt: int, exc: Exception) -> float:
     return min(EVAL_RETRY_MAX_SECONDS, base_delay + jitter)
 
 def _build_result_columns(metric_names: list) -> list:
-    cols = ["Question", "Actual Answer", "Expected Output"]
+    cols = ["Question", "Actual Answer", "Expected Output", "Latency"]
     for m in metric_names:
         cols.append(f"{m} Score")
         cols.append(f"{m} Reason")
@@ -241,6 +241,7 @@ async def run_evaluation_task(
             # Search GT corresponding in Golden dataset (same order asumption)
             q = res_item.get("question", res_item.get("query", ""))
             ans = res_item.get("answer", res_item.get("result", ""))
+            latency = res_item.get("latency", "")
 
             # Get GT
             gt = next(
@@ -261,7 +262,8 @@ async def run_evaluation_task(
             res_row = {
                 "Question": q,
                 "Actual Answer": ans,
-                "Expected Output": gt
+                "Expected Output": gt,
+                "Latency": latency
             }
 
             for m_name, metric in active_metrics:
