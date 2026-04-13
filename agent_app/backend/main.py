@@ -31,12 +31,12 @@ async def root():
 @app.post(
     "/solve_ticket", 
     deprecated=True, 
-    summary="DEPRECATED: Use /chat/solve_ticket instead", 
-    description="This endpoint is deprecated. Please use /chat/solve_ticket for better performance and additional features."
+    summary="DEPRECATED: Use /chat instead", 
+    description="This endpoint is deprecated. Please use /chat for better performance and additional features."
 )
 async def solve_ticket_endpoint(item: Item, request: Request):
     warnings.warn(
-        "The /solve_ticket endpoint is deprecated. Please use /chat/solve_ticket instead.",
+        "The /solve_ticket endpoint is deprecated. Please use /chat instead.",
         DeprecationWarning
     )
     user = await get_authorized_user(request)
