@@ -229,7 +229,7 @@
 
         <div id="tab-admin" class="tab-content grid-sections" style="display: grid;">
             <!-- Feature Flags Section -->
-            <section class="card">
+            <section class="card" style="height: fit; max-height: 500px; overflow-y: auto;">
                 <h2>Feature Flags</h2>
                 <div class="flag-control">
                     <div>
@@ -243,7 +243,7 @@
             </section>
 
             <!-- Users Section -->
-            <section class="card" style="grid-row: span 2;">
+            <section class="card" style="grid-row: span 2; height: fit; max-height: 500px; overflow-y: auto;">
                 <h2>Users Management</h2>
                 <div style="overflow-x: auto;">
                     <table id="users-table">
@@ -251,7 +251,7 @@
                             <tr>
                                 <th>Username</th>
                                 <th>Usage</th>
-                                <th>LLimit</th>
+                                <th>Limit</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -263,7 +263,7 @@
             </section>
 
             <!-- Error Logs Section -->
-            <section class="card">
+            <section class="card" style="height: fit; max-height: 500px; overflow-y: auto;">
                 <h2>Recent Error Logs</h2>
                 <div id="logs-container">
                     <!-- Dynamic Content -->
