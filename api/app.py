@@ -29,7 +29,12 @@ from modules.security import SECRET_KEY, ALGORITHM
 from modules.utils import list_models
 from models.search import RawSearchRequest, SearchRequest
 from modules.decorators import handle_value_error
-from modules.async_rag_evaluator import start_system_evaluation, get_evaluation_task_status, download_evaluation_results
+from modules.async_rag_evaluator import (
+    start_system_evaluation, 
+    get_evaluation_task_status, 
+    download_evaluation_results,
+    cancel_all_evaluation_tasks
+)
 
 
 app = FastAPI()
@@ -96,6 +101,7 @@ async def startup_db_client():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    await cancel_all_evaluation_tasks("FastAPI shutdown")
     await close_mongo_connection()
 
 # Configure CORS to allow requests from the frontend
