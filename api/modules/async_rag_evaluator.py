@@ -48,6 +48,36 @@ EVAL_RETRY_JITTER_SECONDS = float(os.getenv("EVAL_RETRY_JITTER_SECONDS", 1.0))
 
 JUDGE_MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
 
+EVALUATION_RUNNERS: dict[str, asyncio.Task] = {}
+EVALUATION_SHUTDOWN_EVENT = asyncio.Event()
+
+def _mark_task_cancelled(task_id: str, reason: str) -> None:
+    task = EVALUATION_TASKS.get(task_id)
+    if not task:
+        return
+    task["status"] = "cancelled"
+    task["error"] = reason
+
+async def cancel_all_evaluation_tasks(reason: str = "FastAPI shutdown") -> None:
+    """
+    Cancel all running evaluation tasks and wait for them to finish.
+    """
+    
+    EVALUATION_SHUTDOWN_EVENT.set()  # Signal tasks to stop if they check this event
+    for task_id, runner in list(EVALUATION_RUNNERS.items()):
+        if runner.done():
+            continue
+        _mark_task_cancelled(task_id, reason)
+        runner.cancel()
+    
+    for task_id, runner in list(EVALUATION_RUNNERS.items()):
+        try:
+            await runner
+        except asyncio.CancelledError:
+            logger.warning("task=%s cancelled by shutdown", task_id[:8])
+        except Exception as exc:
+            logger.exception("task=%s ended with error during shutdown: %s", task_id[:8], str(exc))
+    EVALUATION_RUNNERS.clear()
 
 def _ensure_output_dir():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
