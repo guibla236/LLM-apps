@@ -1,4 +1,4 @@
-from checkpoint import AsyncMongoDBSaver
+from core.checkpoint import AsyncMongoDBSaver
 from motor.motor_asyncio import AsyncIOMotorClient
 from core.config import get_env_var
 
