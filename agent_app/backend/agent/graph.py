@@ -26,3 +26,13 @@ workflow.add_edge("tools", "agent")
 # Checkpointer integration
 checkpointer = get_checkpointer()
 app_graph = workflow.compile(checkpointer=checkpointer)
+
+# Export agent graph image to a file
+try:
+    graph_image_data = app_graph.get_graph().draw_mermaid_png()
+    with open("agent_graph.png", "wb") as f:
+        f.write(graph_image_data)
+    print("Agent graph image successfully saved to agent_graph.png")
+except Exception as e:
+    print(f"Notice: Could not generate agent graph image: {e}")
+    # Note: draw_mermaid_png may require 'pyppeteer' or 'graphviz' depending on the environment context
