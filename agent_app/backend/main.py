@@ -5,10 +5,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 import traceback
 from core.logger import agent_logger
-from services.agent_service import solve_ticket
 from dotenv import load_dotenv
-from schema.ticket import Item, TicketModel
-from core.security import get_authorized_user
+from schema.ticket import Item
 
 # Import routers
 from routers.chat import router as chat_router
@@ -39,10 +37,8 @@ async def solve_ticket_endpoint(item: Item, request: Request):
         "The /solve_ticket endpoint is deprecated. Please use /chat instead.",
         DeprecationWarning
     )
-    user = await get_authorized_user(request)
-    ticket_model = TicketModel(**item.ticket)
-    solution = await solve_ticket(ticket_model, username=user["username"])
-    return {"solution": solution}
+    
+    return {"error": "The /solve_ticket endpoint is deprecated. Please use /chat instead."}
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
