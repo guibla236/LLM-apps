@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage, RemoveMessage
 import time
 from datetime import datetime
-from services.agent_executor_service import agent_executor
+from agent.graph import app_graph
 from core.logger import agent_logger
 from schema.ticket import TicketModel
 from core.config import get_llm
@@ -32,10 +32,8 @@ async def chat_with_agent(
     }
     
     try:
-        await _manage_context_window(config)  # Ensure we manage the context window before invoking the agent
-
         # LangGraph rehydrates state from memory based on thread_id
-        response = await agent_executor.ainvoke(
+        response = await app_graph.ainvoke(
             {"messages": [HumanMessage(content=message)]},
             config=config
         )
