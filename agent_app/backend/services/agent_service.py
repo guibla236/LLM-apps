@@ -37,7 +37,7 @@ async def chat_with_agent(
         )
         
         # Robustly find the last AI message with actual content
-        solution = "Lo siento, no pude generar una respuesta válida."
+        solution = "I'm sorry, but I couldn't generate a valid response."
         all_messages = response["messages"]
         for msg in reversed(all_messages):
              if msg.type == "ai" and msg.content and not msg.tool_calls:
