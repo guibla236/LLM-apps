@@ -1,4 +1,4 @@
-from services.agent_executor_service import agent_executor
+from agent.graph import app_graph
 from langchain_core.runnables.config import RunnableConfig
 from core.database import get_db
 from langchain_core.messages import HumanMessage
@@ -61,7 +61,7 @@ async def get_session_history_messages(thread_id: str):
     """Retrieves the message history for a specific thread with context traces."""
     from core.utils import format_trace
     config = RunnableConfig(configurable={"thread_id": thread_id})
-    state = await agent_executor.aget_state(config)
+    state = await app_graph.aget_state(config)
     
     if not (state and state.values and "messages" in state.values):
         return []
