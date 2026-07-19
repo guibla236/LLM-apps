@@ -146,18 +146,22 @@ def _init_pinecone():
     return index, embeddings_model
 
 
+PINECONE_NAMESPACE = "kb-se-all"
+
+
 def _build_pinecone_vectors(
     pairs: List[dict],
-    community: str,
     embeddings_model,
     batch_size: int = 100,
 ) -> List[tuple]:
-    """Build (id, vector, metadata, namespace) tuples for Pinecone upsert.
+    """Build (id, vector, metadata) tuples for Pinecone upsert.
 
-    Uses the embeddings model to vectorize each title_body.
-    Returns a flat list of tuples, one per pair.
+    Uses a single namespace "kb-se-all" (per EDA decision):
+    the corpus is cross-community (98% of DevOps content lives
+    outside the devops community), so per-community namespaces
+    don't add retrieval value. Community is stored in metadata
+    for provenance tracking.
     """
-    namespace = f"se-{community}"
     vectors = []
 
     for i in range(0, len(pairs), batch_size):
@@ -166,18 +170,17 @@ def _build_pinecone_vectors(
         embeddings = embeddings_model.embed_documents(texts)
 
         for j, (pair, vec) in enumerate(zip(batch, embeddings)):
-            ticket_id = make_ticket_id(community, pair["original_id"])
+            ticket_id = make_ticket_id(pair["community"], pair["original_id"])
             expected_truncated = (pair.get("upvoted_answer") or "")[:500]
             vectors.append(
                 (
                     ticket_id,
                     vec,
                     {
-                        "community": community,
+                        "community": pair["community"],
                         "expected_output": expected_truncated,
                         "priority": pair["priority"].value,
                     },
-                    namespace,
                 )
             )
 
@@ -185,20 +188,14 @@ def _build_pinecone_vectors(
 
 
 def _pinecone_upsert(index, vectors: List[tuple], dry_run: bool = False):
-    """Upsert vectors to Pinecone, grouped by namespace."""
+    """Upsert vectors to Pinecone in the single kb-se-all namespace."""
     if dry_run:
         return
 
-    # Group by namespace
-    by_namespace: dict = {}
-    for vid, vec, meta, ns in vectors:
-        by_namespace.setdefault(ns, []).append((vid, vec, meta))
-
-    for ns, ns_vectors in by_namespace.items():
-        # Pinecone upsert accepts list of (id, vector, metadata)
-        upsert_data = [(vid, vec, meta) for vid, vec, meta in ns_vectors]
-        index.upsert(vectors=upsert_data, namespace=ns)
-        print(f"  ✓ Upserted {len(upsert_data)} vectors to namespace '{ns}'")
+    upsert_data = [(vid, vec, meta) for vid, vec, meta in vectors]
+    ns = PINECONE_NAMESPACE
+    index.upsert(vectors=upsert_data, namespace=ns)
+    print(f"  \u2713 Upserted {len(upsert_data)} vectors to namespace '{ns}'")
 
 
 # ── MongoDB ingestion ────────────────────────────────────────────────────────
@@ -329,10 +326,10 @@ def process_community(
     pinecone_pairs = [p for p in pairs if not p["is_golden"]]
     if pinecone_pairs and pinecone_index is not None:
         vectors = _build_pinecone_vectors(
-            pinecone_pairs, community, embeddings_model
+            pinecone_pairs, embeddings_model
         )
         _pinecone_upsert(pinecone_index, vectors)
-        print(f"  ✓ Pinecone: {len(pinecone_pairs)} vectors upserted (namespace: se-{community})")
+        print(f"  ✓ Pinecone: {len(pinecone_pairs)} vectors upserted (namespace: kb-se-all)")
     else:
         print(f"  - Pinecone: skipped (no pairs or no index)")
 
@@ -396,8 +393,8 @@ def main():
     )
     parser.add_argument(
         "--namespace-prefix",
-        default="se",
-        help="Namespace prefix for Pinecone (default: se)",
+        default="kb-se",
+        help="Ignored (kept for backwards compat). Namespace is always kb-se-all per EDA decision.",
     )
     parser.add_argument(
         "--embedding-model",
@@ -436,6 +433,7 @@ def main():
     print(f"  StackExchange Dataset Ingestion")
     print(f"{'='*60}")
     print(f"  Communities: {', '.join(communities)}")
+    print(f"  Pinecone namespace: {PINECONE_NAMESPACE}")
     print(f"  Dry run: {dry_run}")
     print(f"  Limit per community: {limit or 'none'}")
     print(f"  Resume mode: {args.resume}")
