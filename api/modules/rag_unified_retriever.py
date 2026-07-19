@@ -300,10 +300,23 @@ async def context_retriever_for_unified_search(query: str,
     ticket_results = [r for r in unified_search_results if r.source == "ticket"]
     kb_results = [r for r in unified_search_results if r.source == "kb"]
     tickets_to_return = []
-    for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
-        tickets_to_return.append(f"Ticket ID: {ticket.id}\nDescription: {ticket.content[:200]}..." + 
-                                 f"\nActions taken: {ticket.metadata.get('actions', 'No actions recorded')}\n" +
-                                 f"Owner: {ticket.metadata.get('owner', 'Unknown')}\n")
+    for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
+        expected = ticket.metadata.get("expected_output", "")
+        if expected:
+            # New path: SE corpus with canonical answer
+            tickets_to_return.append(
+                f"Ticket ID: {ticket.id}\n"
+                f"Description: {ticket.content[:200]}...\n"
+                f"Suggested solution: {expected[:600]}...\n"
+            )
+        else:
+            # Legacy path: synthetic tickets (no expected_output)
+            tickets_to_return.append(
+                f"Ticket ID: {ticket.id}\n"
+                f"Description: {ticket.content[:200]}..." 
+                f"\nActions taken: {ticket.metadata.get('actions', 'No actions recorded')}\n"
+                f"Owner: {ticket.metadata.get('owner', 'Unknown')}\n"
+            )
     kbs_to_return = []
     for kb in kb_results[:KBS_TO_CONSIDER]:
         kbs_to_return.append(f"Knowledge Base Document ID {kb.id}: {kb.content[:200]}...\n")
