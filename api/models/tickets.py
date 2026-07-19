@@ -2,7 +2,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 class TicketPriority(str, Enum):
-    """Enum para las prioridades de los tickets."""
+    """Enum for ticket priorities."""
     LOW = "Low"
     MEDIUM = "Medium"
     HIGH = "High"
@@ -10,11 +10,19 @@ class TicketPriority(str, Enum):
 
 
 class TicketModel(BaseModel):
-    """Modelo de un ticket de soporte."""
-    ticketId: str = Field(..., description="ID único del ticket (ej. SOFT-20251211-001)")
-    creationDate: str = Field(..., description="Fecha de creación en formato YYYY-MM-DD")
+    """Model for a support ticket (synthetic or Stack Exchange Q&A)."""
+    ticketId: str = Field(..., description="Unique ticket ID (e.g. DEV-20251211-001 or SE-SUPERUSER-142340)")
+    creationDate: str = Field(default="", description="Creation date (YYYY-MM-DD). Empty for Stack Exchange entries.")
     priority: TicketPriority
-    owner: str = Field(..., description="Nombre y departamento del solicitante")
-    description: str = Field(..., description="Descripción detallada del problema")
-    impact: str = Field(..., description="Impacto del problema en la productividad")
-    actions: str = Field(..., description="Acciones tomadas por el solicitante antes de reportar")
+    owner: str = Field(default="community", description="Requester name. Defaults to 'community' for SE entries.")
+    description: str = Field(..., description="Problem description / title_body from Stack Exchange")
+    impact: str = Field(default="", description="Business impact. Empty for SE entries (not applicable).")
+    actions: str = Field(default="", description="Actions taken before reporting. Empty for SE entries.")
+    expected_output: str = Field(
+        default="",
+        description="Canonical answer (upvoted_answer for Stack Exchange). Empty for legacy synthetic."
+    )
+    community: str = Field(
+        default="",
+        description="Stack Exchange community (superuser, askubuntu, ...). Empty for synthetic tickets."
+    )
