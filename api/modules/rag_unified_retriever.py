@@ -39,9 +39,13 @@ def _init_bm25_retrievers():
         with open(index_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         
-        # Tickets
+        # Tickets: use enriched page_content_bm25 if available (SE corpus),
+        # fall back to legacy "ticketId description" for synthetic tickets.
         ticket_docs = [
-            Document(page_content=f"{t['ticketId']} {t['description']}", metadata=t)
+            Document(
+                page_content=t.get("page_content_bm25", f"{t['ticketId']} {t['description']}"),
+                metadata=t
+            )
             for t in data.get("tickets", [])
         ]
         if ticket_docs:
