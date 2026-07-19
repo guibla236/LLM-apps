@@ -37,6 +37,10 @@ async def connect_to_mongo():
     await db.db.feature_flags.create_index("name", unique=True)
     await db.db.registrations.create_index("timestamp")
     
+    # Indexes for qa_pairs collection (Stack Exchange corpus + future)
+    await db.db.qa_pairs.create_index("ticketId", unique=True)
+    await db.db.qa_pairs.create_index("community")
+    
     print(f"Connected to MongoDB: {MONGODB_DB_NAME} (Indexes ensured)")
 
 async def close_mongo_connection():
