@@ -21,14 +21,14 @@ text_splitter = RecursiveCharacterTextSplitter(
     separators=["\n\n", "\n", ". ", ", ", " ", ""]
 )
 
-# Predefined categories based on main IT support topics.
+# Predefined categories based on main IT support topics (bilingual: English primary, Spanish fallback).
 KB_CATEGORIES = {
-    "KB1": "Ciberseguridad y Cumplimiento",
-    "KB2": "Colaboración y Herramientas Cloud", 
-    "KB3": "DevOps e Infraestructura",
-    "KB4": "Movilidad y MDM",
-    "KB5": "Hardware y Oficina Inteligente",
-    "KB6": "Privacidad y Gestión de Datos"
+    "KB1": "Cybersecurity & Compliance",
+    "KB2": "Collaboration & Cloud Tools",
+    "KB3": "DevOps & Infrastructure",
+    "KB4": "Mobility & MDM",
+    "KB5": "Hardware & Smart Office",
+    "KB6": "Privacy & Data Management"
 }
 
 class KBDocument(BaseModel):
@@ -57,15 +57,15 @@ def extract_kb_category(file_id: str, content: str = "") -> str:
     if prefix in KB_CATEGORIES:
         return KB_CATEGORIES[prefix]
     
-    # Fallback by keywords in content
+    # Fallback by keywords in content (bilingual: English + Spanish)
     content_lower = content.lower()
     keyword_mapping = {
-        r"ciberseguridad|seguridad|phishing|mfa|2fa|autenticación|cumplimiento|gdpr|ley": "Ciberseguridad y Cumplimiento",
-        r"onedrive|sharepoint|teams|slack|colaboración|cloud|azure|office365|google workspace": "Colaboración y Herramientas Cloud",
-        r"docker|kubernetes|ci/cd|pipeline|despliegue|infraestructura|redes|devops|staging": "DevOps e Infraestructura",
-        r"movilidad|mdm|jamf|intune|byod|dispositivo|móvil|tablet|enrolamiento": "Movilidad y MDM",
-        r"hardware|dock|monitor|sensor|oficina inteligente|iot|cargador|periférico|ergonomía": "Hardware y Oficina Inteligente",
-        r"privacidad|datos|dlp|auditoría|exportación|retención|legal hold|nóminas|erp": "Privacidad y Gestión de Datos"
+        r"cybersecurity|security|phishing|mfa|2fa|authentication|compliance|gdpr|ciberseguridad|seguridad|autenticación|cumplimiento|ley": "Cybersecurity & Compliance",
+        r"onedrive|sharepoint|teams|slack|collaboration|cloud|azure|office365|google workspace|colaboración|cloud": "Collaboration & Cloud Tools",
+        r"docker|kubernetes|ci/cd|pipeline|deployment|infrastructure|devops|staging|despliegue|infraestructura|redes": "DevOps & Infrastructure",
+        r"mobility|mdm|jamf|intune|byod|device|mobile|tablet|enrollment|movilidad|dispositivo|móvil|enrolamiento": "Mobility & MDM",
+        r"hardware|dock|monitor|sensor|iot|charger|peripheral|ergonomics|oficina inteligente|periférico|ergonomía|cargador": "Hardware & Smart Office",
+        r"privacy|data|dlp|audit|export|retention|legal hold|payroll|erp|privacidad|datos|auditoría|exportación|retención|nóminas": "Privacy & Data Management"
     }
     
     for pattern, category in keyword_mapping.items():
@@ -86,8 +86,11 @@ def extract_metadata_from_content(content: str) -> Dict[str, str]:
     """
     metadata = {}
     
-    # Extraer público objetivo
+    # Extract target audience (bilingual: English + Spanish)
     audience_patterns = [
+        r"target audience[:\s]+(.+?)(?:\n|$)",
+        r"intended for[:\s]+(.+?)(?:\n|$)",
+        r"audience[:\s]+(.+?)(?:\n|$)",
         r"dirigido a[:\s]+(.+?)(?:\n|$)",
         r"para[:\s]+(.+?)(?:\n|$)",
         r"público[:\s]+(.+?)(?:\n|$)"
@@ -99,8 +102,11 @@ def extract_metadata_from_content(content: str) -> Dict[str, str]:
             metadata["target_audience"] = match.group(1).strip()
             break
     
-    # Extraer propósito
+    # Extract purpose (bilingual: English + Spanish)
     purpose_patterns = [
+        r"purpose[:\s]+(.+?)(?:\n|$)",
+        r"objective[:\s]+(.+?)(?:\n|$)",
+        r"goal[:\s]+(.+?)(?:\n|$)",
         r"propósito[:\s]+(.+?)(?:\n|$)",
         r"objetivo[:\s]+(.+?)(?:\n|$)",
         r"finalidad[:\s]+(.+?)(?:\n|$)"
