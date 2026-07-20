@@ -147,6 +147,7 @@ def _init_pinecone():
 
 
 PINECONE_NAMESPACE = "kb-se-all"
+PINECONE_UPSERT_BATCH_SIZE = 500  # Pinecone Free Tier payload limit
 
 
 def _build_pinecone_vectors(
@@ -163,8 +164,14 @@ def _build_pinecone_vectors(
     for provenance tracking.
     """
     vectors = []
+    num_batches = (len(pairs) + batch_size - 1) // batch_size
 
-    for i in range(0, len(pairs), batch_size):
+    for i in tqdm(
+        range(0, len(pairs), batch_size),
+        total=num_batches,
+        desc="  Embedding batches",
+        unit="batch",
+    ):
         batch = pairs[i : i + batch_size]
         texts = [p["title_body"] for p in batch]
         embeddings = embeddings_model.embed_documents(texts)
@@ -188,14 +195,25 @@ def _build_pinecone_vectors(
 
 
 def _pinecone_upsert(index, vectors: List[tuple], dry_run: bool = False):
-    """Upsert vectors to Pinecone in the single kb-se-all namespace."""
+    """Upsert vectors to Pinecone in batches (Free Tier payload limit ~500)."""
     if dry_run:
         return
 
-    upsert_data = [(vid, vec, meta) for vid, vec, meta in vectors]
     ns = PINECONE_NAMESPACE
-    index.upsert(vectors=upsert_data, namespace=ns)
-    print(f"  \u2713 Upserted {len(upsert_data)} vectors to namespace '{ns}'")
+    total = len(vectors)
+    num_batches = (total + PINECONE_UPSERT_BATCH_SIZE - 1) // PINECONE_UPSERT_BATCH_SIZE
+
+    for i in tqdm(
+        range(0, total, PINECONE_UPSERT_BATCH_SIZE),
+        total=num_batches,
+        desc="  Pinecone upsert batches",
+        unit="batch",
+    ):
+        batch = vectors[i : i + PINECONE_UPSERT_BATCH_SIZE]
+        upsert_data = [(vid, vec, meta) for vid, vec, meta in batch]
+        index.upsert(vectors=upsert_data, namespace=ns)
+
+    print(f"  \u2713 Upserted {total} vectors to namespace '{ns}' ({num_batches} batches)")
 
 
 # ── MongoDB ingestion ────────────────────────────────────────────────────────
