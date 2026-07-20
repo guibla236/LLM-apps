@@ -237,7 +237,7 @@ async def _mongo_upsert_qa_pairs(db, pairs: List[dict], dry_run: bool = False):
 
 # ── Main ingestion pipeline ──────────────────────────────────────────────────
 
-def process_community(
+async def process_community(
     community: str,
     limit: Optional[int] = None,
     dry_run: bool = False,
@@ -263,7 +263,6 @@ def process_community(
         "flax-sentence-embeddings/stackexchange_titlebody_best_and_down_voted_answer_jsonl",
         community,
         split="train",
-        trust_remote_code=True,
     )
 
     total = len(dataset)
@@ -335,8 +334,7 @@ def process_community(
 
     # ── 4. Upsert to MongoDB (all pairs, including golden) ──
     if mongo_db is not None:
-        import asyncio
-        asyncio.run(_mongo_upsert_qa_pairs(mongo_db, pairs))
+        await _mongo_upsert_qa_pairs(mongo_db, pairs)
         print(f"  ✓ MongoDB: {len(pairs)} docs upserted")
     else:
         print(f"  - MongoDB: skipped (no database)")
@@ -379,7 +377,8 @@ def validate_counts(results: List[dict]):
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
-def main():
+def _parse_args():
+    """Parse CLI arguments (does not start the event loop)."""
     parser = argparse.ArgumentParser(
         description="Ingest StackExchange dataset to Pinecone + MongoDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -423,7 +422,12 @@ def main():
         default=[],
         help="Paths to golden QA JSON files whose ticketIds are excluded from Pinecone",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+async def main_async():
+    """Async entry point (single event loop for all communities)."""
+    args = _parse_args()
 
     communities = args.communities or IT_COMMUNITIES
     dry_run = args.dry_run
@@ -463,7 +467,7 @@ def main():
     results = []
     for comm in communities:
         try:
-            result = process_community(
+            result = await process_community(
                 community=comm,
                 limit=limit,
                 dry_run=dry_run,
@@ -502,4 +506,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main_async())
