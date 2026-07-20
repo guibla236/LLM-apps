@@ -22,6 +22,9 @@ Usage:
     # Resume interrupted ingestion (skips already-indexed IDs)
     python scripts/ingest_stackexchange_dataset.py --resume
 
+    # Process a single community (validate one before full run)
+    python scripts/ingest_stackexchange_dataset.py --communities superuser
+
     # Exclude golden QA IDs from vector index (keeps them in Mongo)
     python scripts/ingest_stackexchange_dataset.py \\
         --exclude-golden-ids ../evaluation_notebooks/goldens/golden_expert.json \\
@@ -146,7 +149,21 @@ def _init_pinecone():
     if not index_name:
         raise ValueError("PINECONE_INDEX_NAME environment variable is not set.")
     index = pinecone_client.Index(index_name)
-    return index, embeddings_model
+    return index, embeddings_model, index_name
+
+
+def _fetch_existing_ids(pinecone_index) -> Set[str]:
+    """Fetch all existing vector IDs from the kb-se-all namespace."""
+    existing = set()
+    try:
+        # Pinecone list endpoint paginates; fetch all pages
+        paginator = pinecone_index.list(namespace=PINECONE_NAMESPACE)
+        for ids_batch in paginator:
+            for vid in ids_batch:
+                existing.add(vid)
+    except Exception as e:
+        print(f"  ⚠  Could not list existing Pinecone IDs: {e}")
+    return existing
 
 
 PINECONE_NAMESPACE = "kb-se-all"
@@ -293,6 +310,7 @@ async def process_community(
     limit: Optional[int] = None,
     dry_run: bool = False,
     excluded_ids: Optional[Set[str]] = None,
+    existing_ids: Optional[Set[str]] = None,
     pinecone_index=None,
     embeddings_model=None,
     mongo_db=None,
@@ -302,6 +320,7 @@ async def process_community(
     Returns a summary dict with counts.
     """
     excluded_ids = excluded_ids or set()
+    existing_ids = existing_ids or set()
     print(f"\n{'='*60}")
     print(f"  Community: {community}")
     print(f"{'='*60}")
@@ -326,6 +345,7 @@ async def process_community(
     skipped_no_answer = 0
     skipped_short_answer = 0
     skipped_golden = 0
+    skipped_existing = 0
 
     for record in dataset:
         upvoted = record.get("upvoted_answer") or ""
@@ -336,6 +356,11 @@ async def process_community(
 
         original_id = record.get("id") or hash(record.get("title_body", ""))
         ticket_id = make_ticket_id(community, original_id)
+
+        # Resume mode: skip IDs already vectorized in Pinecone
+        if ticket_id in existing_ids:
+            skipped_existing += 1
+            continue
 
         # Check golden exclusion for Pinecone (still add to Mongo)
         is_golden = ticket_id in excluded_ids
@@ -359,6 +384,8 @@ async def process_community(
     if excluded_ids:
         golden_in_batch = sum(1 for p in pairs if p["is_golden"])
         print(f"    Golden (excluded from vector index): {golden_in_batch}")
+    if existing_ids and skipped_existing > 0:
+        print(f"    Skipped (already in Pinecone): {skipped_existing}")
 
     if dry_run:
         print(f"  [DRY-RUN] Would upsert {len(pairs)} vectors to Pinecone")
@@ -370,6 +397,7 @@ async def process_community(
             "skipped_short": skipped_short_answer,
             "golden": sum(1 for p in pairs if p["is_golden"]),
             "dry_run": True,
+            "skipped_existing": skipped_existing,
         }
 
     # ── 3. Upsert to Pinecone (skip golden IDs) ──
@@ -397,6 +425,7 @@ async def process_community(
         "pinecone_upserted": len(pinecone_pairs),
         "mongo_upserted": len(pairs),
         "skipped_short": skipped_short_answer,
+        "skipped_existing": skipped_existing,
         "golden": sum(1 for p in pairs if p["is_golden"]),
     }
 
@@ -444,7 +473,11 @@ def _parse_args():
         "--communities",
         type=parse_community_arg,
         default=None,
-        help="Comma-separated list of communities (default: all 12 IT communities)",
+        help=(
+            "Comma-separated list of communities to process. "
+            "Use --list-communities to see available options. "
+            "(default: all 12 IT communities)"
+        ),
     )
     parser.add_argument(
         "--namespace-prefix",
@@ -517,12 +550,19 @@ async def main_async():
     pinecone_index = None
     embeddings_model = None
     mongo_db = None
+    existing_ids: Set[str] = set()
 
     if not dry_run:
         print(f"\n  Initializing Pinecone and MongoDB connections...")
-        pinecone_index, embeddings_model = _init_pinecone()
+        pinecone_index, embeddings_model, pinecone_index_name = _init_pinecone()
         mongo_db = _init_mongo()
         print(f"  ✓ Connections established")
+
+        # In resume mode, pre-fetch existing IDs from Pinecone to skip them
+        if args.resume:
+            print(f"\n  Fetching existing IDs from Pinecone (resume mode)...")
+            existing_ids = _fetch_existing_ids(pinecone_index)
+            print(f"  Found {len(existing_ids):,} existing vectors in '{PINECONE_NAMESPACE}'")
 
     # ── Process each community ──
     results = []
@@ -533,6 +573,7 @@ async def main_async():
                 limit=limit,
                 dry_run=dry_run,
                 excluded_ids=excluded_ids,
+                existing_ids=existing_ids,
                 pinecone_index=pinecone_index,
                 embeddings_model=embeddings_model,
                 mongo_db=mongo_db,
