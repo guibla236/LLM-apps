@@ -7,6 +7,9 @@ transforms Q&A pairs into the extended TicketModel, upserts them to Pinecone
 (with per-community namespaces) and persists the full answers in MongoDB qa_pairs.
 
 Usage:
+    # List available communities
+    python scripts/ingest_stackexchange_dataset.py --list-communities
+
     # Dry-run (validate without writing)
     python scripts/ingest_stackexchange_dataset.py --dry-run --limit-per-community 50
 
@@ -216,6 +219,36 @@ def _pinecone_upsert(index, vectors: List[tuple], dry_run: bool = False):
     print(f"  \u2713 Upserted {total} vectors to namespace '{ns}' ({num_batches} batches)")
 
 
+def print_community_table():
+    """Print available communities with expected pair counts and exit."""
+    print(f"\n{'='*60}")
+    print(f"  Available Stack Exchange Communities")
+    print(f"{'='*60}")
+    print(f"  {'Community':<25} {'Expected Pairs':<20} {'Category'}")
+    print(f"  {'-'*25} {'-'*20} {'-'*35}")
+    categories = {
+        "superuser": "Hardware / Office",
+        "askubuntu": "OS / General",
+        "serverfault": "DevOps / Infrastructure",
+        "apple": "MDM / Mobility",
+        "unix": "Sysadmin / Linux",
+        "android": "MDM / Mobility",
+        "security": "Cybersecurity",
+        "dba": "Data & SQL",
+        "webapps": "Cloud Collaboration",
+        "sharepoint": "Cloud Collaboration",
+        "networkengineering": "Networking",
+        "devops": "DevOps",
+    }
+    for comm in IT_COMMUNITIES:
+        expected = EXPECTED_PAIRS.get(comm, 0)
+        cat = categories.get(comm, "")
+        print(f"  {comm:<25} {expected:<20,} {cat}")
+    print(f"\n  {'Total':<25} {sum(EXPECTED_PAIRS.values()):<20,}")
+    print(f"\n  Use: --communities superuser,askubuntu  (select specific ones)")
+    print(f"  Or:  --limit-per-community 100           (limit for testing)")
+
+
 # ── MongoDB ingestion ────────────────────────────────────────────────────────
 
 def _init_mongo():
@@ -403,6 +436,11 @@ def _parse_args():
         epilog=__doc__,
     )
     parser.add_argument(
+        "--list-communities",
+        action="store_true",
+        help="Show available communities with expected pair counts and exit",
+    )
+    parser.add_argument(
         "--communities",
         type=parse_community_arg,
         default=None,
@@ -446,6 +484,11 @@ def _parse_args():
 async def main_async():
     """Async entry point (single event loop for all communities)."""
     args = _parse_args()
+
+    # ── List communities and exit? ──
+    if args.list_communities:
+        print_community_table()
+        return
 
     communities = args.communities or IT_COMMUNITIES
     dry_run = args.dry_run
