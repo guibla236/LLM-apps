@@ -152,17 +152,59 @@ def _init_pinecone():
     return index, embeddings_model, index_name
 
 
-def _fetch_existing_ids(pinecone_index) -> Set[str]:
-    """Fetch all existing vector IDs from the kb-se-all namespace."""
-    existing = set()
+async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
+    """Fetch existing ticket IDs from MongoDB (fast) or Pinecone (fallback).
+
+    MongoDB is the source of truth for ingested pairs. Querying it is
+    faster and more reliable than paginating Pinecone's list endpoint.
+    Falls back to Pinecone with correct pagination if MongoDB unavailable.
+    """
+    existing: Set[str] = set()
+
+    # Fast path: query MongoDB qa_pairs collection
+    if mongo_db is not None:
+        try:
+            cursor = mongo_db.qa_pairs.find(
+                {},
+                {"ticketId": 1, "_id": 0},
+            )
+            async for doc in cursor:
+                tid = doc.get("ticketId", "")
+                if tid:
+                    existing.add(tid)
+            print(f"  ✓ Found {len(existing):,} existing IDs from MongoDB")
+            return existing
+        except Exception as e:
+            print(f"  ⚠  MongoDB query failed ({e}), falling back to Pinecone...")
+
+    # Slow path: Pinecone list with proper pagination
     try:
-        # Pinecone list endpoint paginates; fetch all pages
-        paginator = pinecone_index.list(namespace=PINECONE_NAMESPACE)
-        for ids_batch in paginator:
-            for vid in ids_batch:
-                existing.add(vid)
+        ns = PINECONE_NAMESPACE
+        response = pinecone_index.list(namespace=ns)
+        if hasattr(response, "vectors") and response.vectors:
+            existing.update(response.vectors)
+
+        # Paginate if more pages exist
+        token = (
+            response.pagination.next
+            if hasattr(response, "pagination") and response.pagination
+            else None
+        )
+        while token:
+            response = pinecone_index.list(
+                namespace=ns, pagination_token=token
+            )
+            if hasattr(response, "vectors") and response.vectors:
+                existing.update(response.vectors)
+            token = (
+                response.pagination.next
+                if hasattr(response, "pagination") and response.pagination
+                else None
+            )
     except Exception as e:
         print(f"  ⚠  Could not list existing Pinecone IDs: {e}")
+
+    print(f"  Found {len(existing):,} existing IDs from Pinecone")
     return existing
 
 
