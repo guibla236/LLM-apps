@@ -16,7 +16,7 @@ warnings.warn(
 )
 
 from typing import List
-from .third_party_clients import default_groq_llm_client, vector_store_instance as vector_store
+from .third_party_clients import default_chat_client, vector_store_instance as vector_store
 from .utils import extract_json_from_llm_response
 from models.tickets import TicketModel
 import sys
@@ -94,7 +94,7 @@ async def augment_similar_tickets(inputTicket: TicketModel) -> dict:
             "contacts": []
         }
 
-    response = await default_groq_llm_client.ainvoke(
+    response = await default_chat_client.ainvoke(
         input=[
             {
                 "role": "system",

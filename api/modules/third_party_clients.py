@@ -1,6 +1,5 @@
 import os
-from langchain_groq import ChatGroq
-from pydantic import SecretStr
+from langchain_openai import ChatOpenAI
 from pinecone import Pinecone
 from dotenv import load_dotenv
 from typing import Any
@@ -12,25 +11,34 @@ from .utils import get_model_details
 load_dotenv()
 
 _DEFAULT_CHAT_MODEL_NAME = os.getenv("DEFAULT_CHAT_MODEL_NAME")
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 if not _DEFAULT_CHAT_MODEL_NAME:
     raise ValueError("DEFAULT_CHAT_MODEL_NAME must be defined in the environment variables.")
-if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
+if not OPENROUTER_API_KEY:
+    raise ValueError("OPENROUTER_API_KEY must be defined in the environment variables.")
 else:
-    default_groq_llm_client = ChatGroq(model=_DEFAULT_CHAT_MODEL_NAME, api_key=SecretStr(GROQ_API_KEY))
+    default_chat_client = ChatOpenAI(
+        model=_DEFAULT_CHAT_MODEL_NAME,
+        api_key=OPENROUTER_API_KEY,
+        base_url=OPENROUTER_BASE_URL,
+    )
 
-def get_groq_client(model_name: str) -> ChatGroq:
-    if not GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY must be defined in the environment variables.")
+
+def get_chat_client(model_name: str) -> ChatOpenAI:
+    if not OPENROUTER_API_KEY:
+        raise ValueError("OPENROUTER_API_KEY must be defined in the environment variables.")
     model_details = get_model_details(model_name)
     if model_details is None:
         raise ValueError(f"The specified model '{model_name}' is not available or it is disabled. Please check the model configuration.")
     if not model_details.get("enabled", False):
         raise ValueError(f"The specified model '{model_name}' is currently disabled. Please try with another model.")
-    return ChatGroq(model=model_name, api_key=SecretStr(GROQ_API_KEY))
+    return ChatOpenAI(
+        model=model_name,
+        api_key=OPENROUTER_API_KEY,
+        base_url=OPENROUTER_BASE_URL,
+    )
 
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 

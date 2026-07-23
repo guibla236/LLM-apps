@@ -16,7 +16,7 @@ warnings.warn(
 )
 
 from pydantic import BaseModel, field_validator, ConfigDict, Field
-from .third_party_clients import default_groq_llm_client
+from .third_party_clients import default_chat_client
 import os
 import sys
 import re
@@ -120,7 +120,7 @@ async def summarize_news(news: NewsInput) -> NewsSummary:
         if not NEWS_SUMMARIZER_MODEL_NAME:
             raise ValueError("La variable de entorno CHAT_MODEL_NAME no está configurada")
 
-        response = await default_groq_llm_client.ainvoke(
+        response = await default_chat_client.ainvoke(
             input=[
                 {
                     "role": "system",

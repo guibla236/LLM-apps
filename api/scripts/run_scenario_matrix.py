@@ -261,6 +261,7 @@ def main():
                 "--golden-json", str(golden["path"]),
                 "--scenario-name", scenario["name"],
                 "--search-method", scenario["search_method"],
+                "--search-type", "tickets_only",
                 "--k", str(args.k),
                 "--delay", str(args.delay),
             ]

@@ -10,7 +10,7 @@ from typing import List, Optional
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
-from .third_party_clients import get_groq_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
+from .third_party_clients import get_chat_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
 from .rag_tickets_ingestor import TicketModel
 from .utils import extract_json_from_llm_response, load_prompt
 from models.search import SearchResult, SearchType, SearchMethod
@@ -77,7 +77,7 @@ async def generate_hypothetical_ticket(query: str, model_name: str) -> str:
 
     # load the template from disk to keep prompts maintainable
     hyde_prompt = PromptTemplate.from_template(load_prompt("hyde_ticket.md"))
-    chain = hyde_prompt | get_groq_client(model_name).bind(temperature=0, max_tokens=512)
+    chain = hyde_prompt | get_chat_client(model_name).bind(temperature=0, max_tokens=512)
     response = await chain.ainvoke({"query": query})
 
     return str(response.content)

@@ -162,6 +162,42 @@ def call_raw_search(
         return []
 
 
+def call_augment_search(
+    api_url: str,
+    query: str,
+    search_type: str,
+    k: int,
+    hybrid_search: bool,
+    use_hyde: bool,
+    api_key: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Call /api/augment_search_results and return the LLM-generated summary."""
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["X-API-KEY"] = api_key
+
+    payload = {
+        "description": query,
+        "search_type": search_type,
+        "k": k,
+        "hybrid_search": hybrid_search,
+        "use_hyde": use_hyde,
+    }
+
+    try:
+        resp = requests.post(
+            f"{api_url}/api/augment_search_results",
+            json=payload,
+            headers=headers,
+            timeout=120,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        print(f"\n  ⚠  Augment API request failed: {e}")
+        return None
+
+
 def results_to_context(results: List[Dict[str, Any]]) -> str:
     """Convert API search results to a single context string."""
     if not results:
@@ -377,9 +413,9 @@ def main():
     )
     parser.add_argument(
         "--search-type",
-        default="both",
+        default="tickets_only",
         choices=["tickets_only", "kb_only", "both"],
-        help="Search type (default: both)",
+        help="Search type (default: tickets_only — KBs excluded to avoid legacy Spanish content)",
     )
     parser.add_argument(
         "--k",
@@ -503,7 +539,7 @@ def main():
             print(f"\n  ⚠  Skipping item {idx}: no question field")
             continue
 
-        # Call API
+        # Step 1: retrieve context (raw_unified_search)
         results = call_raw_search(
             api_url=args.api_url,
             query=question,
@@ -514,8 +550,6 @@ def main():
             api_key=api_key,
         )
 
-        # Build context
-        context_str = results_to_context(results)
         retrieval_context = results_to_retrieval_context(results)
 
         if not retrieval_context:
@@ -536,10 +570,29 @@ def main():
             time.sleep(args.delay)
             continue
 
+        # Step 2: generate answer (augment_search_results)
+        augment_result = call_augment_search(
+            api_url=args.api_url,
+            query=question,
+            search_type=args.search_type,
+            k=args.k,
+            hybrid_search=(args.search_method != "bm25_only"),
+            use_hyde=args.use_hyde,
+            api_key=api_key,
+        )
+
+        actual_output = ""
+        if augment_result:
+            actual_output = augment_result.get("summary", "")
+        else:
+            # Fallback: use context string if generation fails
+            actual_output = results_to_context(results)
+            print(f"\n  ⚠  Generation failed for question {idx}, using context as actual_output")
+
         # Build test case
         test_case = LLMTestCase(
             input=question,
-            actual_output=context_str,
+            actual_output=actual_output,
             expected_output=expected_answer,
             retrieval_context=retrieval_context,
         )
