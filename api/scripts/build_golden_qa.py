@@ -365,7 +365,7 @@ async def main_async(args):
         else:
             print(f"  [DRY-RUN] Would delete {deleted} vectors from Pinecone")
 
-        # ── 8. Rebuild BM25 ──
+        # ── 7. Rebuild BM25 ──
         print(f"\n  Rebuilding BM25 index (excluding {len(all_ids_sampled)} golden IDs)...")
         success = rebuild_bm25(all_ids_sampled, dry_run=args.dry_run)
         if success and not args.dry_run:
