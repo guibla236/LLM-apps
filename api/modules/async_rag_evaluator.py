@@ -15,7 +15,7 @@ from deepeval.metrics import (
     ToxicityMetric, BiasMetric
 )
 from deepeval.models.base_model import DeepEvalBaseLLM
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from fastapi.responses import FileResponse
 from fastapi import UploadFile, BackgroundTasks
 
@@ -46,7 +46,8 @@ EVAL_RETRY_BASE_SECONDS = float(os.getenv("EVAL_RETRY_BASE_SECONDS", 2.0))
 EVAL_RETRY_MAX_SECONDS = float(os.getenv("EVAL_RETRY_MAX_SECONDS", 40.0))
 EVAL_RETRY_JITTER_SECONDS = float(os.getenv("EVAL_RETRY_JITTER_SECONDS", 1.0))
 
-JUDGE_MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
+JUDGE_MODEL_NAME = "deepseek/deepseek-v4-flash"  # Dev. Final: change to openai/gpt-5-nano
+JUDGE_BASE_URL = "https://openrouter.ai/api/v1"
 
 EVALUATION_RUNNERS: dict[str, asyncio.Task] = {}
 EVALUATION_SHUTDOWN_EVENT = asyncio.Event()
@@ -217,7 +218,16 @@ async def run_evaluation_task(
         EVALUATION_TASKS[task_id]["status"] = "in_progress"
 
         # 1. Judge LLM config
-        llm = ChatGroq(model=JUDGE_MODEL_NAME, temperature = 0)
+        ev = os.environ
+        api_key = ev.get("OPENROUTER_API_KEY") or ev.get("OPENAI_API_KEY")
+        if not api_key:
+            logger.error("OPENROUTER_API_KEY not set — evaluation will fail")
+        llm = ChatOpenAI(
+            model=JUDGE_MODEL_NAME,
+            api_key=api_key,
+            base_url=JUDGE_BASE_URL,
+            temperature=0,
+        )
         deepeval_model = CustomDeepEval(llm)
 
         # 2. Instantiate selected metrics
