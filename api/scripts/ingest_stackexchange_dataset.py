@@ -35,6 +35,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -231,7 +232,12 @@ def _build_pinecone_vectors(
     embeddings_model,
     batch_size: int = 100,
 ) -> List[tuple]:
-    """Build (id, vector, metadata) tuples for Pinecone upsert.
+    """Build (id, vector, metadata) tuples for Pinecone upsert with chunking.
+
+    Each pair's title_body is split into chunks (when > SE_CHUNK_SIZE)
+    to match the chunking strategy of the legacy synthetic ingestor.
+    Chunks get deterministic IDs: {ticket_id}_{chunk_index}.
+    All chunks of the same pair share identical metadata.
 
     Uses a single namespace "kb-se-all" (per EDA decision):
     the corpus is cross-community (98% of DevOps content lives
@@ -239,33 +245,47 @@ def _build_pinecone_vectors(
     don't add retrieval value. Community is stored in metadata
     for provenance tracking.
     """
-    vectors = []
-    num_batches = (len(pairs) + batch_size - 1) // batch_size
+    # ── 1. Expand pairs into chunk records (1:N mapping) ──
+    chunk_records: list[tuple[str, str, dict]] = []  # (chunk_text, chunk_id, pair)
+    for pair in pairs:
+        ticket_id = pair["ticket_id"]
+        title_body = pair["title_body"]
+
+        if len(title_body) > SE_CHUNK_SIZE:
+            chunks = _text_splitter.split_text(title_body)
+        else:
+            chunks = [title_body]
+
+        for chunk_idx, chunk_text in enumerate(chunks):
+            chunk_id = f"{ticket_id}_chunk-{chunk_idx}"
+            chunk_records.append((chunk_text, chunk_id, pair))
+
+    # ── 2. Embed chunks in batches ──
+    vectors: list[tuple] = []
+    total_chunks = len(chunk_records)
+    num_batches = (total_chunks + batch_size - 1) // batch_size
 
     for i in tqdm(
-        range(0, len(pairs), batch_size),
+        range(0, total_chunks, batch_size),
         total=num_batches,
-        desc="  Embedding batches",
+        desc="  Embedding chunks",
         unit="batch",
     ):
-        batch = pairs[i : i + batch_size]
-        texts = [p["title_body"] for p in batch]
+        batch = chunk_records[i : i + batch_size]
+        texts = [r[0] for r in batch]
         embeddings = embeddings_model.embed_documents(texts)
 
-        for j, (pair, vec) in enumerate(zip(batch, embeddings)):
-            ticket_id = make_ticket_id(pair["community"], pair["original_id"])
+        for (chunk_text, chunk_id, pair), vec in zip(batch, embeddings):
             expected_truncated = (pair.get("upvoted_answer") or "")[:500]
-            vectors.append(
-                (
-                    ticket_id,
-                    vec,
-                    {
-                        "community": pair["community"],
-                        "expected_output": expected_truncated,
-                        "priority": pair["priority"].value,
-                    },
-                )
-            )
+            vectors.append((
+                chunk_id,
+                vec,
+                {
+                    "community": pair["community"],
+                    "expected_output": expected_truncated,
+                    "priority": pair["priority"].value,
+                },
+            ))
 
     return vectors
 
@@ -347,7 +367,7 @@ async def _mongo_upsert_qa_pairs(db, pairs: List[dict], dry_run: bool = False):
             "ticketId": pair["ticket_id"],
             "title_body": pair["title_body"],
             "upvoted_answer": pair.get("upvoted_answer") or "",
-            "downvoted_answer": pair.get("downvoted_answer"),
+            "downvoted_answer": pair.get("downvoted_answer") or "",
             "community": pair["community"],
             "priority": pair["priority"].value,
             "ingested_at": now,
@@ -410,7 +430,11 @@ async def process_community(
             skipped_short_answer += 1
             continue
 
-        original_id = record.get("id") or hash(record.get("title_body", ""))
+        # Deterministic ID: md5 of title_body (dataset has no 'id' field)
+        # Python's hash() is randomized per process, so we use hashlib
+        # for stable IDs across runs → idempotent MongoDB upserts.
+        raw = record.get("title_body") or record.get("title", "")
+        original_id = hashlib.md5(raw.encode()).hexdigest()[:12]
         ticket_id = make_ticket_id(community, original_id)
 
         # Resume mode: skip IDs already vectorized in Pinecone
@@ -463,7 +487,7 @@ async def process_community(
             pinecone_pairs, embeddings_model
         )
         _pinecone_upsert(pinecone_index, vectors)
-        print(f"  ✓ Pinecone: {len(pinecone_pairs)} vectors upserted (namespace: kb-se-all)")
+        print(f"  ✓ Pinecone: {len(vectors)} vectors upserted from {len(pinecone_pairs)} pairs (namespace: kb-se-all)")
     else:
         print(f"  - Pinecone: skipped (no pairs or no index)")
 
@@ -617,7 +641,7 @@ async def main_async():
         # In resume mode, pre-fetch existing IDs from Pinecone to skip them
         if args.resume:
             print(f"\n  Fetching existing IDs from Pinecone (resume mode)...")
-            existing_ids = _fetch_existing_ids(pinecone_index)
+            existing_ids = await _fetch_existing_ids(pinecone_index, mongo_db)
             print(f"  Found {len(existing_ids):,} existing vectors in '{PINECONE_NAMESPACE}'")
 
     # ── Process each community ──
