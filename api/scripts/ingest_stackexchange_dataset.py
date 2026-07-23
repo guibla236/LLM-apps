@@ -48,6 +48,7 @@ from typing import List, Optional, Set
 sys.path.append(str(Path(__file__).parent.parent))
 
 from datasets import load_dataset
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tqdm import tqdm
 
 from models.tickets import TicketModel, TicketPriority
@@ -102,7 +103,7 @@ def infer_priority(title_body: str, answer: str) -> TicketPriority:
     return TicketPriority.MEDIUM
 
 
-def make_ticket_id(community: str, original_id: int) -> str:
+def make_ticket_id(community: str, original_id: str) -> str:
     """Generate a deterministic SE ticket ID."""
     return f"SE-{community.upper()}-{original_id}"
 
@@ -210,6 +211,19 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
 
 PINECONE_NAMESPACE = "kb-se-all"
 PINECONE_UPSERT_BATCH_SIZE = 500  # Pinecone Free Tier payload limit
+
+# Chunking configuration per EDA findings.
+# 75% of SE questions are under 1000 chars; maximum is 4199 chars.
+# chunk_size=1000 keeps 75% in a single chunk, longest split into ≤4 chunks.
+# chunk_overlap=100 maintains continuity between fragments.
+# Format: SE-{COMMUNITY}-{id}_chunk-{i}
+SE_CHUNK_SIZE = 1000
+SE_CHUNK_OVERLAP = 100
+_text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=SE_CHUNK_SIZE,
+    chunk_overlap=SE_CHUNK_OVERLAP,
+    add_start_index=True,
+)
 
 
 def _build_pinecone_vectors(
