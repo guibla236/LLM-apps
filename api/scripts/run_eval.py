@@ -10,13 +10,13 @@ Usage:
     # Basic evaluation
     python scripts/run_eval.py \\
         --api-url http://localhost:8000 \\
-        --golden-json ../evaluation_notebooks/goldens/golden_expert.json \\
+        --golden-json ../evaluation_notebooks/goldens/golden_se_200.json \\
         --scenario-name baseline_vector_only
 
     # With API key auth
     python scripts/run_eval.py \\
         --api-url http://localhost:8000 \\
-        --golden-json ../evaluation_notebooks/goldens/golden_expert.json \\
+        --golden-json ../evaluation_notebooks/goldens/golden_se_200.json \\
         --search-method vector_only \\
         --k 10 \\
         --api-key your-api-key-here
@@ -24,14 +24,14 @@ Usage:
     # Custom output directory
     python scripts/run_eval.py \\
         --api-url http://localhost:8000 \\
-        --golden-json ../evaluation_notebooks/goldens/golden_expert.json \\
+        --golden-json ../evaluation_notebooks/goldens/golden_se_200.json \\
         --output-dir ../evaluation_notebooks/raw_results/ \\
         --delay 3.0
 
 Requires:
     - Running RAG API at --api-url
-    - GROQ_API_KEY environment variable (for DeepEval judge)
-    - deepeval, langchain-groq, requests installed
+    - OPENROUTER_API_KEY environment variable (or OpenRouter API key in .env)
+    - deepeval, langchain-openai, requests installed
 """
 
 import argparse
@@ -45,12 +45,14 @@ from pathlib import Path
 from statistics import mean, median, stdev
 from typing import Any, Dict, List, Optional
 
+from dotenv import load_dotenv
+load_dotenv(str(Path(__file__).parent.parent / ".env"))
+
 import requests
 from tqdm import tqdm
 
 # DeepEval imports
-from deepeval import evaluate
-from deepeval.test_case import LLMTestCase
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import (
     GEval,
     FaithfulnessMetric,
@@ -59,11 +61,11 @@ from deepeval.metrics import (
     ContextualRecallMetric,
 )
 from deepeval.models.base_model import DeepEvalBaseLLM
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 
 # ── Constants ──
 
-DEFAULT_JUDGE_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+DEFAULT_JUDGE_MODEL = "deepseek/deepseek-v4-flash"  # Dev: cheap. Final: --judge-model openai/gpt-5-nano
 DEFAULT_DELAY = 2.0  # seconds between API calls (rate limit: 10/min)
 DEFAULT_K = 5
 REQUIRED_METRICS = [
@@ -80,14 +82,16 @@ RETRY_BASE_SECONDS = 2.0
 RETRY_MAX_SECONDS = 40.0
 RETRY_JITTER_SECONDS = 1.0
 
-# ── Custom DeepEval wrapper (reuses pattern from async_rag_evaluator.py) ──
+
+# ── Custom DeepEval wrapper ──
 
 
 class CustomDeepEval(DeepEvalBaseLLM):
-    """Adapts a LangChain ChatGroq model to DeepEval's LLM interface."""
+    """Adapts a LangChain ChatOpenAI model to DeepEval's LLM interface."""
 
-    def __init__(self, model):
+    def __init__(self, model, model_name: str = "unknown"):
         self.model = model
+        self._model_name = model_name
 
     def load_model(self):
         return self.model
@@ -99,7 +103,19 @@ class CustomDeepEval(DeepEvalBaseLLM):
         return self.generate(prompt)
 
     def get_model_name(self):
-        return JUDGE_MODEL
+        return self._model_name
+
+    def generate_raw_response(self, prompt: str, **kwargs):
+        """DeepEval's GEval calls this. Falls back to generate_with_schema_and_extract if it raises AttributeError,
+        but some metric versions call it directly. We implement it for compatibility."""
+        from collections import namedtuple
+        result = self.generate(prompt)
+        _log_debug(f"generate_raw_response() returning: {repr(result[:300])}")
+        # Simulate OpenAI-style response object
+        Choice = namedtuple("Choice", ["message"])
+        Message = namedtuple("Message", ["content"])
+        RawResponse = namedtuple("RawResponse", ["choices"])
+        return RawResponse(choices=[Choice(message=Message(content=result))]), 0.0
 
 
 # ── API client ──
@@ -136,6 +152,10 @@ def call_raw_search(
         )
         resp.raise_for_status()
         data = resp.json()
+        # API returns a list of context strings directly
+        if isinstance(data, list):
+            return [{"id": f"result-{i}", "content": item, "score": 1.0}
+                    for i, item in enumerate(data)]
         return data.get("results", [])
     except requests.exceptions.RequestException as e:
         print(f"\n  ⚠  API request failed: {e}")
@@ -180,23 +200,26 @@ def _build_metrics(judge_model) -> dict:
                 LLMTestCaseParams.EXPECTED_OUTPUT,
             ],
             model=judge_model,
-            verbose=True,
         ),
         "faithfulness": FaithfulnessMetric(
+            threshold=0.5,
             model=judge_model,
-            verbose=True,
+            include_reason=True,
         ),
         "answer_relevancy": AnswerRelevancyMetric(
+            threshold=0.5,
             model=judge_model,
-            verbose=True,
+            include_reason=True,
         ),
         "contextual_precision": ContextualPrecisionMetric(
+            threshold=0.5,
             model=judge_model,
-            verbose=True,
+            include_reason=True,
         ),
         "contextual_recall": ContextualRecallMetric(
+            threshold=0.5,
             model=judge_model,
-            verbose=True,
+            include_reason=True,
         ),
     }
 
@@ -300,13 +323,12 @@ def _json_aggregate_path(csv_path: str) -> str:
 
 def _compute_aggregate(rows: List[Dict]) -> dict:
     """Compute mean, median, std, min, max for each metric."""
-    metrics = [
-        "contextual_precision",
-        "contextual_recall",
-        "faithfulness",
-        "answer_relevancy",
-        "correctness",
-    ]
+    metrics = list(set(
+        [m for m in [
+            "contextual_precision", "contextual_recall",
+            "faithfulness", "answer_relevancy", "correctness",
+        ] if any(m in r for r in rows)]
+    ))
     aggregate = {"total_questions": len(rows)}
     for m in metrics:
         vals = [r[m] for r in rows if r[m] is not None]
@@ -406,20 +428,20 @@ def main():
     )
     args = parser.parse_args()
 
-    global JUDGE_MODEL
-    JUDGE_MODEL = args.judge_model
-
     # ── Resolve paths ──
     golden_path = Path(args.golden_json)
     if not golden_path.exists():
         print(f"ERROR: Golden file not found: {golden_path}")
         sys.exit(1)
 
-    golden_name = golden_path.stem  # e.g. "golden_expert"
+    golden_name = golden_path.stem  # e.g. "golden_se_200"
     output_dir = args.output_dir or os.getenv(
         "EVAL_OUTPUT_DIR",
         str(Path(__file__).parent.parent.parent / "evaluation_notebooks" / "raw_results"),
     )
+
+    # Auto-detect API key from env if not provided via CLI
+    api_key = args.api_key or os.getenv("APP_API_KEY")
 
     # ── Load golden QA ──
     print(f"Loading golden QA from {golden_path}")
@@ -438,17 +460,18 @@ def main():
 
     # ── Initialize judge model ──
     print(f"\nInitializing judge: {args.judge_model}")
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        print("ERROR: GROQ_API_KEY environment variable is required")
+    or_api_key = os.getenv("OPENROUTER_API_KEY")
+    if not or_api_key:
+        print("ERROR: OPENROUTER_API_KEY environment variable is required")
         sys.exit(1)
 
-    chat_groq = ChatGroq(
+    llm = ChatOpenAI(
         model=args.judge_model,
-        api_key=groq_api_key,
+        api_key=or_api_key,
+        base_url="https://openrouter.ai/api/v1",
         temperature=0.0,
     )
-    judge = CustomDeepEval(chat_groq)
+    judge = CustomDeepEval(llm, model_name=args.judge_model)
 
     # Build metrics
     metrics_map = _build_metrics(judge)
@@ -488,7 +511,7 @@ def main():
             search_type=args.search_type,
             k=args.k,
             use_hyde=args.use_hyde,
-            api_key=args.api_key,
+            api_key=api_key,
         )
 
         # Build context

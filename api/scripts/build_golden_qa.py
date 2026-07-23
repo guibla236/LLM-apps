@@ -2,9 +2,9 @@
 """
 Golden QA Builder — stratified sampling from MongoDB qa_pairs.
 
-Samples 200 QA pairs (50 Expert + 150 Operational) from the real StackExchange
-corpus in MongoDB, writes DeepEval-compatible golden JSON files, and optionally
-excludes the sampled ticketIds from the Pinecone vector index + rebuilds BM25.
+Samples 200 QA pairs stratified across 9 StackExchange communities (single
+golden_se_200.json — no Expert/Operational split), optionally excludes the
+sampled ticketIds from the Pinecone vector index, and rebuilds BM25.
 
 Usage:
     # Dry-run: show counts without writing
@@ -31,6 +31,10 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+# Load .env from api/ directory
+from dotenv import load_dotenv
+load_dotenv(str(Path(__file__).parent.parent / ".env"))
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -42,26 +46,22 @@ API_DIR = Path(__file__).parent.parent
 GOLDENS_DIR = API_DIR.parent / "evaluation_notebooks" / "goldens"
 BM25_SCRIPT = API_DIR / "scripts" / "build_bm25_index.py"
 
-# ── Stratified quotas ──
+# ── Stratified quotas (single dataset, no Expert/Operational split) ──
 
-EXPERT_QUOTAS: Dict[str, int] = {
+STRATIFIED_QUOTAS: Dict[str, int] = {
+    "superuser": 50,
+    "askubuntu": 50,
+    "serverfault": 15,
+    "apple": 25,
+    "android": 25,
     "dba": 10,
     "networkengineering": 10,
-    "serverfault": 15,
     "security": 10,
     "devops": 5,
 }
 
-OPERATIONAL_QUOTAS: Dict[str, int] = {
-    "superuser": 50,
-    "askubuntu": 50,
-    "apple": 25,
-    "android": 25,
-}
-
-# Fallback communities when quotas can't be met
-EXPERT_FALLBACK = "serverfault"
-OPERATIONAL_FALLBACK = "superuser"
+# Fallback community when quotas can't be met
+FALLBACK_COMMUNITY = "superuser"
 
 # Chunking config (must match ingest_stackexchange_dataset.py)
 SE_CHUNK_SIZE = 1000
@@ -176,47 +176,37 @@ def delete_from_pinecone(chunk_ids: List[str], dry_run: bool = False) -> int:
     return total
 
 
-async def rebuild_bm25(exclude_ids: Set[str], dry_run: bool = False) -> bool:
-    """Rebuild BM25 index excluding golden ticketIds."""
+def rebuild_bm25(exclude_ids: Set[str], dry_run: bool = False) -> bool:
+    """Rebuild BM25 index excluding golden ticketIds using subprocess."""
     if dry_run:
         print(f"  [DRY-RUN] Would rebuild BM25 index excluding {len(exclude_ids)} IDs")
         return True
 
-    # Write excluded IDs to temp file for build_bm25_index.py
+    # Write excluded IDs to temp file
     tmp_path = API_DIR / "scripts" / ".golden_excluded_ids.tmp"
     try:
         with open(tmp_path, "w") as f:
             for tid in sorted(exclude_ids):
                 f.write(tid + "\n")
 
-        # Import and run BM25 builder with exclude filter
-        sys.path.insert(0, str(API_DIR))
-        from scripts.build_bm25_index import build_bm25_index
-
-        # Monkey-patch: add exclude filter to the builder
-        original_process = None
-        try:
-            from scripts import build_bm25_index as bm25_mod
-
-            original_process = bm25_mod._process_batch
-
-            def _filtered_process(batch, tickets_for_bm25):
-                filtered = [doc for doc in batch if doc.get("ticketId", "") not in exclude_ids]
-                original_process(filtered, tickets_for_bm25)
-
-            bm25_mod._process_batch = _filtered_process
-            await build_bm25_index()
-            bm25_mod._process_batch = original_process
-        finally:
-            if original_process:
-                from scripts import build_bm25_index as bm25_mod
-
-                bm25_mod._process_batch = original_process
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(API_DIR / "scripts" / "build_bm25_index.py"),
+             "--exclude-ids-file", str(tmp_path)],
+            cwd=str(API_DIR),
+            capture_output=True,
+            text=True,
+        )
+        print(result.stdout)
+        if result.returncode != 0:
+            print(f"  ⚠  BM25 rebuild stderr: {result.stderr}")
+            return False
+        if result.stderr:
+            print(f"  stderr: {result.stderr}")
+        return True
     finally:
         if tmp_path.exists():
             tmp_path.unlink()
-
-    return True
 
 
 # ── Main ──
@@ -245,151 +235,116 @@ async def main_async(args):
         sys.exit(1)
 
     # ── 2. Show available pairs per target community ──
-    all_target_communities = list(set(list(EXPERT_QUOTAS.keys()) + list(OPERATIONAL_QUOTAS.keys())))
+    all_target_communities = list(STRATIFIED_QUOTAS.keys())
     available = await count_by_community(db, all_target_communities)
     print(f"\n{'='*60}")
-    print("  Available pairs per target community")
+    print("  Available pairs per target community (single golden_se_200.json)")
     print(f"{'='*60}")
     for comm in sorted(all_target_communities):
         avail = available.get(comm, 0)
-        quota = EXPERT_QUOTAS.get(comm) or OPERATIONAL_QUOTAS.get(comm)
+        quota = STRATIFIED_QUOTAS[comm]
         flag = "OK" if avail >= quota else "SHORT"
         print(f"  {comm:<25} {avail:>6,} available / {quota:>3} needed  [{flag}]")
 
-    # ── 3. Sample Expert pairs ──
+    # ── 3. Sample all pairs (single stratified pass) ──
     print(f"\n{'='*60}")
-    print("  Sampling Expert (50 pairs)")
+    print("  Sampling 200 pairs (9 communities)")
     print(f"{'='*60}")
-    expert_pairs: List[dict] = []
-    for community, quota in sorted(EXPERT_QUOTAS.items()):
+    golden_pairs: List[dict] = []
+    for community, quota in sorted(STRATIFIED_QUOTAS.items()):
         avail = available.get(community, 0)
         actual_quota = min(quota, avail)
         if actual_quota < quota:
             deficit = quota - actual_quota
             print(f"  ⚠  {community}: only {actual_quota}/{quota} available. Deficit={deficit}")
-            if deficit > 0:
-                print(f"      Will compensate from {EXPERT_FALLBACK}")
+            print(f"      Will compensate from {FALLBACK_COMMUNITY}")
         else:
             print(f"  {community}: sampling {actual_quota}")
         pairs = await sample_community(db, community, actual_quota, RANDOM_SEED, all_ids_sampled)
         for p in pairs:
             tid = p.get("ticketId", "")
             all_ids_sampled.add(tid)
-            expert_pairs.append(build_golden_item(p))
+            golden_pairs.append(build_golden_item(p))
 
     # Compensate deficits
-    for community, quota in sorted(EXPERT_QUOTAS.items()):
+    for community, quota in sorted(STRATIFIED_QUOTAS.items()):
         avail = available.get(community, 0)
         if avail < quota:
             deficit = quota - avail
-            print(f"  Compensating {deficit} from {EXPERT_FALLBACK}...")
+            print(f"  Compensating {deficit} from {FALLBACK_COMMUNITY}...")
             extra = await sample_community(
-                db, EXPERT_FALLBACK, deficit, RANDOM_SEED + 1, all_ids_sampled
+                db, FALLBACK_COMMUNITY, deficit, RANDOM_SEED + 1, all_ids_sampled
             )
             for p in extra:
                 tid = p.get("ticketId", "")
                 all_ids_sampled.add(tid)
-                expert_pairs.append(build_golden_item(p))
+                golden_pairs.append(build_golden_item(p))
 
-    print(f"  → Total expert: {len(expert_pairs)}")
+    print(f"  → Total golden: {len(golden_pairs)}")
 
-    # ── 4. Sample Operational pairs ──
-    print(f"\n{'='*60}")
-    print("  Sampling Operational (150 pairs)")
-    print(f"{'='*60}")
-    operational_pairs: List[dict] = []
-    for community, quota in sorted(OPERATIONAL_QUOTAS.items()):
-        avail = available.get(community, 0)
-        actual_quota = min(quota, avail)
-        if actual_quota < quota:
-            deficit = quota - actual_quota
-            print(f"  ⚠  {community}: only {actual_quota}/{quota} available. Deficit={deficit}")
-        print(f"  {community}: sampling {actual_quota}")
-        pairs = await sample_community(db, community, actual_quota, RANDOM_SEED, all_ids_sampled)
-        for p in pairs:
-            tid = p.get("ticketId", "")
-            all_ids_sampled.add(tid)
-            operational_pairs.append(build_golden_item(p))
-
-    # Compensate deficits
-    for community, quota in sorted(OPERATIONAL_QUOTAS.items()):
-        avail = available.get(community, 0)
-        if avail < quota:
-            deficit = quota - avail
-            print(f"  Compensating {deficit} from {OPERATIONAL_FALLBACK}...")
-            extra = await sample_community(
-                db, OPERATIONAL_FALLBACK, deficit, RANDOM_SEED + 2, all_ids_sampled
-            )
-            for p in extra:
-                tid = p.get("ticketId", "")
-                all_ids_sampled.add(tid)
-                operational_pairs.append(build_golden_item(p))
-
-    print(f"  → Total operational: {len(operational_pairs)}")
-
-    # ── 5. Validate ──
-    all_pairs = expert_pairs + operational_pairs
-    all_tids = [p["ticketId"] for p in all_pairs]
+    # ── 4. Validate ──
+    all_tids = [p["ticketId"] for p in golden_pairs]
     dupes = len(all_tids) - len(set(all_tids))
 
     print(f"\n{'='*60}")
     print(f"  Validation")
     print(f"{'='*60}")
-    print(f"  Expert:      {len(expert_pairs)}")
-    print(f"  Operational: {len(operational_pairs)}")
-    print(f"  Total:       {len(all_pairs)}")
+    print(f"  Total:       {len(golden_pairs)}")
     print(f"  Duplicates:  {dupes}")
-    print(f"  All have question: {all(p.get('question') for p in all_pairs)}")
-    print(f"  All have answer:   {all(p.get('answer') for p in all_pairs)}")
-    print(f"  All have ticketId: {all(p.get('ticketId') for p in all_pairs)}")
+    print(f"  All have question: {all(p.get('question') for p in golden_pairs)}")
+    print(f"  All have answer:   {all(p.get('answer') for p in golden_pairs)}")
+    print(f"  All have ticketId: {all(p.get('ticketId') for p in golden_pairs)}")
 
-    if len(all_pairs) != 200:
-        print(f"\n  ⚠  WARNING: Expected 200 pairs, got {len(all_pairs)}")
+    if len(golden_pairs) != 200:
+        print(f"\n  ⚠  WARNING: Expected 200 pairs, got {len(golden_pairs)}")
     if dupes > 0:
         print(f"\n  ⚠  WARNING: Found {dupes} duplicate ticketIds!")
         sys.exit(1)
 
-    # ── 6. Write golden JSONs (with .bak backup) ──
+    # ── 5. Write golden JSON (single file, with .bak backup) ──
+    golden_path = GOLDENS_DIR / "golden_se_200.json"
+
     if args.dry_run:
-        print(f"\n  [DRY-RUN] Would write golden JSONs to {GOLDENS_DIR}")
-        print(f"  [DRY-RUN] Would backup existing files with .bak")
+        print(f"\n  [DRY-RUN] Would write golden JSON to {golden_path}")
+        print(f"  [DRY-RUN] Would backup existing golden_se_200.json with .bak")
     else:
         GOLDENS_DIR.mkdir(parents=True, exist_ok=True)
 
-        expert_path = GOLDENS_DIR / "golden_expert.json"
-        operational_path = GOLDENS_DIR / "golden_operational.json"
+        # Backup existing golden_se_200.json if present
+        if golden_path.exists():
+            bak_path = golden_path.with_suffix(".json.bak")
+            golden_path.rename(bak_path)
+            print(f"\n  Backed up {golden_path.name} → {bak_path.name}")
 
-        # Backup existing files
-        for path in [expert_path, operational_path]:
-            if path.exists():
-                bak_path = path.with_suffix(".json.bak")
-                path.rename(bak_path)
-                print(f"\n  Backed up {path.name} → {bak_path.name}")
+        # Also backup legacy golden_expert/operational if still present
+        for legacy_name in ["golden_expert.json", "golden_operational.json"]:
+            legacy_path = GOLDENS_DIR / legacy_name
+            if legacy_path.exists():
+                bak_path = legacy_path.with_suffix(".json.bak")
+                if not bak_path.exists():
+                    legacy_path.rename(bak_path)
+                    print(f"  Backed up legacy {legacy_path.name} → {bak_path.name}")
 
-        # Write new goldens
-        with open(expert_path, "w", encoding="utf-8") as f:
-            json.dump(expert_pairs, f, ensure_ascii=False, indent=2)
-        print(f"  Written: {expert_path} ({len(expert_pairs)} pairs)")
+        # Write new golden
+        with open(golden_path, "w", encoding="utf-8") as f:
+            json.dump(golden_pairs, f, ensure_ascii=False, indent=2)
+        print(f"  Written: {golden_path} ({len(golden_pairs)} pairs)")
 
-        with open(operational_path, "w", encoding="utf-8") as f:
-            json.dump(operational_pairs, f, ensure_ascii=False, indent=2)
-        print(f"  Written: {operational_path} ({len(operational_pairs)} pairs)")
-
-    # ── 7. Exclude golden IDs from index ──
+    # ── 6. Exclude golden IDs from index ──
+    all_chunk_ids: List[str] = []
     if not args.skip_index_exclusion:
         print(f"\n{'='*60}")
         print("  Excluding golden IDs from Pinecone index")
         print(f"{'='*60}")
 
         # Compute chunk IDs for each golden pair
-        all_chunk_ids: List[str] = []
-        for p in all_pairs:
+        for p in golden_pairs:
             tid = p["ticketId"]
             title_body = p["question"]
             chunk_ids = compute_chunk_ids(title_body, tid)
             all_chunk_ids.extend(chunk_ids)
 
-        print(f"  Found {len(all_chunk_ids)} chunk IDs to delete for {len(all_pairs)} golden pairs")
+        print(f"  Found {len(all_chunk_ids)} chunk IDs to delete for {len(golden_pairs)} golden pairs")
 
         deleted = delete_from_pinecone(all_chunk_ids, dry_run=args.dry_run)
         if not args.dry_run:
@@ -397,23 +352,22 @@ async def main_async(args):
         else:
             print(f"  [DRY-RUN] Would delete {deleted} vectors from Pinecone")
 
-        # ── 8. Rebuild BM25 ──
+        # ── 7. Rebuild BM25 ──
         print(f"\n  Rebuilding BM25 index (excluding {len(all_ids_sampled)} golden IDs)...")
-        success = await rebuild_bm25(all_ids_sampled, dry_run=args.dry_run)
+        success = rebuild_bm25(all_ids_sampled, dry_run=args.dry_run)
         if success and not args.dry_run:
             print("  ✓ BM25 index rebuilt successfully")
     else:
         print("\n  Skipping index exclusion (--skip-index-exclusion)")
 
-    # ── 9. Summary ──
+    # ── 8. Summary ──
     print(f"\n{'='*60}")
     print("  Summary")
     print(f"{'='*60}")
-    print(f"  Expert pairs:      {len(expert_pairs)}")
-    print(f"  Operational pairs: {len(operational_pairs)}")
-    print(f"  Total golden:      {len(all_pairs)}")
+    print(f"  Total golden:      {len(golden_pairs)}")
     print(f"  Unique ticketIds:  {len(set(all_tids))}")
     print(f"  Excluded from idx: {'No (--skip-index-exclusion)' if args.skip_index_exclusion else f'{len(all_chunk_ids)} chunk IDs'}")
+    print(f"  Golden file:       {GOLDENS_DIR / 'golden_se_200.json'}")
 
     client.close()
 

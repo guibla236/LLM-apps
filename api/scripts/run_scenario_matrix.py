@@ -31,6 +31,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Load .env
+from dotenv import load_dotenv
+load_dotenv(str(Path(__file__).parent.parent / ".env"))
+
 # ── Paths ──
 
 API_DIR = Path(__file__).parent.parent
@@ -38,7 +42,6 @@ SCRIPTS_DIR = API_DIR / "scripts"
 RUN_EVAL = SCRIPTS_DIR / "run_eval.py"
 GOLDENS_DIR = API_DIR.parent / "evaluation_notebooks" / "goldens"
 RAW_RESULTS_DIR = API_DIR.parent / "evaluation_notebooks" / "raw_results"
-PLANS_DIR = API_DIR.parent / "evaluation_notebooks" / "plans"
 
 # ── Scenario definitions ──
 
@@ -79,14 +82,9 @@ SCENARIOS = [
 
 GOLDEN_FILES = [
     {
-        "name": "golden_expert",
-        "path": GOLDENS_DIR / "golden_expert.json",
-        "label": "Expert (50 pairs)",
-    },
-    {
-        "name": "golden_operational",
-        "path": GOLDENS_DIR / "golden_operational.json",
-        "label": "Operational (150 pairs)",
+        "name": "golden_se_200",
+        "path": GOLDENS_DIR / "golden_se_200.json",
+        "label": "StackExchange 200 pairs (9 communities)",
     },
 ]
 
@@ -211,6 +209,11 @@ def main():
         print("ERROR: GROQ_API_KEY environment variable is required")
         sys.exit(1)
 
+    # Auto-detect API key from .env for local runs
+    api_key = args.api_key or os.getenv("APP_API_KEY")
+    if not api_key:
+        print("WARNING: No API key provided. Use --api-key or set APP_API_KEY in .env")
+
     # ── Check goldens ──
     print("\nVerifying golden files...")
     if not _check_goldens():
@@ -262,8 +265,8 @@ def main():
                 "--delay", str(args.delay),
             ]
 
-            if args.api_key:
-                cmd.extend(["--api-key", args.api_key])
+            if api_key:
+                cmd.extend(["--api-key", api_key])
             if args.limit:
                 cmd.extend(["--limit", str(args.limit)])
 

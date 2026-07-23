@@ -9,18 +9,23 @@ section from the existing index.
 
 Usage:
     python scripts/build_bm25_index.py
+    python scripts/build_bm25_index.py --exclude-ids-file ../scripts/.golden_excluded_ids.tmp
 
 Requires:
     - MONGODB_URI and MONGODB_DB_NAME environment variables set
     - MongoDB qa_pairs collection populated (run ingest_stackexchange_dataset.py first)
 """
 
+import argparse
 import json
 import os
 import sys
 import asyncio
 from pathlib import Path
 from datetime import datetime, timezone
+from typing import Set
+
+from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -33,8 +38,24 @@ STATIC_DIR = API_DIR / "static"
 BM25_INDEX_PATH = STATIC_DIR / "bm25_index.json"
 
 
-async def build_bm25_index():
-    """Main builder: read MongoDB qa_pairs → write enriched bm25_index.json."""
+def load_exclude_ids(path: str) -> Set[str]:
+    """Load ticket IDs to exclude from a text file (one ID per line)."""
+    exclude = set()
+    with open(path, "r") as f:
+        for line in f:
+            tid = line.strip()
+            if tid:
+                exclude.add(tid)
+    print(f"Loaded {len(exclude)} ticket IDs to exclude from {path}")
+    return exclude
+
+
+async def build_bm25_index(exclude_ids: Set[str] = None):
+    """Main builder: read MongoDB qa_pairs → write enriched bm25_index.json.
+
+    Args:
+        exclude_ids: Optional set of ticketId values to exclude from the index.
+    """
     # ── 1. Connect to MongoDB ──
     uri = os.getenv("MONGODB_URI")
     db_name = os.getenv("MONGODB_DB_NAME")
@@ -65,12 +86,12 @@ async def build_bm25_index():
         async for doc in cursor:
             batch.append(doc)
             if len(batch) >= batch_size:
-                _process_batch(batch, tickets_for_bm25)
+                _process_batch(batch, tickets_for_bm25, exclude_ids)
                 print(f"  Processed {len(tickets_for_bm25)} / {total_docs}", end="\r")
                 batch = []
 
         if batch:
-            _process_batch(batch, tickets_for_bm25)
+            _process_batch(batch, tickets_for_bm25, exclude_ids)
 
         print(f"\n  Done. Total tickets: {len(tickets_for_bm25)}")
 
@@ -104,10 +125,18 @@ async def build_bm25_index():
     client.close()
 
 
-def _process_batch(batch: list, tickets_for_bm25: list):
-    """Transform a batch of MongoDB docs into BM25 ticket entries."""
+def _process_batch(batch: list, tickets_for_bm25: list, exclude_ids: Set[str] = None):
+    """Transform a batch of MongoDB docs into BM25 ticket entries.
+
+    Args:
+        batch: List of MongoDB documents.
+        tickets_for_bm25: Output list to append to.
+        exclude_ids: Optional set of ticketId values to skip.
+    """
     for doc in batch:
         ticket_id = doc.get("ticketId", "")
+        if exclude_ids and ticket_id in exclude_ids:
+            continue
         title_body = doc.get("title_body", "")
         upvoted_answer = doc.get("upvoted_answer", "") or ""
         community = doc.get("community", "")
@@ -129,4 +158,18 @@ def _process_batch(batch: list, tickets_for_bm25: list):
 
 
 if __name__ == "__main__":
-    asyncio.run(build_bm25_index())
+    parser = argparse.ArgumentParser(description="Build BM25 index from MongoDB qa_pairs")
+    parser.add_argument(
+        "--exclude-ids-file",
+        default=None,
+        help="Path to a text file with ticket IDs to exclude (one per line)",
+    )
+    args = parser.parse_args()
+
+    load_dotenv(str(API_DIR / ".env"))
+
+    exclude_ids = None
+    if args.exclude_ids_file:
+        exclude_ids = load_exclude_ids(args.exclude_ids_file)
+
+    asyncio.run(build_bm25_index(exclude_ids=exclude_ids))
