@@ -109,8 +109,12 @@ async def sample_community(
     if len(docs) == 0:
         return []
 
-    # Deterministic shuffle
-    rng = random.Random(seed + hash(community) % 2**31)
+    # Deterministic shuffle. IMPORTANT: Python's hash() is randomized
+    # between processes (PYTHONHASHSEED), so hash(community) would yield
+    # different selections on each run. Use crc32 for cross-run stability.
+    import zlib
+    community_seed = zlib.crc32(community.encode("utf-8")) & 0x7FFFFFFF
+    rng = random.Random(seed + community_seed)
     rng.shuffle(docs)
 
     selected = docs[:quota]
@@ -282,7 +286,16 @@ async def main_async(args):
 
     print(f"  → Total golden: {len(golden_pairs)}")
 
-    # ── 4. Validate ──
+    # ── 4. Shuffle: preserve stratification, randomize order ──
+    # The per-community quotas are respected (sampling above), but the file
+    # would be written community-by-community in contiguous blocks (sorted()
+    # iteration). Shuffling the final list ensures that taking the first N
+    # pairs (e.g., first 50 for a quick eval) yields a representative
+    # community mix instead of just the first communities alphabetically.
+    rng = random.Random(RANDOM_SEED)
+    rng.shuffle(golden_pairs)
+
+    # ── 5. Validate ──
     all_tids = [p["ticketId"] for p in golden_pairs]
     dupes = len(all_tids) - len(set(all_tids))
 
@@ -301,7 +314,7 @@ async def main_async(args):
         print(f"\n  ⚠  WARNING: Found {dupes} duplicate ticketIds!")
         sys.exit(1)
 
-    # ── 5. Write golden JSON (single file, with .bak backup) ──
+    # ── 6. Write golden JSON (single file, with .bak backup) ──
     golden_path = GOLDENS_DIR / "golden_se_200.json"
 
     if args.dry_run:
@@ -330,7 +343,7 @@ async def main_async(args):
             json.dump(golden_pairs, f, ensure_ascii=False, indent=2)
         print(f"  Written: {golden_path} ({len(golden_pairs)} pairs)")
 
-    # ── 6. Exclude golden IDs from index ──
+    # ── 7. Exclude golden IDs from index ──
     all_chunk_ids: List[str] = []
     if not args.skip_index_exclusion:
         print(f"\n{'='*60}")
@@ -352,7 +365,7 @@ async def main_async(args):
         else:
             print(f"  [DRY-RUN] Would delete {deleted} vectors from Pinecone")
 
-        # ── 7. Rebuild BM25 ──
+        # ── 8. Rebuild BM25 ──
         print(f"\n  Rebuilding BM25 index (excluding {len(all_ids_sampled)} golden IDs)...")
         success = rebuild_bm25(all_ids_sampled, dry_run=args.dry_run)
         if success and not args.dry_run:
