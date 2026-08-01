@@ -261,28 +261,32 @@ def _build_metrics(judge_model) -> dict:
 
 
 def _measure_metric(metric, test_case: LLMTestCase, attempt: int = 1) -> Optional[float]:
-    """Measure a single metric with retry logic (exponential backoff)."""
+    """Measure a single metric with retry logic (exponential backoff).
+
+    Retries on ANY exception (HTTP errors, timeouts, connection resets) —
+    a hanging LLM call must not stall the whole evaluation.
+    """
     import random as _random
 
     try:
         metric.measure(test_case)
         return metric.score
     except Exception as e:
-        status = _extract_status_code(e)
-        if status and status in (429, 500, 502, 503, 504):
-            if attempt < RETRY_MAX_ATTEMPTS:
-                delay = min(
-                    RETRY_BASE_SECONDS * (2 ** (attempt - 1)),
-                    RETRY_MAX_SECONDS,
-                )
-                jitter = _random.uniform(0, RETRY_JITTER_SECONDS)
-                total_delay = delay + jitter
-                print(
-                    f"\n  ⚡ Retry {attempt}/{RETRY_MAX_ATTEMPTS} for {metric.__class__.__name__} "
-                    f"after {total_delay:.1f}s (HTTP {status})"
-                )
-                time.sleep(total_delay)
-                return _measure_metric(metric, test_case, attempt + 1)
+        if attempt < RETRY_MAX_ATTEMPTS:
+            delay = min(
+                RETRY_BASE_SECONDS * (2 ** (attempt - 1)),
+                RETRY_MAX_SECONDS,
+            )
+            jitter = _random.uniform(0, RETRY_JITTER_SECONDS)
+            total_delay = delay + jitter
+            status = _extract_status_code(e)
+            status_str = f" (HTTP {status})" if status else ""
+            print(
+                f"\n  ⚡ Retry {attempt}/{RETRY_MAX_ATTEMPTS} for {metric.__class__.__name__} "
+                f"after {total_delay:.1f}s{status_str}: {str(e)[:120]}"
+            )
+            time.sleep(total_delay)
+            return _measure_metric(metric, test_case, attempt + 1)
         print(f"\n  ⚠  {metric.__class__.__name__} failed: {e}")
         return None
 
