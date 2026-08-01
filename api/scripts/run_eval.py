@@ -516,6 +516,8 @@ def main():
         api_key=or_api_key,
         base_url="https://openrouter.ai/api/v1",
         temperature=0.0,
+        timeout=120,  # fail fast instead of hanging forever
+        max_retries=2,
     )
     judge = CustomDeepEval(llm, model_name=args.judge_model)
 
