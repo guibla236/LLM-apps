@@ -466,6 +466,12 @@ def main():
         default=None,
         help="Limit number of questions to evaluate (for testing)",
     )
+    parser.add_argument(
+        "--append-to",
+        default=None,
+        help="Resume: append to this existing CSV instead of creating a new one. "
+             "Skips questions already present in the file (matched by ticketId).",
+    )
     args = parser.parse_args()
 
     # ── Resolve paths ──
@@ -519,8 +525,24 @@ def main():
     print(f"  Metrics: {', '.join(args.metrics)}")
 
     # ── Prepare CSV ──
-    csv_path = _csv_path(output_dir, args.scenario_name, golden_name)
-    _write_csv_header(csv_path)
+    already_done: set = set()
+    if args.append_to:
+        append_path = Path(args.append_to)
+        if not append_path.exists():
+            print(f"ERROR: --append-to file not found: {append_path}")
+            sys.exit(1)
+        csv_path = str(append_path)
+        # Load already-evaluated ticketIds from the existing CSV
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                tid = row.get("ticketId", "")
+                if tid:
+                    already_done.add(tid)
+        print(f"  Resume mode: {len(already_done)} questions already evaluated in {csv_path}")
+    else:
+        csv_path = _csv_path(output_dir, args.scenario_name, golden_name)
+        _write_csv_header(csv_path)
     print(f"  Output CSV: {csv_path}")
 
     # ── Run evaluation ──
@@ -541,6 +563,10 @@ def main():
 
         if not question:
             print(f"\n  ⚠  Skipping item {idx}: no question field")
+            continue
+
+        # Skip questions already evaluated in resume mode
+        if args.append_to and ticket_id in already_done:
             continue
 
         # Step 1: retrieve context (raw_unified_search)
@@ -587,7 +613,7 @@ def main():
 
         actual_output = ""
         if augment_result:
-            actual_output = augment_result.get("summary", "")
+            actual_output = augment_result.get("answer", "")
         else:
             # Fallback: use context string if generation fails
             actual_output = results_to_context(results)
@@ -623,7 +649,21 @@ def main():
 
     # ── Write JSON aggregate ──
     json_path = _json_aggregate_path(csv_path)
-    aggregate = _compute_aggregate(rows)
+    # In resume mode, reload all rows from the CSV (existing + new) for the aggregate
+    if args.append_to:
+        all_rows: List[Dict] = []
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                parsed = {k: row[k] for k in row}
+                for m in ["contextual_precision", "contextual_recall",
+                          "faithfulness", "answer_relevancy", "correctness"]:
+                    v = parsed.get(m, "")
+                    parsed[m] = float(v) if v not in ("", "None") else None
+                all_rows.append(parsed)
+        aggregate = _compute_aggregate(all_rows)
+    else:
+        aggregate = _compute_aggregate(rows)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(aggregate, f, ensure_ascii=False, indent=2)
 
