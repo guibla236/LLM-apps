@@ -281,6 +281,8 @@ def _build_pinecone_vectors(
                 chunk_id,
                 vec,
                 {
+                    "ticketId": pair["ticket_id"],
+                    "text": chunk_text,  # required by PineconeVectorStore (text_key)
                     "community": pair["community"],
                     "expected_output": expected_truncated,
                     "priority": pair["priority"].value,
