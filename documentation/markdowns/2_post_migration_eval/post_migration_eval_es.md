@@ -108,13 +108,25 @@ Una distinción importante: las dos primeras métricas evalúan al _retriever_ (
 
 El siguiente paso lógico es atacar la causa raíz del problema: la calidad del modelo de embeddings. `all-minilm:22m` (384 dimensiones) fue necesario para un prototipo con datos sintéticos, pero no tiene la capacidad semántica para distinguir matices y aún menos para hacerlo en un corpus técnico de 60.000 documentos reales. La siguiente fase evaluará modelos modernos como `voyage-4-lite` (1024 dimensiones) junto con distintas estrategias de chunking — desde eliminar el chunking por completo hasta probar ventanas más amplias — para encontrar la combinación que maximice la precisión del recuperador sin tocar el resto del pipeline.
 
+### Un hallazgo de infraestructura: el índice BM25 no cabe en producción
+
+La migración trajo consigo un problema inesperado: **el índice BM25 dejó de ser viable para la versión desplegada** dada la infraestructura con la que se venía trabajando. Con el corpus sintético (807 documentos) el índice pesaba unos cientos de kilobytes, mientras que ahora, con los 60.000 pares reales, el archivo índice para hacer la búsqueda léxica con BM25 creció a **125 MB**. Esa magnitud choca con el despliegue por dos razones: la carga del índice demoraría más tiempo que el permitido por Vercel para un *cold start* y además ocurre que el servidor debe cargar el JSON completo como un diccionario para construir el retriever BM25 y al hacerlo, excede la RAM disponible en el plan que brinda la plataforma.
+
+El resultado práctico es que **la búsqueda híbrida (BM25 + Vector), la única que aportó valor en la etapa de retrieval, solo funciona en el entorno local de desarrollo**. Esto no bloquea el experimento: la evaluación corre en local y los resultados de esta entrada se obtuvieron con la configuración completa. En estas circunstancias, se opta por retrasar la liberación de la nueva versión del producto que hace uso del nuevo conjunto de datos hasta que se posea un *retrieval* semántico que las métricas validen como funcional. Esto implica priorizar la mejora de la búsqueda semántica antes que destinar esfuerzo a un problema de infraestructura que no resulta central para el experimento.
+
+El plan a futuro pasa por dos caminos:
+1. **Mejorar la búsqueda semántica**: Implementar modelos de embeddings más avanzados y estrategias de chunking para mejorar la precisión del recuperador semántico.
+2. **Mover la búsqueda tradicional a MongoDB Atlas**: Utilizar la plataforma de MongoDB para gestionar la búsqueda léxica, lo que habilitará la búsqueda híbrida en producción.
+
+Eventualmente, MongoDB Atlas también podría encargarse de la búsqueda semántica, pero eso se evaluará una vez que la búsqueda semántica esté optimizada y no dependa de BM25 para cumplir con los requerimientos de recuperación.
+
 ### Conclusiones
 
 **1. La migración de datos se realizó correctamente.** El sistema completo, con corpus real y en su configuración actual, supera al sistema sintético en Correctness (25.80% vs 19.33%) y lo mejora drásticamente en Faithfulness (97.03% vs 84.24%) y AnswerRelevancy (85.52% vs 56.31%). Con 75 veces más documentos y preguntas reales, el sistema responde mejor, no peor.
 
 **2. El sistema genera respuestas casi sin alucinaciones.** Faithfulness 97.03% en el escenario híbrido, 97.30% incluso en Vector Only. El pipeline *recuperar y generar sobre lo recuperado* se respeta. El matiz: el juez y el generador son el mismo modelo, lo que puede inflar levemente el número — validar con un juez independiente es una tarea pendiente.
 
-**3. El retrieval sigue siendo el cuello de botella.** Las métricas de recuperación (ContextualPrecision 7.99%, ContextualRecall 5.71%) son las más bajas del sistema. BM25 es indispensable (Vector Only sin BM25 da 0% en ambas). La causa raíz es el modelo de embeddings — `all-minilm:22m` (384 dimensiones) no captura la semántica de un dominio técnico con 60.000 documentos. La siguiente fase (Search Optimization) evaluará modelos modernos como `voyage-4-lite` (1024 dimensiones) y estrategias de chunking para corregir esto.
+**3. El retrieval sigue siendo el cuello de botella.** Las métricas de recuperación (ContextualPrecision 7.99%, ContextualRecall 5.71%) son las más bajas del sistema. BM25 es indispensable para que el recuperador tenga capacidad de búsqueda efectiva (Vector Only sin BM25 da 0% en ambas). La causa raíz es el modelo de embeddings — `all-minilm:22m` (384 dimensiones) no captura la semántica de un dominio técnico con 60.000 documentos. La siguiente fase (Search Optimization) evaluará modelos modernos como `voyage-4-lite` (1024 dimensiones) y estrategias de chunking para corregir esto.
 
 ### Referencias
 

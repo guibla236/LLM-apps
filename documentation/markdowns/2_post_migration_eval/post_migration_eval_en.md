@@ -106,13 +106,25 @@ An important distinction: the first two metrics evaluate the _retriever_ (how we
 
 The logical next step is to attack the root cause of the problem: the quality of the embedding model. `all-minilm:22m` (384 dimensions) was necessary for a prototype with synthetic data, but it does not have the semantic capacity to distinguish nuances — let alone in a technical corpus of 60,000 real documents. The next phase will evaluate modern models such as `voyage-4-lite` (1024 dimensions) along with different chunking strategies — from removing chunking entirely to testing wider windows — to find the combination that maximizes retriever precision without touching the rest of the pipeline.
 
+### An Infrastructure Finding: The BM25 Index Does Not Fit in Production
+
+The migration brought with it an unexpected problem: **the BM25 index is no longer viable for the deployed version** given the infrastructure we had been working with. With the synthetic corpus (807 documents) the index weighed a few hundred kilobytes, while now, with the 60,000 real pairs, the index file for the lexical BM25 search grew to **125 MB**. That magnitude clashes with deployment for two reasons: loading the index would take longer than the time Vercel allows for a *cold start*, and the server must also load the entire JSON as a dictionary to build the BM25 retriever, which exceeds the RAM available in the platform's plan.
+
+The practical result is that **the hybrid search (BM25 + Vector), the only one that added value in the retrieval stage, only works in the local development environment**. This does not block the experiment: the evaluation runs locally and the results in this post were obtained with the complete configuration. Under these circumstances, we chose to delay the release of the new version of the product that uses the new dataset until we have a semantic *retrieval* validated as functional by the metrics. This implies prioritizing the improvement of semantic search over investing effort in an infrastructure problem that is not central to the experiment.
+
+The future plan has two paths:
+1. **Improve semantic search**: Implement more advanced embedding models and chunking strategies to improve the precision of the semantic retriever.
+2. **Move the traditional search to MongoDB Atlas**: Use MongoDB's platform to manage the lexical search, which will enable hybrid search in production.
+
+Eventually, MongoDB Atlas could also take over semantic search, but that will be evaluated once semantic search is optimized and no longer depends on BM25 to meet the retrieval requirements.
+
 ### Conclusions
 
 **1. The data migration was carried out correctly.** The complete system, with a real corpus and in its current configuration, surpasses the synthetic system in Correctness (25.80% vs 19.33%) and dramatically improves Faithfulness (97.03% vs 84.24%) and AnswerRelevancy (85.52% vs 56.31%). With 75 times more documents and real questions, the system answers better, not worse.
 
 **2. The system generates answers almost without hallucinations.** Faithfulness 97.03% in the hybrid scenario, 97.30% even in Vector Only. The *retrieve and generate over what was retrieved* pipeline is respected. The caveat: the judge and the generator are the same model, which can slightly inflate the number — validating with an independent judge is a pending task.
 
-**3. Retrieval remains the bottleneck.** The retrieval metrics (ContextualPrecision 7.99%, ContextualRecall 5.71%) are the lowest of the system. BM25 is indispensable (Vector Only without BM25 gives 0% on both). The root cause is the embedding model — `all-minilm:22m` (384 dimensions) does not capture the semantics of a technical domain with 60,000 documents. The next phase (Search Optimization) will evaluate modern models such as `voyage-4-lite` (1024 dimensions) and chunking strategies to fix this.
+**3. Retrieval remains the bottleneck.** The retrieval metrics (ContextualPrecision 7.99%, ContextualRecall 5.71%) are the lowest of the system. BM25 is indispensable for the retriever to have effective search capability (Vector Only without BM25 gives 0% on both). The root cause is the embedding model — `all-minilm:22m` (384 dimensions) does not capture the semantics of a technical domain with 60,000 documents. The next phase (Search Optimization) will evaluate modern models such as `voyage-4-lite` (1024 dimensions) and chunking strategies to fix this.
 
 ### References
 
