@@ -22,6 +22,12 @@ Usage:
     # Resume interrupted ingestion (skips already-indexed IDs)
     python scripts/ingest_stackexchange_dataset.py --resume
 
+    # Resume against the target index (M4 experiment indexes):
+    # MongoDB already holds all pairs from the baseline ingest, so use
+    # Re-ingest variants (embedding/chunking experiments): qa_pairs docs are
+    # already in MongoDB, so skip the upsert phase entirely (Pinecone only)
+    python scripts/ingest_stackexchange_dataset.py --skip-mongo
+
     # Process a single community (validate one before full run)
     python scripts/ingest_stackexchange_dataset.py --communities superuser
 
@@ -208,7 +214,8 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
         ns = PINECONE_NAMESPACE
         response = pinecone_index.list(namespace=ns)
         if hasattr(response, "vectors") and response.vectors:
-            existing.update(response.vectors)
+            for vid in response.vectors:
+                existing.add(_strip_chunk_suffix(vid))
 
         # Paginate if more pages exist
         token = (
@@ -221,7 +228,8 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
                 namespace=ns, pagination_token=token
             )
             if hasattr(response, "vectors") and response.vectors:
-                existing.update(response.vectors)
+                for vid in response.vectors:
+                    existing.add(_strip_chunk_suffix(vid))
             token = (
                 response.pagination.next
                 if hasattr(response, "pagination") and response.pagination
@@ -230,7 +238,7 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
     except Exception as e:
         print(f"  ⚠  Could not list existing Pinecone IDs: {e}")
 
-    print(f"  Found {len(existing):,} existing IDs from Pinecone")
+    print(f"  Found {len(existing):,} existing ticket IDs from Pinecone")
     return existing
 
 
@@ -719,11 +727,11 @@ async def main_async():
             print(f"  - MongoDB: skipped (--skip-mongo)")
         print(f"  ✓ Connections established")
 
-        # In resume mode, pre-fetch existing IDs from Pinecone to skip them
+        # In resume mode, pre-fetch existing IDs to skip them
         if args.resume:
             print(f"\n  Fetching existing IDs from Pinecone (resume mode)...")
             existing_ids = await _fetch_existing_ids(pinecone_index, mongo_db)
-            print(f"  Found {len(existing_ids):,} existing vectors in '{PINECONE_NAMESPACE}'")
+            print(f"  Found {len(existing_ids):,} existing ticket IDs in '{PINECONE_NAMESPACE}'")
 
     # ── Process each community ──
     results = []
