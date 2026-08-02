@@ -34,6 +34,12 @@ Usage:
     # already in MongoDB, so skip the upsert phase entirely (Pinecone only)
     python scripts/ingest_stackexchange_dataset.py --skip-mongo
 
+    # Chunking variants (M4 experiments)
+    python scripts/ingest_stackexchange_dataset.py --no-chunk
+    python scripts/ingest_stackexchange_dataset.py --chunk-size 2000 --chunk-overlap 200
+
+    # Embedding model (OpenRouter via EMBEDDINGS_MODEL env var, or explicit flag)
+    python scripts/ingest_stackexchange_dataset.py --embedding-model voyage-4-lite
     # Selected communities only
     python scripts/ingest_stackexchange_dataset.py --communities superuser,askubuntu
 """
@@ -147,9 +153,9 @@ def load_golden_ids(golden_paths: List[str]) -> Set[str]:
 
 # ── Pinecone ingestion ───────────────────────────────────────────────────────
 
-def _init_pinecone():
+def _init_pinecone(embedding_model_name: Optional[str] = None):
     """Lazy-init Pinecone index and embeddings."""
-    from modules.third_party_clients import pinecone_client, embeddings_model
+    from modules.third_party_clients import pinecone_client, get_embeddings_model
 
     index_name = os.getenv("PINECONE_INDEX_NAME")
     if not index_name:
@@ -197,28 +203,30 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
         except Exception as e:
             print(f"  ⚠  MongoDB query failed ({e}), falling back to Pinecone...")
 
-    # Slow path: Pinecone list with proper pagination (SDK 7.x generator)
+    # Slow path: Pinecone list with proper pagination
     try:
         ns = PINECONE_NAMESPACE
-        token = None
-        while True:
-            kwargs = {"namespace": ns, "limit": 100}
-            if token:
-                kwargs["pagination_token"] = token
-            response = pinecone_index.list(**kwargs)
-            items = list(response)
-            if not items:
-                break
-            for batch in items:
-                for vid in batch:
-                    existing.add(_strip_chunk_suffix(vid))
-            try:
-                pagination = getattr(response, "pagination", None)
-                token = pagination.next if pagination else None
-            except Exception:
-                token = None
-            if not token:
-                break
+        response = pinecone_index.list(namespace=ns)
+        if hasattr(response, "vectors") and response.vectors:
+            existing.update(response.vectors)
+
+        # Paginate if more pages exist
+        token = (
+            response.pagination.next
+            if hasattr(response, "pagination") and response.pagination
+            else None
+        )
+        while token:
+            response = pinecone_index.list(
+                namespace=ns, pagination_token=token
+            )
+            if hasattr(response, "vectors") and response.vectors:
+                existing.update(response.vectors)
+            token = (
+                response.pagination.next
+                if hasattr(response, "pagination") and response.pagination
+                else None
+            )
     except Exception as e:
         print(f"  ⚠  Could not list existing Pinecone IDs: {e}")
 
@@ -234,25 +242,22 @@ PINECONE_UPSERT_BATCH_SIZE = 500  # Pinecone Free Tier payload limit
 # chunk_size=1000 keeps 75% in a single chunk, longest split into ≤4 chunks.
 # chunk_overlap=100 maintains continuity between fragments.
 # Format: SE-{COMMUNITY}-{id}_chunk-{i}
-SE_CHUNK_SIZE = 1000
-SE_CHUNK_OVERLAP = 100
-_text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=SE_CHUNK_SIZE,
-    chunk_overlap=SE_CHUNK_OVERLAP,
-    add_start_index=True,
-)
+# Defaults are overridable via CLI flags (--chunk-size, --chunk-overlap, --no-chunk).
 
 
 def _build_pinecone_vectors(
     pairs: List[dict],
     embeddings_model,
     batch_size: int = 100,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 100,
+    no_chunk: bool = False,
 ) -> List[tuple]:
     """Build (id, vector, metadata) tuples for Pinecone upsert with chunking.
 
-    Each pair's title_body is split into chunks (when > SE_CHUNK_SIZE)
-    to match the chunking strategy of the legacy synthetic ingestor.
-    Chunks get deterministic IDs: {ticket_id}_{chunk_index}.
+    Each pair's title_body is split into chunks (when > chunk_size, unless
+    no_chunk is set) to match the chunking strategy of the legacy synthetic
+    ingestor. Chunks get deterministic IDs: {ticket_id}_{chunk_index}.
     All chunks of the same pair share identical metadata.
 
     Uses a single namespace "kb-se-all" (per EDA decision):
@@ -261,16 +266,22 @@ def _build_pinecone_vectors(
     don't add retrieval value. Community is stored in metadata
     for provenance tracking.
     """
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        add_start_index=True,
+    )
+
     # ── 1. Expand pairs into chunk records (1:N mapping) ──
     chunk_records: list[tuple[str, str, dict]] = []  # (chunk_text, chunk_id, pair)
     for pair in pairs:
         ticket_id = pair["ticket_id"]
         title_body = pair["title_body"]
 
-        if len(title_body) > SE_CHUNK_SIZE:
-            chunks = _text_splitter.split_text(title_body)
-        else:
+        if no_chunk or len(title_body) <= chunk_size:
             chunks = [title_body]
+        else:
+            chunks = text_splitter.split_text(title_body)
 
         for chunk_idx, chunk_text in enumerate(chunks):
             chunk_id = f"{ticket_id}_chunk-{chunk_idx}"
@@ -408,6 +419,9 @@ async def process_community(
     pinecone_index=None,
     embeddings_model=None,
     mongo_db=None,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 100,
+    no_chunk: bool = False,
 ) -> dict:
     """Process a single Stack Exchange community.
 
@@ -502,7 +516,10 @@ async def process_community(
     pinecone_pairs = [p for p in pairs if not p["is_golden"]]
     if pinecone_pairs and pinecone_index is not None:
         vectors = _build_pinecone_vectors(
-            pinecone_pairs, embeddings_model
+            pinecone_pairs, embeddings_model,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            no_chunk=no_chunk,
         )
         _pinecone_upsert(pinecone_index, vectors)
         print(f"  ✓ Pinecone: {len(vectors)} vectors upserted from {len(pinecone_pairs)} pairs (namespace: kb-se-all)")
@@ -593,8 +610,30 @@ def _parse_args():
     )
     parser.add_argument(
         "--embedding-model",
-        default="all-minilm:22m",
-        help="Ollama embedding model name (default: all-minilm:22m)",
+        default=None,
+        help=(
+            "Embedding model name. OpenRouter models (e.g. voyage-4-lite) are "
+            "served via the OpenAI-compatible endpoint; Ollama names (e.g. "
+            "all-minilm:22m) fall back to local. Default: EMBEDDINGS_MODEL env "
+            "var, else Ollama all-minilm:22m."
+        ),
+    )
+    parser.add_argument(
+        "--no-chunk",
+        action="store_true",
+        help="Embed the full title_body as a single vector per pair (no splitting)",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=1000,
+        help="Max chars per chunk for RecursiveCharacterTextSplitter (default: 1000)",
+    )
+    parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=100,
+        help="Overlap between chunks (default: 100)",
     )
     parser.add_argument(
         "--dry-run",
@@ -651,6 +690,8 @@ async def main_async():
     print(f"  Dry run: {dry_run}")
     print(f"  Limit per community: {limit or 'none'}")
     print(f"  Resume mode: {args.resume}")
+    print(f"  Embedding model: {args.embedding_model or 'EMBEDDINGS_MODEL env / Ollama default'}")
+    print(f"  Chunking: {'no-chunk (whole doc)' if args.no_chunk else f'{args.chunk_size}/{args.chunk_overlap}'}")
     print(f"  Skip MongoDB upsert: {args.skip_mongo}")
     if args.exclude_golden_ids:
         print(f"  Golden QA exclusion: {', '.join(args.exclude_golden_ids)}")
@@ -671,7 +712,7 @@ async def main_async():
 
     if not dry_run:
         print(f"\n  Initializing Pinecone and MongoDB connections...")
-        pinecone_index, embeddings_model, pinecone_index_name = _init_pinecone()
+        pinecone_index, embeddings_model, pinecone_index_name = _init_pinecone(args.embedding_model)
         if not args.skip_mongo:
             mongo_db = _init_mongo()
         else:
@@ -697,6 +738,9 @@ async def main_async():
                 pinecone_index=pinecone_index,
                 embeddings_model=embeddings_model,
                 mongo_db=mongo_db,
+                chunk_size=args.chunk_size,
+                chunk_overlap=args.chunk_overlap,
+                no_chunk=args.no_chunk,
             )
             results.append(result)
         except Exception as e:
