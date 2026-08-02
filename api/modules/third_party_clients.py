@@ -1,10 +1,11 @@
 import os
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from pinecone import Pinecone
 from dotenv import load_dotenv
-from typing import Any, Optional
+from typing import Any, List, Optional
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
+from openai import OpenAI
 from .utils import get_model_details
 
 
@@ -43,6 +44,35 @@ def get_chat_client(model_name: str) -> ChatOpenAI:
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 
+class OpenRouterEmbeddings:
+    """Minimal embeddings client for OpenRouter-hosted models.
+
+    Implements the LangChain Embeddings interface (`embed_documents` /
+    `embed_query`) so it can be used anywhere `embeddings_model` is expected
+    (PineconeVectorStore, ingest script).
+
+    Why not `OpenAIEmbeddings`: langchain-openai >= 1.x tokenizes the input
+    with tiktoken and sends *token arrays* to the endpoint. VoyageAI models
+    (e.g. voyage-4-lite) reject token arrays — they only accept strings or
+    string arrays (HTTP 400). The raw OpenAI client sends strings, which
+    works with every OpenRouter embedding model.
+    """
+
+    def __init__(self, model: str, api_key: Optional[str] = None, base_url: Optional[str] = None):
+        self.model = model
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+
+    def _embed(self, texts: List[str]) -> List[List[float]]:
+        response = self.client.embeddings.create(model=self.model, input=texts)
+        return [item.embedding for item in response.data]
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return self._embed(texts)
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed([text])[0]
+
+
 def get_embeddings_model(model_name: Optional[str] = None) -> Any:
     """Returns the embeddings client for the configured model.
 
@@ -52,14 +82,10 @@ def get_embeddings_model(model_name: Optional[str] = None) -> Any:
        (e.g. `voyage-4-lite`), served via the OpenAI-compatible endpoint.
     3. Fallback: local Ollama embeddings with `OLLAMA_EMBEDDINGS_MODEL`
        (default `all-minilm:22m`) — preserves the pre-M4 behavior.
-
-    Note: `dimensions` is intentionally NOT passed to OpenAIEmbeddings —
-    it only applies to OpenAI-native models (text-embedding-3-*); OpenRouter
-    models (voyage-4-lite, qwen3-embedding-8b) return their native dims.
     """
     model = model_name or os.getenv("EMBEDDINGS_MODEL")
     if model:
-        return OpenAIEmbeddings(
+        return OpenRouterEmbeddings(
             model=model,
             api_key=OPENROUTER_API_KEY,
             base_url=OPENROUTER_BASE_URL,
