@@ -1,8 +1,8 @@
 import os
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pinecone import Pinecone
 from dotenv import load_dotenv
-from typing import Any
+from typing import Any, Optional
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from .utils import get_model_details
@@ -12,7 +12,7 @@ load_dotenv()
 
 _DEFAULT_CHAT_MODEL_NAME = os.getenv("DEFAULT_CHAT_MODEL_NAME")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
 if not _DEFAULT_CHAT_MODEL_NAME:
     raise ValueError("DEFAULT_CHAT_MODEL_NAME must be defined in the environment variables.")
@@ -42,9 +42,34 @@ def get_chat_client(model_name: str) -> ChatOpenAI:
 
 pinecone_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-TOKENIZER_MODEL_NAME = "all-minilm:22m"
 
-embeddings_model = OllamaEmbeddings(model=TOKENIZER_MODEL_NAME)
+def get_embeddings_model(model_name: Optional[str] = None) -> Any:
+    """Returns the embeddings client for the configured model.
+
+    Resolution order:
+    1. Explicit `model_name` argument (highest priority).
+    2. `EMBEDDINGS_MODEL` env var — an OpenRouter-hosted model
+       (e.g. `voyage-4-lite`), served via the OpenAI-compatible endpoint.
+    3. Fallback: local Ollama embeddings with `OLLAMA_EMBEDDINGS_MODEL`
+       (default `all-minilm:22m`) — preserves the pre-M4 behavior.
+
+    Note: `dimensions` is intentionally NOT passed to OpenAIEmbeddings —
+    it only applies to OpenAI-native models (text-embedding-3-*); OpenRouter
+    models (voyage-4-lite, qwen3-embedding-8b) return their native dims.
+    """
+    model = model_name or os.getenv("EMBEDDINGS_MODEL")
+    if model:
+        return OpenAIEmbeddings(
+            model=model,
+            api_key=OPENROUTER_API_KEY,
+            base_url=OPENROUTER_BASE_URL,
+        )
+    ollama_model = os.getenv("OLLAMA_EMBEDDINGS_MODEL", "all-minilm:22m")
+    return OllamaEmbeddings(model=ollama_model)
+
+
+# Default instance — backward compatible (Ollama local unless EMBEDDINGS_MODEL is set)
+embeddings_model = get_embeddings_model()
 
 # Namespace where the SE corpus vectors live. The PineconeVectorStore default
 # is the '' namespace (legacy synthetic tickets) — the SE ingestion writes to
