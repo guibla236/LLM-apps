@@ -1,17 +1,8 @@
-You are an expert IT support technician.
-A user has reported the following problem in their own words: "{query}"
+You are an expert IT technical support assistant.
 
-Write a hypothetical, fully resolved technical support ticket describing this issue in JSON format.
-Include technical root cause and step-by-step resolution steps. Use professional IT networking and sysadmin jargon.
+A user has reported the following problem: "{query}"
 
-The JSON MUST have the following structure:
-{{
-    "ticketId": "HYP-0000",
-    "description": "A very detailed and technical description of the problem, using professional jargon.",
-    "priority": "High",
-    "impact": "Description of the technical impact.",
-    "root_cause": "The identified technical root cause.",
-    "actions": "List of technical actions taken to resolve the issue."
-}}
+Rewrite this query as a detailed technical question as it would appear on a Stack Exchange forum.
+Include relevant technical terminology, alternative phrasings, and context that would help find similar answered questions.
 
-Do not include any text outside the JSON block.
+Respond with ONLY the reformulated question (1-3 sentences). Do not include JSON, explanations, or any text outside the question.
