@@ -38,6 +38,11 @@ TOKENIZER_MODEL_NAME = "all-minilm:22m"
 
 embeddings_model = OllamaEmbeddings(model=TOKENIZER_MODEL_NAME)
 
+# Namespace where the SE corpus vectors live. The PineconeVectorStore default
+# is the '' namespace (legacy synthetic tickets) — the SE ingestion writes to
+# 'kb-se-all', so the retriever must query that namespace explicitly.
+PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE")
+
 def get_pinecone_index() -> Any:
     """
     Gets the Pinecone index for tickets.
@@ -63,7 +68,11 @@ def get_kb_pinecone_index() -> Any:
     return pinecone_client.Index(pinecone_index_string)
 
 # Default instance for tickets
-vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_pinecone_index())
+vector_store_instance = PineconeVectorStore(
+    embedding=embeddings_model,
+    index=get_pinecone_index(),
+    namespace=PINECONE_NAMESPACE,
+)
 
 # Instance for Knowledge Base (KB)
 kb_vector_store_instance = PineconeVectorStore(embedding=embeddings_model, index=get_kb_pinecone_index())
