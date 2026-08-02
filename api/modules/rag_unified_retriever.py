@@ -280,11 +280,8 @@ async def context_retriever_for_unified_search(query: str,
         search_method: SearchMethod = SearchMethod.HYBRID, 
         use_hyde: bool = False) -> list[str]:
     """
-    Context generator that creates a prompt for the LLM based on the results of a unified search across tickets and KB documents.
-    This function retrieves relevant tickets and KB documents, then formats them into a structured context that can be fed into 
-    an LLM for further processing (e.g., summarization, action suggestion). The context includes the original query, 
-    a list of similar tickets with their descriptions and metadata, and a list of relevant KB documents. 
-    The number of tickets and KB documents included in the context can be controlled via environment variables to manage token limits.
+    Context generator that formats retrieval results as Q&A reference material.
+    Formats each retrieved ticket as a StackExchange-style Q&A pair for the LLM generator.
     """
     
     unified_search_results = await unified_search(
@@ -299,30 +296,24 @@ async def context_retriever_for_unified_search(query: str,
     
     ticket_results = [r for r in unified_search_results if r.source == "ticket"]
     kb_results = [r for r in unified_search_results if r.source == "kb"]
-    tickets_to_return = []
+    results_to_return = []
+    
     for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
-        expected = ticket.metadata.get("expected_output", "")
-        if expected:
-            # New path: SE corpus with canonical answer
-            tickets_to_return.append(
-                f"Ticket ID: {ticket.id}\n"
-                f"Description: {ticket.content[:200]}...\n"
-                f"Suggested solution: {expected[:600]}...\n"
-            )
-        else:
-            # Legacy path: synthetic tickets (no expected_output)
-            tickets_to_return.append(
-                f"Ticket ID: {ticket.id}\n"
-                f"Description: {ticket.content[:200]}..." 
-                f"\nActions taken: {ticket.metadata.get('actions', 'No actions recorded')}\n"
-                f"Owner: {ticket.metadata.get('owner', 'Unknown')}\n"
-            )
-    kbs_to_return = []
+        expected = ticket.metadata.get('expected_output', '')
+        desc = ticket.content[:500] if ticket.content else ''
+        results_to_return.append(
+            f"[Q&A] ID: {ticket.id}\n"
+            f"Question: {desc}\n"
+            f"Answer: {expected}\n"
+        )
+    
     for kb in kb_results[:KBS_TO_CONSIDER]:
-        kbs_to_return.append(f"Knowledge Base Document ID {kb.id}: {kb.content[:200]}...\n")
+        results_to_return.append(
+            f"[KB] ID: {kb.id}\n"
+            f"Content: {kb.content[:500]}...\n"
+        )
     
-    
-    return tickets_to_return + kbs_to_return
+    return results_to_return
 
 async def augment_search_results_with_tickets_and_kbs(
         query: str, 
@@ -378,24 +369,20 @@ async def augment_search_results_with_tickets_and_kbs(
         # Extract relevant information
         ticket_owners = list(set([r.metadata.get('owner', '') for r in ticket_results if r.metadata.get('owner')]))
         
-        # Prepare LLM context
+        # Build Q&A context
         context = f"Query: {query}\n\n"
-        context += "Similar tickets found:\n"
-        for ticket in ticket_results[:TICKETS_TO_CONSIDER]:  # Limit to 3 tickets to avoid exceeding token limit
-            context += f"""
-                Id: {ticket.id} \n
-                Description: {ticket.content[:200]}... \n
-                Actions taken: {ticket.metadata.get('actions', 'No actions recorded')} \n
-                Owner: {ticket.metadata.get('owner', 'Unknown')}\n
-                """
+        context += "Retrieved Q&A pairs:\n"
+        for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
+            expected = ticket.metadata.get('expected_output', '')
+            desc = ticket.content[:500] if ticket.content else ''
+            context += f"[Q&A] {ticket.id}\nQ: {desc}\nA: {expected}\n\n"
         
-        context += "\n Knowledge Base relevant documents:\n"
         for kb in kb_results[:KBS_TO_CONSIDER]:
-            context += f"- {kb.id}: {kb.content[:200]}...\n"
+            context += f"[KB] {kb.id}: {kb.content[:500]}...\n"
         
-        groq_llm_client = get_groq_client(model_name)
+        llm_client = get_chat_client(model_name)
         
-        response = await groq_llm_client.ainvoke(
+        response = await llm_client.ainvoke(
             input=[
                 {"role": "system", "content": load_prompt("rag_system_prompt.md")},
                 {"role": "user", "content": context}
@@ -404,42 +391,9 @@ async def augment_search_results_with_tickets_and_kbs(
         )
         
         if response and response.content:
-            # Clean the LLM response from markdown and extract the JSON block
-            clean_content = extract_json_from_llm_response(str(response.content))
+            return {"answer": str(response.content).strip()}
 
-            # The extractor always returns str: try to parse JSON
-            parsed_json = None
-            try:
-                parsed_json = json.loads(clean_content)
-            except Exception:
-                parsed_json = None
-
-            if isinstance(parsed_json, dict):
-                return {
-                    "summary": parsed_json.get("summary", ""),
-                    "contacts": parsed_json.get("contacts", []),
-                    "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
-                    "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
-                    "suggested_actions": parsed_json.get("suggested_actions", [])
-                }
-
-            # Fallback if JSON could not be parsed
-            return {
-                "summary": str(response.content),
-                "contacts": ticket_owners,
-                "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
-                "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
-                "suggested_actions": ["Review the KB documents and tickets mentioned to get more details"]
-            }
-
-        # Fallback if LLM did not return a valid response (response is falsy)
-        return {
-            "summary": "Something went wrong: LLM did not return a valid response",
-            "contacts": ticket_owners,
-            "kb_references": [k.id for k in kb_results[:KBS_TO_CONSIDER]],
-            "ticket_references": [r.id for r in ticket_results[:TICKETS_TO_CONSIDER]],
-            "suggested_actions": ["Something went wrong"]
-        }
+        return {"answer": "The system could not generate a response."}
         
     except Exception as e:
         sys.stderr.write(f"\n========== DEBUG: ERROR in augment_search_results_with_tickets_and_kbs ==========\n")
@@ -447,13 +401,7 @@ async def augment_search_results_with_tickets_and_kbs(
         sys.stderr.write(f"DEBUG: Mensaje de error: {str(e)}\n")
         sys.stderr.flush()
         
-        return {
-            "summary": f"Error processing the results: {str(e)}",
-            "contacts": [],
-            "kb_references": [],
-            "ticket_references": [],
-            "suggested_actions": []
-        }
+        return {"answer": f"Error processing the results: {str(e)}"}
 
 # Funciones de compatibilidad con el sistema existente
 async def retrieve_relevant_tickets(inputTicket: TicketModel, model_name: str) -> List[TicketModel]:
