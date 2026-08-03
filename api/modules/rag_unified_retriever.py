@@ -261,9 +261,12 @@ async def unified_search(
             # search_kb_documents ignores use_hyde internal logic
             kb_results = await search_kb_documents(query, k, search_method, use_hyde=use_hyde)
             results.extend(kb_results)
-        
-        # Sort by score (placeholder) and limit results
-        results.sort(key=lambda x: x.score, reverse=True)
+
+        # NOTE: no re-sort by score here. The per-source retrievers already
+        # order results (search_tickets puts vector results first, then BM25
+        # complements — see the "we could do RRF later" comment). The scores
+        # are fixed placeholders (0.75 vector / 0.8 BM25), so sorting by them
+        # would hoist BM25 above vector results and wreck contextual precision.
         return results[:2*k]
         
     except Exception as e:
