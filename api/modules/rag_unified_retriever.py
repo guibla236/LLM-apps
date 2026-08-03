@@ -273,6 +273,20 @@ async def unified_search(
         sys.stderr.flush()
         return []
 
+def _clean_ticket_content(ticket) -> str:
+    """Return the ticket content without the leading ticketId prefix.
+
+    BM25 page_content is built as `f"{ticketId} {title_body} ..."` to give
+    the ID weight in keyword matching, which duplicates the ID when the
+    context renderer already prints `ID: {id}`. Strip it for a clean Q&A.
+    """
+    content = ticket.content or ""
+    tid = ticket.id or ""
+    if tid and content.startswith(tid):
+        content = content[len(tid):].lstrip()
+    return content[:500]
+
+
 async def context_retriever_for_unified_search(query: str, 
         model_name: str,
         search_type: SearchType = SearchType.BOTH, 
@@ -300,7 +314,7 @@ async def context_retriever_for_unified_search(query: str,
     
     for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
         expected = ticket.metadata.get('expected_output', '')
-        desc = ticket.content[:500] if ticket.content else ''
+        desc = _clean_ticket_content(ticket)
         results_to_return.append(
             f"[Q&A] ID: {ticket.id}\n"
             f"Question: {desc}\n"
@@ -374,7 +388,7 @@ async def augment_search_results_with_tickets_and_kbs(
         context += "Retrieved Q&A pairs:\n"
         for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
             expected = ticket.metadata.get('expected_output', '')
-            desc = ticket.content[:500] if ticket.content else ''
+            desc = _clean_ticket_content(ticket)
             context += f"[Q&A] {ticket.id}\nQ: {desc}\nA: {expected}\n\n"
         
         for kb in kb_results[:KBS_TO_CONSIDER]:
