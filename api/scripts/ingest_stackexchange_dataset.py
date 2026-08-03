@@ -158,12 +158,26 @@ def _init_pinecone():
     return index, embeddings_model, index_name
 
 
+def _strip_chunk_suffix(vector_id: str) -> str:
+    """Derive the ticket ID from a Pinecone vector ID.
+
+    Vector IDs are chunk IDs: `{ticket_id}_chunk-{idx}` (always, even when
+    a pair fits a single chunk). Stripping the suffix recovers the ticket
+    ID so `--resume` can match against the ticket IDs computed from the
+    dataset.
+    """
+    return vector_id.rsplit("_chunk-", 1)[0] if "_chunk-" in vector_id else vector_id
+
+
 async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
     """Fetch existing ticket IDs from MongoDB (fast) or Pinecone (fallback).
 
     MongoDB is the source of truth for ingested pairs. Querying it is
     faster and more reliable than paginating Pinecone's list endpoint.
-    Falls back to Pinecone with correct pagination if MongoDB unavailable.
+    Falls back to Pinecone with correct pagination if MongoDB unavailable
+    (e.g. with --skip-mongo). The Pinecone path iterates the SDK 7.x
+    generator (limit <= 100) and strips the `_chunk-N` suffix from vector
+    IDs to recover ticket IDs.
     """
     existing: Set[str] = set()
 
@@ -183,30 +197,28 @@ async def _fetch_existing_ids(pinecone_index, mongo_db=None) -> Set[str]:
         except Exception as e:
             print(f"  ⚠  MongoDB query failed ({e}), falling back to Pinecone...")
 
-    # Slow path: Pinecone list with proper pagination
+    # Slow path: Pinecone list with proper pagination (SDK 7.x generator)
     try:
         ns = PINECONE_NAMESPACE
-        response = pinecone_index.list(namespace=ns)
-        if hasattr(response, "vectors") and response.vectors:
-            existing.update(response.vectors)
-
-        # Paginate if more pages exist
-        token = (
-            response.pagination.next
-            if hasattr(response, "pagination") and response.pagination
-            else None
-        )
-        while token:
-            response = pinecone_index.list(
-                namespace=ns, pagination_token=token
-            )
-            if hasattr(response, "vectors") and response.vectors:
-                existing.update(response.vectors)
-            token = (
-                response.pagination.next
-                if hasattr(response, "pagination") and response.pagination
-                else None
-            )
+        token = None
+        while True:
+            kwargs = {"namespace": ns, "limit": 100}
+            if token:
+                kwargs["pagination_token"] = token
+            response = pinecone_index.list(**kwargs)
+            items = list(response)
+            if not items:
+                break
+            for batch in items:
+                for vid in batch:
+                    existing.add(_strip_chunk_suffix(vid))
+            try:
+                pagination = getattr(response, "pagination", None)
+                token = pagination.next if pagination else None
+            except Exception:
+                token = None
+            if not token:
+                break
     except Exception as e:
         print(f"  ⚠  Could not list existing Pinecone IDs: {e}")
 
