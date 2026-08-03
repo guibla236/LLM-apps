@@ -20,7 +20,11 @@ class SearchResult(BaseModel):
     score: float = Field(..., description="Relevance score")
 
 class SearchRequest(BaseModel):
-    description: str = Field(..., min_length=5, max_length=2000, description="Description of the support problem to search for")
+    # max_length must cover the real corpus: longest title_body in qa_pairs is
+    # 4,171 chars (5.53% of 60K docs exceed 2000). A 2000 limit caused 422s on
+    # /api/augment_search_results for legitimate queries (and 2 of the 50 eval
+    # samples). 5000 covers the max + margin while keeping prompts bounded.
+    description: str = Field(..., min_length=5, max_length=5000, description="Description of the support problem to search for")
     search_type: SearchType = Field(default=SearchType.BOTH, description="Search type: tickets_only, kb_only, both")
     hybrid_search: bool = Field(default=True, description="If True, performs hybrid search (Vector + BM25)")
     use_hyde: bool = Field(default=False, description="If True, uses HyDE for semantic search")
