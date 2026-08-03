@@ -1,0 +1,3 @@
+scenario,correctness,faithfulness,answer_relevancy,contextual_precision,contextual_recall
+baseline_vector_only,24.0%,90.1%,94.57%,29.37%,13.86%
+hybrid_no_rrf,36.0%,98.47%,94.76%,31.88%,17.15%
