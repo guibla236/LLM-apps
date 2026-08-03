@@ -531,7 +531,12 @@ async def process_community(
 
 
 def validate_counts(results: List[dict]):
-    """Check final counts against expected pairs per community (±5%)."""
+    """Check final counts against expected pairs per community (±5%).
+
+    With `--skip-mongo`, `mongo_upserted` is 0, so the actual count must
+    include pairs skipped by `--resume` (already in Pinecone) — otherwise
+    a resumed community like superuser would show as ~0% instead of 100%.
+    """
     print(f"\n{'='*60}")
     print(f"  VALIDATION")
     print(f"{'='*60}")
@@ -539,7 +544,9 @@ def validate_counts(results: List[dict]):
     for r in results:
         comm = r["community"]
         expected = EXPECTED_PAIRS.get(comm, 0)
-        actual = r.get("mongo_upserted") or r.get("transformed", 0)
+        actual = r.get("mongo_upserted") or (
+            r.get("transformed", 0) + r.get("skipped_existing", 0)
+        )
         if expected > 0:
             deviation = abs(actual - expected) / expected
             status = "✓" if deviation <= 0.05 else "⚠"
