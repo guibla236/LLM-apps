@@ -30,6 +30,10 @@ Usage:
         --exclude-golden-ids ../evaluation_notebooks/goldens/golden_expert.json \\
                            ../evaluation_notebooks/goldens/golden_operational.json
 
+    # Re-ingest variants (embedding/chunking experiments): qa_pairs docs are
+    # already in MongoDB, so skip the upsert phase entirely (Pinecone only)
+    python scripts/ingest_stackexchange_dataset.py --skip-mongo
+
     # Selected communities only
     python scripts/ingest_stackexchange_dataset.py --communities superuser,askubuntu
 """
@@ -494,9 +498,11 @@ async def process_community(
         print(f"  - Pinecone: skipped (no pairs or no index)")
 
     # ── 4. Upsert to MongoDB (all pairs, including golden) ──
+    mongo_upserted = 0
     if mongo_db is not None:
         await _mongo_upsert_qa_pairs(mongo_db, pairs)
-        print(f"  ✓ MongoDB: {len(pairs)} docs upserted")
+        mongo_upserted = len(pairs)
+        print(f"  ✓ MongoDB: {mongo_upserted} docs upserted")
     else:
         print(f"  - MongoDB: skipped (no database)")
 
@@ -505,7 +511,7 @@ async def process_community(
         "loaded": len(dataset),
         "transformed": len(pairs),
         "pinecone_upserted": len(pinecone_pairs),
-        "mongo_upserted": len(pairs),
+        "mongo_upserted": mongo_upserted,
         "skipped_short": skipped_short_answer,
         "skipped_existing": skipped_existing,
         "golden": sum(1 for p in pairs if p["is_golden"]),
@@ -588,6 +594,15 @@ def _parse_args():
         help="Skip IDs already present in Pinecone (idempotent)",
     )
     parser.add_argument(
+        "--skip-mongo",
+        action="store_true",
+        help=(
+            "Skip the MongoDB upsert phase — use when qa_pairs docs already "
+            "exist (e.g. embedding/chunking experiments on the same corpus). "
+            "Vectors go to Pinecone only, saving time and network."
+        ),
+    )
+    parser.add_argument(
         "--exclude-golden-ids",
         nargs="*",
         default=[],
@@ -617,6 +632,7 @@ async def main_async():
     print(f"  Dry run: {dry_run}")
     print(f"  Limit per community: {limit or 'none'}")
     print(f"  Resume mode: {args.resume}")
+    print(f"  Skip MongoDB upsert: {args.skip_mongo}")
     if args.exclude_golden_ids:
         print(f"  Golden QA exclusion: {', '.join(args.exclude_golden_ids)}")
 
@@ -637,7 +653,10 @@ async def main_async():
     if not dry_run:
         print(f"\n  Initializing Pinecone and MongoDB connections...")
         pinecone_index, embeddings_model, pinecone_index_name = _init_pinecone()
-        mongo_db = _init_mongo()
+        if not args.skip_mongo:
+            mongo_db = _init_mongo()
+        else:
+            print(f"  - MongoDB: skipped (--skip-mongo)")
         print(f"  ✓ Connections established")
 
         # In resume mode, pre-fetch existing IDs from Pinecone to skip them
