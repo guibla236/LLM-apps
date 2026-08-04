@@ -167,7 +167,8 @@ def _init_pinecone(embedding_model_name: Optional[str] = None):
     if not index_name:
         raise ValueError("PINECONE_INDEX_NAME environment variable is not set.")
     index = pinecone_client.Index(index_name)
-    return index, embeddings_model, index_name
+    embeddings = get_embeddings_model(embedding_model_name)
+    return index, embeddings, index_name
 
 
 def _strip_chunk_suffix(vector_id: str) -> str:
@@ -328,25 +329,51 @@ def _build_pinecone_vectors(
 
 
 def _pinecone_upsert(index, vectors: List[tuple], dry_run: bool = False):
-    """Upsert vectors to Pinecone in batches (Free Tier payload limit ~500)."""
+    """Upsert vectors to Pinecone in batches with adaptive size.
+
+    Starts at PINECONE_UPSERT_BATCH_SIZE (500). If Pinecone rejects a batch
+    because the request exceeds 2 MB (e.g. chunked variants store full chunk
+    text in metadata), the batch size is halved and the same vectors are
+    retried. The size only shrinks when actually needed.
+    """
     if dry_run:
         return
 
     ns = PINECONE_NAMESPACE
     total = len(vectors)
-    num_batches = (total + PINECONE_UPSERT_BATCH_SIZE - 1) // PINECONE_UPSERT_BATCH_SIZE
+    batch_size = PINECONE_UPSERT_BATCH_SIZE
+    num_batches = (total + batch_size - 1) // batch_size
 
-    for i in tqdm(
-        range(0, total, PINECONE_UPSERT_BATCH_SIZE),
-        total=num_batches,
-        desc="  Pinecone upsert batches",
-        unit="batch",
-    ):
-        batch = vectors[i : i + PINECONE_UPSERT_BATCH_SIZE]
+    pbar = tqdm(total=num_batches, desc="  Pinecone upsert batches", unit="batch")
+    start = 0
+    while start < total:
+        batch = vectors[start : start + batch_size]
         upsert_data = [(vid, vec, meta) for vid, vec, meta in batch]
-        index.upsert(vectors=upsert_data, namespace=ns)
 
-    print(f"  \u2713 Upserted {total} vectors to namespace '{ns}' ({num_batches} batches)")
+        # Adaptive backoff: halve the batch if the payload exceeds 2 MB.
+        # Re-slicing from the same `start` with the new size guarantees no
+        # vectors are skipped (the outer advance uses the effective size).
+        while True:
+            try:
+                index.upsert(vectors=upsert_data, namespace=ns)
+                break
+            except Exception as e:
+                msg = str(e)
+                if "exceeds the maximum supported size" in msg and batch_size > 1:
+                    batch_size = max(batch_size // 2, 1)
+                    pbar.set_description(
+                        f"  Pinecone upsert batches (size→{batch_size})"
+                    )
+                    batch = vectors[start : start + batch_size]
+                    upsert_data = [(vid, vec, meta) for vid, vec, meta in batch]
+                    continue
+                raise
+
+        start += batch_size
+        pbar.update(1)
+    pbar.close()
+
+    print(f"  \u2713 Upserted {total} vectors to namespace '{ns}' (final batch size: {batch_size})")
 
 
 def print_community_table():

@@ -72,6 +72,14 @@ class OpenRouterEmbeddings:
     def embed_query(self, text: str) -> List[float]:
         return self._embed([text])[0]
 
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Async variant — PineconeVectorStore.asimilarity_search uses this."""
+        return self._embed(texts)
+
+    async def aembed_query(self, text: str) -> List[float]:
+        """Async variant — PineconeVectorStore.asimilarity_search uses this."""
+        return self._embed([text])[0]
+
 
 def get_embeddings_model(model_name: Optional[str] = None) -> Any:
     """Returns the embeddings client for the configured model.
