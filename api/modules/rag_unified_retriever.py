@@ -7,7 +7,6 @@ import sys
 import os
 import json
 from typing import List, Optional
-from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from .third_party_clients import get_chat_client, vector_store_instance as vector_store, kb_vector_store_instance as kb_vector_store
@@ -19,49 +18,48 @@ from models.search import SearchResult, SearchType, SearchMethod
 TICKETS_TO_CONSIDER = int(os.getenv("TICKETS_TO_CONSIDER", 5))
 KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
 
-# --- Global BM25 Retrievers ---
-_TICKET_BM25_RETRIEVER: Optional[BM25Retriever] = None
-_KB_BM25_RETRIEVER: Optional[BM25Retriever] = None
+# MongoDB Atlas Search index for lexical retrieval (replaces local BM25)
+ATLAS_SEARCH_INDEX = os.getenv("ATLAS_SEARCH_INDEX", "default")
 
-def _init_bm25_retrievers():
-    """Initialize BM25 retrievers by loading the pre-computed index."""
-    global _TICKET_BM25_RETRIEVER, _KB_BM25_RETRIEVER
-    
-    if _TICKET_BM25_RETRIEVER is not None:
-        return
 
-    index_path = os.path.join(os.path.dirname(__file__), "..", "static", "bm25_index.json")
-    if not os.path.exists(index_path):
-        sys.stderr.write(f"DEBUG: BM25 index not found at {index_path}\n")
-        return
-
-    try:
-        with open(index_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        # Tickets: use enriched page_content_bm25 if available (SE corpus),
-        # fall back to legacy "ticketId description" for synthetic tickets.
-        ticket_docs = [
+async def mongodb_lexical_search(query: str, k: int = 5) -> List[Document]:
+    """Full-text search over qa_pairs using MongoDB Atlas Search"""
+    from .database import get_database
+    db = get_database()
+    pipeline = [
+        {
+            "$search": {
+                "index": ATLAS_SEARCH_INDEX,
+                "text": {"query": query, "path": "title_body"},
+            }
+        },
+        {"$limit": k},
+        {
+            "$project": {
+                "ticketId": 1,
+                "title_body": 1,
+                "upvoted_answer": 1,
+                "community": 1,
+                "priority": 1,
+                "score": {"$meta": "searchScore"},
+            }
+        },
+    ]
+    docs: List[Document] = []
+    async for doc in db.qa_pairs.aggregate(pipeline):
+        metadata = {
+            "ticketId": doc.get("ticketId", ""),
+            "community": doc.get("community", ""),
+            "priority": doc.get("priority", ""),
+            "expected_output": (doc.get("upvoted_answer") or "")[:500],
+        }
+        docs.append(
             Document(
-                page_content=t.get("page_content_bm25", f"{t['ticketId']} {t['description']}"),
-                metadata=t
+                page_content=doc.get("title_body", ""),
+                metadata=metadata,
             )
-            for t in data.get("tickets", [])
-        ]
-        if ticket_docs:
-            _TICKET_BM25_RETRIEVER = BM25Retriever.from_documents(ticket_docs)
-        
-        # KB
-        kb_docs = [
-            Document(page_content=d["content"], metadata=d)
-            for d in data.get("kb", [])
-        ]
-        if kb_docs:
-            _KB_BM25_RETRIEVER = BM25Retriever.from_documents(kb_docs)
-
-        sys.stderr.write(f"DEBUG: BM25 Retrievers initialized successfully.\n")
-    except Exception as e:
-        sys.stderr.write(f"DEBUG: Error initializing BM25: {str(e)}\n")
+        )
+    return docs
 
 async def generate_hypothetical_ticket(query: str, model_name: str) -> str:
     """
@@ -116,13 +114,10 @@ async def search_tickets(
 
             raw_vector_results = await vector_store.asimilarity_search(vector_query, k=k)
 
-        # 2. BM25 search (Keywords)
-        bm25_results = []
+        # 2. Lexical search (MongoDB Atlas Search)
+        lexical_search_results = []
         if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
-            _init_bm25_retrievers()
-            if _TICKET_BM25_RETRIEVER:
-                # BM25Retriever from LangChain is synchronous
-                bm25_results = _TICKET_BM25_RETRIEVER.invoke(query)
+            lexical_search_results = await mongodb_lexical_search(query, k=k)
         
         # 3. Combine and map to SearchResult
         seen_ids = set()
@@ -139,8 +134,8 @@ async def search_tickets(
                         content=doc.page_content, metadata=doc.metadata, score=0.75
                     ))
         
-        # Add BM25 results that are not already present
-        for doc in bm25_results[:k]:
+        # Add lexical search results that are not already present
+        for doc in lexical_search_results[:k]:
             tid = doc.metadata['ticketId']
             if tid not in seen_ids:
                 seen_ids.add(tid)
@@ -160,62 +155,17 @@ async def search_tickets(
 
 async def search_kb_documents(query: str, k: int = 5, search_method: SearchMethod = SearchMethod.HYBRID, use_hyde: bool = False) -> List[SearchResult]:
     """
-    Search for relevant Knowledge Base documents based on a query.
-    
-    Args:
-        query (str): Query to search for
-        k (int): Maximum number of results
-        search_method (SearchMethod): Either SearchMethod.VECTOR_ONLY, SearchMethod.BM25_ONLY, or SearchMethod.HYBRID
-        use_hyde (bool): Whether to use hypothetical document generation (IGNORE FOR KB)
-        
-    Returns:
-        List[SearchResult]: List of relevant KB documents
+    DEPRECATED (2026-08-04): Knowledge Base search is disabled.
+
+    The legacy KB corpus (from the synthetic era) was
+    excluded from the evaluation scope, has no
+    consumers (no endpoint/frontend requests kb_only/both), and the local
+    BM25 index that powered its lexical search was removed in the MongoDB
+    Atlas Search migration. If KB is ever reactivated, it must be re-ingested
+    in the new corpus format (English, aligned with the real dataset).
     """
-    try:
-        # 1. Vector search
-        raw_vector_results = []
-        if search_method in [SearchMethod.HYBRID, SearchMethod.VECTOR_ONLY]:
-            # HyDE is disabled for KB search as technical tickets don't match manual styles
-            raw_vector_results = await kb_vector_store.asimilarity_search(query, k=k)
-        
-        # 2. BM25 search
-        bm25_results = []
-        if search_method in [SearchMethod.HYBRID, SearchMethod.BM25_ONLY]:
-            _init_bm25_retrievers()
-            if _KB_BM25_RETRIEVER:
-                bm25_results = _KB_BM25_RETRIEVER.invoke(query)
-        
-        # 3. Combine
-        seen_ids = set()
-        results = []
-        
-        for doc in raw_vector_results:
-            if 'fileId' in doc.metadata:
-                fid = doc.metadata['fileId']
-                if fid not in seen_ids:
-                    seen_ids.add(fid)
-                    results.append(SearchResult(
-                        source="kb", id=fid, title=f"KB {fid}",
-                        content=doc.page_content, metadata=doc.metadata, score=0.75
-                    ))
-        
-        for doc in bm25_results[:k]:
-            fid = doc.metadata['fileId']
-            if fid not in seen_ids:
-                seen_ids.add(fid)
-                results.append(SearchResult(
-                    source="kb", id=fid, title=f"KB {fid}",
-                    content=doc.page_content, metadata=doc.metadata, score=0.8
-                ))
-        
-        return results
-        
-    except Exception as e:
-        sys.stderr.write(f"\n========== DEBUG: ERROR in search_kb_documents ==========\n")
-        sys.stderr.write(f"DEBUG: Error type: {type(e).__name__}\n")
-        sys.stderr.write(f"DEBUG: Error message: {str(e)}\n")
-        sys.stderr.flush()
-        return []
+    sys.stderr.write("DEBUG: search_kb_documents is DEPRECATED — returning empty (KB disabled).\n")
+    return []
 
 async def unified_search(
         query: str, 
@@ -314,7 +264,7 @@ async def context_retriever_for_unified_search(query: str,
     ticket_results = [r for r in unified_search_results if r.source == "ticket"]
     kb_results = [r for r in unified_search_results if r.source == "kb"]
     results_to_return = []
-    
+
     for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
         expected = ticket.metadata.get('expected_output', '')
         desc = _clean_ticket_content(ticket)
