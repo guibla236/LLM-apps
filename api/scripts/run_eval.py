@@ -332,6 +332,12 @@ def _write_csv_header(csv_path: str):
         "faithfulness",
         "answer_relevancy",
         "correctness",
+        "retrieval_secs",
+        "generation_secs",
+        "judge_secs",
+        "total_secs",
+        "output_chars",
+        "output_tokens",
     ]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -350,6 +356,12 @@ def _append_csv_row(csv_path: str, row: dict):
         "faithfulness",
         "answer_relevancy",
         "correctness",
+        "retrieval_secs",
+        "generation_secs",
+        "judge_secs",
+        "total_secs",
+        "output_chars",
+        "output_tokens",
     ]
     with open(csv_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -364,12 +376,24 @@ def _json_aggregate_path(csv_path: str) -> str:
     return csv_path.replace(".csv", "_aggregate.json")
 
 
+def _estimate_tokens(text: str) -> int:
+    """Estimate output tokens. Uses tiktoken when available, else chars/4 heuristic."""
+    try:
+        import tiktoken
+        enc = tiktoken.get_encoding("o200k_base")
+        return len(enc.encode(text))
+    except Exception:
+        return max(1, len(text) // 4)
+
+
 def _compute_aggregate(rows: List[Dict]) -> dict:
     """Compute mean, median, std, min, max for each metric."""
     metrics = list(set(
         [m for m in [
             "contextual_precision", "contextual_recall",
             "faithfulness", "answer_relevancy", "correctness",
+            "retrieval_secs", "generation_secs", "judge_secs",
+            "total_secs", "output_chars", "output_tokens",
         ] if any(m in r for r in rows)]
     ))
     aggregate = {"total_questions": len(rows)}
@@ -581,6 +605,7 @@ def main():
             continue
 
         # Step 1: retrieve context (raw_unified_search)
+        t_retrieval_start = time.time()
         results = call_raw_search(
             api_url=args.api_url,
             query=question,
@@ -590,6 +615,7 @@ def main():
             use_hyde=args.use_hyde,
             api_key=api_key,
         )
+        retrieval_secs = time.time() - t_retrieval_start
 
         retrieval_context = results_to_retrieval_context(results)
 
@@ -605,6 +631,12 @@ def main():
                 "faithfulness": None,
                 "answer_relevancy": None,
                 "correctness": None,
+                "retrieval_secs": round(retrieval_secs, 2),
+                "generation_secs": None,
+                "judge_secs": None,
+                "total_secs": round(retrieval_secs, 2),
+                "output_chars": 0,
+                "output_tokens": 0,
             })
             _append_csv_row(csv_path, rows[-1])
             errors += 1
@@ -612,6 +644,7 @@ def main():
             continue
 
         # Step 2: generate answer (augment_search_results)
+        t_generation_start = time.time()
         augment_result = call_augment_search(
             api_url=args.api_url,
             query=question,
@@ -622,6 +655,7 @@ def main():
             api_key=api_key,
             model_name=args.generator_model,
         )
+        generation_secs = time.time() - t_generation_start
 
         actual_output = ""
         if augment_result:
@@ -640,6 +674,7 @@ def main():
         )
 
         # Measure each metric
+        t_judge_start = time.time()
         row = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "question": question,
@@ -651,6 +686,14 @@ def main():
             row[metric_name] = round(score, 4) if score is not None else None
             if score is None:
                 errors += 1
+        judge_secs = time.time() - t_judge_start
+
+        row["retrieval_secs"] = round(retrieval_secs, 2)
+        row["generation_secs"] = round(generation_secs, 2)
+        row["judge_secs"] = round(judge_secs, 2)
+        row["total_secs"] = round(retrieval_secs + generation_secs + judge_secs, 2)
+        row["output_chars"] = len(actual_output)
+        row["output_tokens"] = _estimate_tokens(actual_output)
 
         rows.append(row)
         _append_csv_row(csv_path, row)
@@ -669,7 +712,9 @@ def main():
             for row in reader:
                 parsed = {k: row[k] for k in row}
                 for m in ["contextual_precision", "contextual_recall",
-                          "faithfulness", "answer_relevancy", "correctness"]:
+                          "faithfulness", "answer_relevancy", "correctness",
+                          "retrieval_secs", "generation_secs", "judge_secs",
+                          "total_secs", "output_chars", "output_tokens"]:
                     v = parsed.get(m, "")
                     parsed[m] = float(v) if v not in ("", "None") else None
                 all_rows.append(parsed)
