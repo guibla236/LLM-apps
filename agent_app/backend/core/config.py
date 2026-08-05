@@ -1,28 +1,27 @@
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from pydantic import SecretStr
 import os
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
-CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+AGENT_MODEL = os.getenv("AGENT_MODEL", "deepseek/deepseek-v4-flash")
 
 _llm = None
 
 def get_llm():
-    """ Initialize and return the LLM instance. """
+    """ Initialize and return the LLM instance (OpenRouter via ChatOpenAI). """
     global _llm
 
     if _llm is None:
-        if GROQ_API_KEY is None:
-            raise ValueError("GROQ_API_KEY environment variable is not set.")
-        if CHAT_MODEL_NAME is None:
-            raise ValueError("CHAT_MODEL_NAME environment variable is not set.")
-        _llm = ChatGroq(
+        if OPENROUTER_API_KEY is None:
+            raise ValueError("OPENROUTER_API_KEY environment variable is not set.")
+        _llm = ChatOpenAI(
             temperature=0,
-            model=CHAT_MODEL_NAME,
-            api_key=SecretStr(GROQ_API_KEY)
+            model=AGENT_MODEL,
+            api_key=OPENROUTER_API_KEY,
+            base_url=OPENROUTER_BASE_URL,
         )
 
     return _llm
