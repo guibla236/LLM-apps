@@ -104,7 +104,7 @@ Al apreciar una desviación estándar alta, resulta necesario también ver otras
 
 La forma de la distribución de respuestas — cola larga a la derecha, mayoría de muestras a la izquierda — sugería una distribución log-normal. Ajustamos una log-normal a las longitudes de respuesta y aplicamos el test de Kolmogorov-Smirnov para validar el ajuste. El resultado: $p = 0.04$. No podemos rechazar la hipótesis de que las respuestas siguen una log-normal a un nivel de confianza del 95%, aunque está en el borde. Es una aproximación razonable, no una certeza.
 
-¿Para qué sirve saber esto? Porque podemos planificar costos de inferencia sin haber ejecutado una sola consulta. El percentil 75 de las respuestas está en 887 caracteres. El 75% de las consultas que hagamos al sistema van a recuperar respuestas por debajo de ese umbral. Si usáramos un modelo barato (llama-3.1-8b-instant, ~$0.05/M tokens) para ese 75% y reserváramos uno más caro (llama-4-scout, ~$0.20/M tokens) para el 25% restante, el costo estimado por cada 1000 consultas pasaría de $0.12 (siempre el caro) a $0.04 (híbrido). Un ahorro del ~68%.
+¿Para qué sirve saber esto? Porque podemos planificar costos de inferencia sin haber ejecutado una sola consulta. El percentil 75 de las respuestas está en 887 caracteres. El 75% de las consultas que hagamos al sistema van a recuperar respuestas por debajo de ese umbral. Si usáramos un modelo barato (p. ej. `ling-2.6-flash`, ~$0.03/M tokens de salida) para ese 75% y reserváramos uno más capaz (p. ej. `deepseek-v4-flash-0731`, ~$0.18/M tokens de salida) para el 25% restante, el costo estimado por cada 1000 consultas se reduciría en un orden de magnitud similar al ~68% calculado originalmente con los modelos de la época. Los modelos concretos y el ahorro real se evaluarán empíricamente en la fase de optimización de costos; este hallazgo solo establece que la oportunidad existe y que los datos ya nos dan un punto de partida.
 
 No estamos decidiendo qué modelo usar. Es una nota al margen: cuando llegue el momento de poner esto en producción, los datos ya nos dan un punto de partida para la discusión sobre costos.
 
@@ -412,7 +412,7 @@ Con el corpus listo para ingesta, los próximos pasos son:
 3. Cargar ~60K pares a Pinecone namespace `kb-se-all`.
 4. Construir colección `qa_pairs` en MongoDB.
 5. Reconstruir índice BM25.
-6. Traducir prompts HyDE y categorías KB a inglés.
+6. Traducir prompts HyDE a inglés. (Las categorías KB quedaron fuera de alcance — la búsqueda KB fue deprecada en la migración M4.)
 7. Preservar datos sintéticos como `kb-synthetic-legacy`.
 
 

@@ -407,5 +407,5 @@ With the corpus ready for ingestion, the next steps are:
 3. Load ~60K pairs into Pinecone namespace `kb-se-all`.
 4. Build the `qa_pairs` collection in MongoDB.
 5. Rebuild the BM25 index.
-6. Translate HyDE prompts and KB categories to English.
+6. Translate HyDE prompts to English. (KB categories dropped from scope — KB search was deprecated in the M4 migration.)
 7. Preserve synthetic data as `kb-synthetic-legacy`.
