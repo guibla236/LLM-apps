@@ -170,6 +170,7 @@ def call_augment_search(
     hybrid_search: bool,
     use_hyde: bool,
     api_key: Optional[str] = None,
+    model_name: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Call /api/augment_search_results and return the LLM-generated summary."""
     headers = {"Content-Type": "application/json"}
@@ -183,6 +184,8 @@ def call_augment_search(
         "hybrid_search": hybrid_search,
         "use_hyde": use_hyde,
     }
+    if model_name:
+        payload["model_name"] = model_name
 
     try:
         resp = requests.post(
@@ -454,6 +457,12 @@ def main():
         help=f"Judge model for DeepEval (default: {DEFAULT_JUDGE_MODEL})",
     )
     parser.add_argument(
+        "--generator-model",
+        default=None,
+        help="Generator model sent as model_name to /api/augment_search_results "
+             "(default: API's DEFAULT_CHAT_MODEL_NAME)",
+    )
+    parser.add_argument(
         "--metrics",
         nargs="+",
         default=REQUIRED_METRICS,
@@ -611,6 +620,7 @@ def main():
             hybrid_search=(args.search_method != "bm25_only"),
             use_hyde=args.use_hyde,
             api_key=api_key,
+            model_name=args.generator_model,
         )
 
         actual_output = ""
