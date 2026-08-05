@@ -1,0 +1,20 @@
+{
+  "total_questions": 50,
+  "contextual_precision": {
+    "mean": 0.338,
+    "median": 0.0,
+    "std": 0.4089,
+    "min": 0,
+    "max": 1.0,
+    "count": 50
+  },
+  "contextual_recall": {
+    "mean": 0.2519,
+    "median": 0.1056,
+    "std": 0.3144,
+    "min": 0.0,
+    "max": 1.0,
+    "count": 50
+  },
+  "timestamp": "2026-08-04T17:44:47.247040+00:00"
+}

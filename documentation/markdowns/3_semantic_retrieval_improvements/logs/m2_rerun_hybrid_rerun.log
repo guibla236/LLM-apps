@@ -1,0 +1,95 @@
+Loading golden QA from /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/goldens/golden_se_200.json
+  Loaded 200 pairs
+  Limited to 50 for testing
+
+Initializing judge: deepseek/deepseek-v4-flash
+  Metrics: correctness, faithfulness, answer_relevancy, contextual_precision, contextual_recall
+  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_hybrid_golden_se_200_20260803_170958.csv
+
+============================================================
+  Running evaluation: m2_rerun_hybrid
+  Questions: 50
+  Search: hybrid, k=10
+============================================================
+Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
+
+
+
+
+Evaluating:   2%|▏         | 1/50 [02:08<1:44:35, 128.07s/q]
+
+
+
+
+Evaluating:   4%|▍         | 2/50 [04:43<1:55:12, 144.00s/q]
+
+
+
+
+Evaluating:   6%|▌         | 3/50 [07:31<2:01:35, 155.22s/q]
+
+
+
+
+Evaluating:   8%|▊         | 4/50 [09:43<1:52:00, 146.09s/q]
+
+
+
+
+Evaluating:  10%|█         | 5/50 [12:01<1:47:20, 143.12s/q]
+
+
+
+
+Evaluating:  12%|█▏        | 6/50 [15:36<2:02:53, 167.59s/q]
+
+
+
+
+Evaluating:  14%|█▍        | 7/50 [17:14<1:43:41, 144.68s/q]
+
+
+
+
+Evaluating:  16%|█▌        | 8/50 [22:14<2:16:00, 194.31s/q]
+
+
+
+
+Evaluating:  18%|█▊        | 9/50 [25:08<2:08:26, 187.97s/q]
+
+
+
+
+Evaluating:  20%|██        | 10/50 [28:53<2:12:50, 199.27s/q]
+
+
+
+
+Evaluating:  22%|██▏       | 11/50 [30:42<1:51:38, 171.75s/q]
+
+
+
+
+Evaluating:  24%|██▍       | 12/50 [34:01<1:54:00, 180.01s/q]
+
+
+
+
+Evaluating:  26%|██▌       | 13/50 [37:06<1:51:58, 181.59s/q]
+
+
+
+
+Evaluating:  28%|██▊       | 14/50 [39:46<1:44:56, 174.90s/q]
+
+
+
+
+Evaluating:  30%|███       | 15/50 [42:32<1:40:32, 172.35s/q]
+
+
+
+
+Evaluating:  32%|███▏      | 16/50 [44:49<1:31:36, 161.67s/q]
+
