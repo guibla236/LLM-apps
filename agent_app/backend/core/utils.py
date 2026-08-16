@@ -58,6 +58,27 @@ _TOOL_NAME_MAP = {
     "search_web_tool": "Searching the web for relevant information"
 }
 
+
+def format_agent_trace(trace_events: list) -> list:
+    """Normalize the diagnosis-graph trace events for the frontend.
+
+    The nodes already emit events in the expected shape
+    ({node, event, description, active}); this pass-through guarantees
+    every entry has the required keys and ``active`` defaults to True.
+    """
+    trace = []
+    for ev in trace_events or []:
+        if not isinstance(ev, dict):
+            continue
+        trace.append({
+            "node": ev.get("node", "agent"),
+            "event": ev.get("event", "thought"),
+            "description": ev.get("description", ""),
+            "active": ev.get("active", True),
+        })
+    return trace
+
+
 def format_trace(messages: list) -> list:
     """Reconstructs a user-friendly execution trace from a list of LangChain messages."""
     trace = []

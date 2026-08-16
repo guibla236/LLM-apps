@@ -36,9 +36,9 @@ async def advanced_search_tool(
     if not _API_BASE_URL:
         return "The API base URL is not configured."
     
-    model_name = get_env_var("CHAT_MODEL_NAME")
+    model_name = get_env_var("AGENT_MODEL")
     if model_name is None:
-        return "The CHAT_MODEL_NAME env var is not set. The environment variable CHAT_MODEL_NAME is not configured. Nothing can be done."
+        return "The AGENT_MODEL env var is not set. The environment variable AGENT_MODEL is not configured. Nothing can be done."
     
     if search_type not in _VALID_SEARCH_TYPES:
         return (

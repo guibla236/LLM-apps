@@ -5,7 +5,7 @@ from agent.graph import app_graph
 from core.logger import agent_logger
 from services.session_service import generate_session_title
 from langchain_core.runnables.config import RunnableConfig
-from core.utils import format_trace
+from core.utils import format_trace, format_agent_trace
 
 async def chat_with_agent(
         message: str, 
@@ -24,7 +24,9 @@ async def chat_with_agent(
         "configurable": {
             "thread_id": thread_id
         }, 
-        "recursion_limit": 10
+        # Multi-step diagnosis graph: analyze + up to 3 iterations
+        # (search/evaluate/refine) + generate ≈ 12 supersteps worst case.
+        "recursion_limit": 20
     }
     
     try:
@@ -44,8 +46,11 @@ async def chat_with_agent(
              if msg.type == "ai" and msg.content:
                  solution = msg.content
                  break
-        
-        trace = format_trace(all_messages)
+
+        # Diagnosis graph emits its own structured trace (working memory);
+        # the legacy ReAct graph keeps the message-based trace as fallback.
+        trace = format_agent_trace(response.get("trace_events")) \
+            if response.get("trace_events") else format_trace(all_messages)
         duration = round(time.perf_counter() - start_time, 2)
         
         # --- Session Management ---
