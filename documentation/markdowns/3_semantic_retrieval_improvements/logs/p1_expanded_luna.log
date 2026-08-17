@@ -1,0 +1,127 @@
+Loading golden QA from ../evaluation_notebooks/goldens/golden_se_200.json
+  Loaded 200 pairs
+  Limited to 50 for testing
+
+Initializing judge: openai/gpt-5.6-luna
+  Metrics: contextual_precision, contextual_recall
+  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/p1_expanded_luna_golden_se_200_20260816_215754.csv
+
+============================================================
+  Running evaluation: p1_expanded_luna
+  Questions: 50
+  Search: vector_only, k=10
+============================================================
+Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
+
+Evaluating:   2%|▏         | 1/50 [00:26<21:46, 26.65s/q]
+
+Evaluating:   4%|▍         | 2/50 [00:59<24:11, 30.23s/q]
+
+Evaluating:   6%|▌         | 3/50 [01:25<22:10, 28.31s/q]
+
+Evaluating:   8%|▊         | 4/50 [01:51<21:03, 27.46s/q]
+
+Evaluating:  10%|█         | 5/50 [02:12<18:50, 25.13s/q]
+
+Evaluating:  12%|█▏        | 6/50 [02:48<21:01, 28.67s/q]
+
+Evaluating:  14%|█▍        | 7/50 [03:12<19:31, 27.25s/q]
+
+Evaluating:  16%|█▌        | 8/50 [03:56<22:50, 32.62s/q]
+
+Evaluating:  18%|█▊        | 9/50 [04:26<21:49, 31.93s/q]
+
+Evaluating:  20%|██        | 10/50 [05:08<23:15, 34.88s/q]
+
+Evaluating:  22%|██▏       | 11/50 [05:27<19:37, 30.18s/q]
+
+Evaluating:  24%|██▍       | 12/50 [06:04<20:24, 32.24s/q]
+
+Evaluating:  26%|██▌       | 13/50 [06:30<18:33, 30.09s/q]
+
+Evaluating:  28%|██▊       | 14/50 [07:01<18:20, 30.58s/q]
+
+Evaluating:  30%|███       | 15/50 [07:36<18:33, 31.80s/q]
+
+Evaluating:  32%|███▏      | 16/50 [08:06<17:39, 31.15s/q]
+
+Evaluating:  34%|███▍      | 17/50 [08:38<17:21, 31.56s/q]
+
+Evaluating:  36%|███▌      | 18/50 [08:58<14:55, 27.99s/q]
+
+Evaluating:  38%|███▊      | 19/50 [09:27<14:36, 28.26s/q]
+
+Evaluating:  40%|████      | 20/50 [10:00<14:50, 29.67s/q]
+
+Evaluating:  42%|████▏     | 21/50 [11:01<18:58, 39.25s/q]
+
+Evaluating:  44%|████▍     | 22/50 [11:35<17:34, 37.68s/q]
+
+Evaluating:  46%|████▌     | 23/50 [12:19<17:49, 39.61s/q]
+
+Evaluating:  48%|████▊     | 24/50 [13:09<18:29, 42.66s/q]
+
+Evaluating:  50%|█████     | 25/50 [13:40<16:15, 39.03s/q]
+
+Evaluating:  52%|█████▏    | 26/50 [14:03<13:45, 34.39s/q]
+
+Evaluating:  54%|█████▍    | 27/50 [14:31<12:27, 32.48s/q]
+
+Evaluating:  56%|█████▌    | 28/50 [15:04<11:55, 32.53s/q]
+
+Evaluating:  58%|█████▊    | 29/50 [15:37<11:25, 32.62s/q]
+
+Evaluating:  60%|██████    | 30/50 [15:59<09:52, 29.61s/q]
+
+Evaluating:  62%|██████▏   | 31/50 [16:29<09:23, 29.63s/q]
+
+Evaluating:  64%|██████▍   | 32/50 [17:14<10:17, 34.29s/q]
+
+Evaluating:  66%|██████▌   | 33/50 [17:44<09:21, 33.03s/q]
+
+Evaluating:  68%|██████▊   | 34/50 [18:11<08:18, 31.16s/q]
+
+Evaluating:  70%|███████   | 35/50 [18:55<08:43, 34.89s/q]
+
+Evaluating:  72%|███████▏  | 36/50 [19:22<07:35, 32.52s/q]
+
+Evaluating:  74%|███████▍  | 37/50 [19:47<06:34, 30.35s/q]
+
+Evaluating:  76%|███████▌  | 38/50 [20:19<06:12, 31.02s/q]
+
+Evaluating:  78%|███████▊  | 39/50 [20:56<05:58, 32.59s/q]
+
+Evaluating:  80%|████████  | 40/50 [21:22<05:07, 30.80s/q]
+
+Evaluating:  82%|████████▏ | 41/50 [21:56<04:44, 31.65s/q]
+
+Evaluating:  84%|████████▍ | 42/50 [22:38<04:38, 34.81s/q]
+
+Evaluating:  86%|████████▌ | 43/50 [22:54<03:24, 29.23s/q]
+
+Evaluating:  88%|████████▊ | 44/50 [23:27<03:01, 30.26s/q]
+
+Evaluating:  90%|█████████ | 45/50 [23:51<02:22, 28.51s/q]
+
+Evaluating:  92%|█████████▏| 46/50 [24:23<01:57, 29.44s/q]
+
+Evaluating:  94%|█████████▍| 47/50 [25:02<01:36, 32.19s/q]
+
+Evaluating:  96%|█████████▌| 48/50 [25:41<01:08, 34.36s/q]
+
+Evaluating:  98%|█████████▊| 49/50 [26:13<00:33, 33.76s/q]
+
+Evaluating: 100%|██████████| 50/50 [26:47<00:00, 33.60s/q]Evaluating: 100%|██████████| 50/50 [26:47<00:00, 32.14s/q]
+
+============================================================
+  Evaluation Complete
+============================================================
+  Questions evaluated: 50
+  Errors:              0
+  CSV:                 /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/p1_expanded_luna_golden_se_200_20260816_215754.csv
+  JSON aggregate:      /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/p1_expanded_luna_golden_se_200_20260816_215754_aggregate.json
+
+  Metric                    Mean       Median     Count   
+  ------------------------- ---------- ---------- --------
+  contextual_precision      0.7441     0.9333     50      
+  contextual_recall         0.2735     0.1834     50      

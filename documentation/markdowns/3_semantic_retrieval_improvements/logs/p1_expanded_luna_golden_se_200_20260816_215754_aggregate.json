@@ -1,0 +1,68 @@
+{
+  "total_questions": 50,
+  "total_secs": {
+    "mean": 30.1684,
+    "median": 30.025,
+    "std": 8.3836,
+    "min": 14.19,
+    "max": 59.6,
+    "count": 50
+  },
+  "generation_secs": {
+    "mean": 10.5112,
+    "median": 9.15,
+    "std": 6.5403,
+    "min": 2.94,
+    "max": 36.36,
+    "count": 50
+  },
+  "judge_secs": {
+    "mean": 17.802,
+    "median": 17.0,
+    "std": 5.3101,
+    "min": 9.54,
+    "max": 29.26,
+    "count": 50
+  },
+  "retrieval_secs": {
+    "mean": 1.8548,
+    "median": 1.79,
+    "std": 0.3126,
+    "min": 1.45,
+    "max": 3.0,
+    "count": 50
+  },
+  "contextual_recall": {
+    "mean": 0.2735,
+    "median": 0.1834,
+    "std": 0.2817,
+    "min": 0.0,
+    "max": 1.0,
+    "count": 50
+  },
+  "output_chars": {
+    "mean": 987.58,
+    "median": 961.0,
+    "std": 426.0715,
+    "min": 276,
+    "max": 2062,
+    "count": 50
+  },
+  "output_tokens": {
+    "mean": 235.64,
+    "median": 219.0,
+    "std": 107.3,
+    "min": 58,
+    "max": 523,
+    "count": 50
+  },
+  "contextual_precision": {
+    "mean": 0.7441,
+    "median": 0.9333,
+    "std": 0.3473,
+    "min": 0,
+    "max": 1.0,
+    "count": 50
+  },
+  "timestamp": "2026-08-16T22:24:41.522047+00:00"
+}
