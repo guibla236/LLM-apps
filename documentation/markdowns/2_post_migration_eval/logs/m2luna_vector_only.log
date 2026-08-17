@@ -1,0 +1,216 @@
+Loading golden QA from ../evaluation_notebooks/goldens/golden_se_200.json
+  Loaded 200 pairs
+  Limited to 50 for testing
+
+Initializing judge: openai/gpt-5.6-luna
+  Metrics: correctness, faithfulness, answer_relevancy, contextual_precision, contextual_recall
+  Resume mode: 13 questions already evaluated in ../evaluation_notebooks/raw_results/m2luna_vector_only_golden_se_200_20260816_172445.csv
+  Output CSV: ../evaluation_notebooks/raw_results/m2luna_vector_only_golden_se_200_20260816_172445.csv
+
+============================================================
+  Running evaluation: m2luna_vector_only
+  Questions: 50
+  Search: vector_only, k=10
+============================================================
+Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
+
+
+
+
+Evaluating:  28%|██▊       | 14/50 [00:58<02:30,  4.19s/q]
+
+
+
+
+Evaluating:  30%|███       | 15/50 [01:55<05:18,  9.10s/q]
+
+
+
+
+Evaluating:  32%|███▏      | 16/50 [02:54<08:26, 14.89s/q]
+
+
+
+
+Evaluating:  34%|███▍      | 17/50 [03:45<11:03, 20.11s/q]
+
+
+
+
+Evaluating:  36%|███▌      | 18/50 [04:40<13:50, 25.95s/q]
+
+
+
+
+Evaluating:  38%|███▊      | 19/50 [05:23<15:08, 29.31s/q]
+
+
+
+
+Evaluating:  40%|████      | 20/50 [06:14<17:01, 34.05s/q]
+
+
+
+
+Evaluating:  42%|████▏     | 21/50 [07:05<18:21, 37.98s/q]
+
+
+
+
+Evaluating:  44%|████▍     | 22/50 [08:04<20:11, 43.27s/q]
+
+
+
+
+Evaluating:  46%|████▌     | 23/50 [09:19<23:21, 51.91s/q]
+
+
+
+
+Evaluating:  48%|████▊     | 24/50 [10:08<22:06, 51.04s/q]
+
+
+
+
+Evaluating:  50%|█████     | 25/50 [11:02<21:38, 51.92s/q]
+
+
+
+
+Evaluating:  52%|█████▏    | 26/50 [12:05<22:00, 55.04s/q]
+
+
+
+
+Evaluating:  54%|█████▍    | 27/50 [12:59<21:00, 54.78s/q]
+
+
+
+
+Evaluating:  56%|█████▌    | 28/50 [13:58<20:29, 55.90s/q]
+
+
+
+
+Evaluating:  58%|█████▊    | 29/50 [15:10<21:13, 60.65s/q]
+
+
+
+
+Evaluating:  60%|██████    | 30/50 [16:11<20:13, 60.67s/q]
+
+
+
+
+Evaluating:  62%|██████▏   | 31/50 [17:05<18:38, 58.89s/q]
+
+
+
+
+Evaluating:  64%|██████▍   | 32/50 [18:13<18:30, 61.67s/q]
+
+
+
+
+Evaluating:  66%|██████▌   | 33/50 [19:12<17:11, 60.68s/q]
+
+
+
+
+Evaluating:  68%|██████▊   | 34/50 [19:54<14:43, 55.21s/q]
+
+
+
+
+Evaluating:  70%|███████   | 35/50 [21:17<15:53, 63.55s/q]
+
+
+
+
+Evaluating:  72%|███████▏  | 36/50 [22:11<14:10, 60.75s/q]
+
+
+
+
+Evaluating:  74%|███████▍  | 37/50 [23:04<12:37, 58.27s/q]
+
+
+
+
+Evaluating:  76%|███████▌  | 38/50 [24:00<11:30, 57.52s/q]
+
+
+
+
+Evaluating:  78%|███████▊  | 39/50 [24:57<10:31, 57.39s/q]
+
+
+
+
+Evaluating:  80%|████████  | 40/50 [25:52<09:27, 56.79s/q]
+
+
+
+
+Evaluating:  82%|████████▏ | 41/50 [26:52<08:39, 57.73s/q]
+
+
+
+
+Evaluating:  84%|████████▍ | 42/50 [28:13<08:37, 64.74s/q]
+
+
+
+
+Evaluating:  86%|████████▌ | 43/50 [29:01<06:58, 59.79s/q]
+
+
+
+
+Evaluating:  88%|████████▊ | 44/50 [30:05<06:05, 60.93s/q]
+
+
+
+
+Evaluating:  90%|█████████ | 45/50 [31:15<05:18, 63.72s/q]
+
+
+
+
+Evaluating:  92%|█████████▏| 46/50 [33:00<05:03, 75.88s/q]
+
+
+
+
+Evaluating:  94%|█████████▍| 47/50 [34:37<04:06, 82.27s/q]
+
+
+
+
+Evaluating:  96%|█████████▌| 48/50 [35:51<02:39, 79.98s/q]
+
+
+
+
+Evaluating:  98%|█████████▊| 49/50 [36:42<01:11, 71.32s/q]
+
+
+
+
+Evaluating: 100%|██████████| 50/50 [37:49<00:00, 70.00s/q]Evaluating: 100%|██████████| 50/50 [37:49<00:00, 45.40s/q]
+
+============================================================
+  Evaluation Complete
+============================================================
+  Questions evaluated: 37
+  Errors:              0
+  CSV:                 ../evaluation_notebooks/raw_results/m2luna_vector_only_golden_se_200_20260816_172445.csv
+  JSON aggregate:      ../evaluation_notebooks/raw_results/m2luna_vector_only_golden_se_200_20260816_172445_aggregate.json
+
+  Metric                    Mean       Median     Count   
+  ------------------------- ---------- ---------- --------
+  correctness               0.5040     0.4000     50      
+  faithfulness              0.9891     1.0000     50      
+  answer_relevancy          0.9614     1.0000     50      
+  contextual_precision      0.6033     0.7000     50      
+  contextual_recall         0.2366     0.1548     50      
