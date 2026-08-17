@@ -26,7 +26,7 @@ To evaluate the system, we built a golden dataset of 200 question-answer pairs r
 
 </div>
 
-Stratification guarantees that all topic areas of support are represented, without the massive communities (superuser, askubuntu) completely dominating the sample. First, only 50 pairs of the golden dataset were used, shuffled in such a way that they were representative of the 9 communities. Then, two scenarios were evaluated: purely vectorial search and hybrid search (Semantic + BM25). In the first scenario we should see how good semantic search is, while in the second we should observe whether traditional keyword search adds value to the system.
+Stratification guarantees that all relevant topic areas of support are represented, without the massive communities (superuser, askubuntu) completely dominating the sample. A golden dataset of **200 pairs** was built with this stratification and, from it, **50 pairs** were taken for this article's evaluations through a sub-sample that preserves the same proportions per community. Two scenarios were then evaluated: purely vector search and hybrid search (Semantic + BM25). In the first scenario we should see how good semantic search is, while in the second we should observe whether traditional keyword search adds value to the system.
 
 All golden pairs are excluded from the vector index and the BM25 index. This guarantees that the system can never retrieve the exact document of the evaluated question: retrieval metrics measure the ability to find the most relevant document by similarity, not to obtain a literal match. It is a bounded form of generalization — while the generator LLM, trained on public data, might recognize well-known StackExchange problems, the retriever cannot rely on exact matching.
 
@@ -52,7 +52,9 @@ An important distinction: the last two metrics evaluate the *retriever* (how wel
 
 ## Results
 
-The design of this comparison is deliberately conservative: between the April synthetic baseline and this run, the only change was the corpus. Same pipeline, same retriever, same evaluation methodology, same judge. Everything else held constant, all five metrics went up. That is what makes the migration conclusive: the raw material was the problem.
+The design of this comparison is deliberately conservative: between the April synthetic baseline and this run, the only change was the corpus. Same pipeline, same retriever, same evaluation methodology, same judge (DeepSeek V4 Flash, the generator of that era). With everything else constant, all five metrics went up. That is what makes the migration conclusive: the raw material was not the best. These results are the record of that reading.
+
+That said, although comparability with the previous evaluation was attempted, using the same model to both generate and evaluate the system is a methodological problem. The section "Independent-judge reference baseline" measures the same system again with another judge and shows that the migration conclusion does not depend on the evaluator.
 
 <center>
 
@@ -102,31 +104,91 @@ The design of this comparison is deliberately conservative: between the April sy
 
 **Faithfulness 98.47%**: across the 50 evaluated cases, the generated answer was grounded in the retrieved context. This metric deserves two caveats:
 
-1. **The judge and the generator are the same model** (`deepseek/deepseek-v4-flash`). This introduces a self-evaluation bias: a model tends to be lenient with answers from its own family. The real Faithfulness could be somewhat lower with an independent judge. Having a judge different from the generator is a methodological limitation to fix in a future iteration, since this one was intended as a first measurement of the changes and prioritized cost efficiency.
+1. **The judge and the generator are the same model** (`deepseek/deepseek-v4-flash`). This introduces a self-evaluation bias: a model tends to be lenient with answers from its own family. That is why, further down, this same article validates the reading with an independent judge: GPT 5.6 Luna.
 
 2. **Faithfulness measures generation but is contingent on the RAG pipeline working as such**: whether the LLM uses the retrieved evidence instead of answering from memory or inventing is also captured by this metric. If the model ignored the context and gave a hallucinated answer, Faithfulness would be low even for a powerful model. Therefore, the high value indicates that the *retrieve and generate on what was retrieved* flow is respected — central for a RAG.
 
 **AnswerRelevancy 94.76%**: almost 19 out of 20 answers are relevant to the user's question. A substantial improvement over the synthetic baseline (56.31%) that confirms the generation is aligned with the Q&A format.
 
-**ContextualPrecision 31.88% and ContextualRecall 17.15%**: compared with the April synthetic baseline (11.19% and 11.67%), contextual precision nearly triples and recall grows by more than five points. Semantic search works on its own (vector-only reaches 29.37% contextual precision) and BM25 adds an additional lexical complement of almost 2.5 points. Precision is not perfect because the system retrieves documents *similar* to the question but never the exact document (this happens because the golden pairs are excluded from the index).
+**ContextualPrecision 31.88% and ContextualRecall 17.15%** (era judge, DeepSeek): against the April synthetic baseline (11.19% and 11.67%), contextual precision nearly triples and recall grows by a little over five points. Semantic search works by itself (vector-only reaches 29.37% contextual precision) and BM25 adds a lexical complement of approximately 2.5 percentage points.
 
-With retrieval already operational, the logical next step is to push these metrics higher. `all-minilm:22m` (384 dimensions) was a pragmatic choice for the synthetic prototype, but the semantic ability to distinguish nuances in a technical corpus is expected to be greater with more advanced models and higher-dimensional embeddings. The next phase will evaluate modern models such as `voyage-4-lite` (1024 dimensions) along with different chunking strategies, from removing chunking entirely to trying wider windows. Finding the combination that maximizes retriever precision without touching the rest of the pipeline will be the goal.
+The design ceiling of these metrics should be made explicit before judging them: all *golden pairs* were deliberately excluded from both the vector and lexical indexes. The consequence is that the retriever can never retrieve the exact document for the evaluated question, since it is not indexed. Therefore, it can only find documents *similar* to the missing one, which is why perfect precision is unattainable: the "correct document" does not exist inside the index. That is the bounded form of generalization that was designed, and any reading of this series' retrieval metrics must keep that upper limit in mind.
+
+With retrieval already operational, the logical next step is to push these metrics up. `all-minilm:22m` and its 384-dimension dimensionality was a pragmatic choice for the synthetic prototype, but the semantic capacity to distinguish nuances in a technical corpus is expected to be greater with more advanced models and higher-dimensional *embeddings*. In the future, modern models such as `voyage-4-lite` (1024 dimensions) will be evaluated along with different chunking strategies, ranging from eliminating chunking altogether to testing wider windows. The goal will be to find the combination that maximizes retriever precision without touching the rest of the pipeline.
 
 ### An infrastructure finding: the BM25 index doesn't fit in production
 
 The migration brought an unexpected problem: **the BM25 index ceased to be viable for the deployed version** given the infrastructure we had been working with. With the synthetic corpus (750 documents) the index weighed a few hundred kilobytes, while now, with the 60,000 real pairs, the index file for lexical BM25 search grew to **125 MB**.
 
-The practical result is that **hybrid search (BM25 + Vector) only works in the local development environment**. Although retrieval works relatively well with semantic search (29.37% ContextualPrecision), the hybrid adds a valuable lexical complement (31.88%) that would be lost in production. Faced with this situation, one possibility arises: **move lexical search to MongoDB Atlas**, since we already have the data there and BM25 is also used for that search, so enabling hybrid search in production involves a few code changes.
+The practical result is that **hybrid search (BM25 + Vector) only works in the local development environment**. With the era's judge, semantic retrieval showed 29.37% ContextualPrecision and the hybrid added a lexical complement of 2.5 points (31.88%) that would be lost in production. Faced with this situation, a possibility emerges: **moving lexical search to MongoDB Atlas**, since we already have the data there and that platform also uses BM25 for that search, so enabling hybrid search in production involves a few code changes that will be carried out in the next stage.
 
 Eventually, MongoDB Atlas could also handle semantic search, but that will be evaluated once semantic search is optimized and no longer depends on BM25 to meet retrieval requirements.
 
+### Independent-judge reference baseline
+
+This article's comparison used the same judge as the generator (DeepSeek V4 Flash) for methodological consistency with the April evaluation — a valid design for isolating the corpus variable, but one that carries the self-evaluation bias noted earlier.
+
+So that the improvements that follow in the series start from values without that bias, a reference *baseline* evaluated with an independent judge is established here: GPT 5.6 Luna, from the OpenAI family, different from the generator. It was used to evaluate the system on the same 50 golden queries and the same system configuration. It is interesting to see the differences with the original judge.
+
+<center>
+
+| Metric | Vector Only | Hybrid (BM25 + Vector) |
+|---------|:-----------:|:----------------------:|
+| Correctness | **50.40%** | 46.80% |
+| Faithfulness | **98.91%** | 98.78% |
+| AnswerRelevancy | 96.14% | **96.77%** |
+| ContextualPrecision | 60.33% | **64.54%** |
+| ContextualRecall | **23.66%** | 22.20% |
+
+</center>
+
+Comparing judges over the same system shows the judge's effect on absolute values. Before interpreting it, a methodological warning: there is no reference truth against which to measure the judges, so we cannot say whether DeepSeek underestimates or Luna overestimates. What is verifiable:
+
+- **The gap concentrates in the retrieval metrics.** ContextualPrecision differs by 32 percentage points (31.88% -> 64.54% in the hybrid) and ContextualRecall by roughly 5, while the pure generation metrics differ little (AnswerRelevancy +2, Correctness +11 in hybrid, Faithfulness +0.3). The judge's effect is not distributed evenly: it impacts where the judge must reason about document rankings.
+- **The gap's direction is the opposite of what was expected.** The documented self-evaluation bias tends to be leniency toward one's own family. Here DeepSeek scores *lower* than an independent judge. Both behaviors are compatible with the data: DeepSeek could be severe with its own output, or Luna could be more permissive in general. We do not know.
+- **What matters for this series is not the absolute, but the consistency.** We do not need to know which judge is closer to a "truth" we do not have while using the *LLM as a judge* technique: we need all comparisons from here on to use the same judge, so that the differences we measure are attributable to the system and not to the evaluator. Likewise, evaluating the answer with the same model that generates it is unacceptable due to biases.
+
+<center>
+
+| Metric | DeepSeek judge (this article's run) | gpt-5.6-luna judge (reference baseline) |
+|---------|:---:|:---:|
+| Correctness (Hybrid) | 36.00% | **46.80%** |
+| Faithfulness (Hybrid) | 98.47% | **98.78%** |
+| AnswerRelevancy (Hybrid) | 94.76% | **96.77%** |
+| ContextualPrecision (Hybrid) | 31.88% | **64.54%** |
+| ContextualRecall (Hybrid) | 17.15% | **22.20%** |
+
+</center>
+
+These values are defined as the project's **official reference baseline** so far: from here on, every measurement of the improvements that follow will be compared against this column with a constant judge. The migration's historical column (DeepSeek) is kept as a reference for continuity with the April evaluation, but it is no longer the basis of comparison.
+
+#### The judge does not only change absolutes: it can flip a comparative verdict
+
+The table in this section allows an additional exercise: comparing the direction of the hybrid effect under each judge. With the previous judge, the hybrid seemed to contribute across all metrics; with the reference judge, the picture is different:
+
+<center>
+
+| Metric | Does hybrid help? DeepSeek judge | Does hybrid help? Luna judge |
+|---------|:---:|:---:|
+| Correctness | Yes (+12.0) | **No** (−3.6) |
+| Faithfulness | Yes (+8.4) | No (−0.1) |
+| AnswerRelevancy | Yes (+0.2) | Yes (+0.6) |
+| ContextualPrecision | Yes (+2.5) | Yes (+4.2) |
+| ContextualRecall | Yes (+3.3) | **No** (−1.5) |
+
+</center>
+
+In the generation metrics, the judge choice does not change the verdict. But in **Correctness and ContextualRecall**, the hybrid seems to help with DeepSeek and stops helping (or slightly hurts, within result variance) with Luna. The reframing is then twofold:
+- The migration remains successful, since with any judge, the real corpus outperforms the synthetic one across all metrics.
+- However, in *retrieval*, which in DeepSeek's reading seemed like the system's weak point (29.37% ContextualPrecision and fairly poor ContextualRecall), Luna presents higher metrics: 60.33% ContextualPrecision and 23.66% ContextualRecall in vector-only (the same holds for the hybrid). If from here on we are going to use that judge for the reasons already cited, retrieval improvement stops being an urgent problem to solve and becomes an area with room for improvement.
+
 ### Conclusions
 
-**1. The trilogy's hypothesis was confirmed: the raw material was the problem.** The complete system, with the real corpus and in its current configuration, outperforms the synthetic system in Correctness (36.00% vs 19.33%) and improves dramatically in Faithfulness (98.47% vs 84.24%) and AnswerRelevancy (94.76% vs 56.31%). With 80 times more documents and real questions written by humans, the system responds better, not worse. As was thought from the beginning, synthetic data was a problem and real data the solution.
+**1. The migration hypothesis was confirmed: the raw material was the problem.** The complete system, with the real corpus and in its current configuration, outperforms the synthetic system in Correctness (36.00% vs 19.33%) and significantly improves Faithfulness (98.47% vs 84.24%) and AnswerRelevancy (94.76% vs 56.31%). With 80 times more documents and real questions written by humans, the system answers better. As was thought from the beginning, synthetic data was a problem.
 
-**2. The system generates answers almost without hallucinations.** Faithfulness 98.47% in the hybrid scenario, 90.10% even in Vector Only. The *retrieve and generate on what was retrieved* pipeline is respected. The caveat: the judge and the generator are the same model, which can slightly inflate the number — validating with an independent judge is a pending task.
+**2. The system generates answers almost without hallucinations.** Faithfulness 98.47% in the hybrid scenario and 90.10% even in Vector Only (with the same judge used in the original system; with the reference judge, 98.78% and 98.91% respectively), so these metrics confirm that the retrieve-and-generate-over-what-was-retrieved flow is respected without notable hallucinations.
 
-**3. Retrieval is the new strong point of the pipeline.** Real-corpus retrieval nearly triples the synthetic baseline (ContextualPrecision 31.88% vs 11.19%) and semantic search works on its own (29.37% in vector-only). The next phase (Search Optimization) will evaluate whether modern models such as `voyage-4-lite` (1024 dimensions) and chunking strategies can push these metrics even further.
+**3. Retrieval is the new strong point of the pipeline.** With the previous judge (the same one used for answer generation), retrieval had shown the least progress against the synthetic baseline (ContextualPrecision 31.88% vs 11.19%, nearly triple) and remained suspect of the system's limitations. With the new judge, that same system measures **60.33% ContextualPrecision in vector-only and 64.54% in hybrid** — a solid level for a local 384-dimension embedding. That said, we cannot affirm which of the two judges is more right; we will simply prefer GPT 5.6 Luna from here on to evaluate the system with a family different from the generator's. Due to this design decision, retrieval stops being the urgent weak point and becomes an area with room for improvement.
 
 ### References
 
