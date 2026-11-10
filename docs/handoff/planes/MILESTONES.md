@@ -92,6 +92,8 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
 
 ### M4 — Search Optimization: Embedding, Chunking & Lexical Search ✅ (2026-08-16)
 
+- **Branch**: `feat/search-optimization`, merged into `feat/agentic-rag-implementation` on 2026-11-09 (the entry only existed on that branch).
+
 - **Description**: Replaces `all-minilm:22m` (384-dim) with `voyage-4-lite` (1024-dim) and varies chunking per EDA findings. Replaces local BM25 (125 MB, broken in production) with MongoDB Atlas Search.
 - **Completed**: 2026-08-16. Winner: **P1 (voyage-4-lite, chunk 1000/100)** with gpt-5.6-luna judge.
 - **Final results** (gpt-5.6-luna, vector_only):
@@ -124,7 +126,7 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
   - ✅ Entry 3 (ES+EN) published.
   - ✅ Latency benchmark measured (`embedding_latency_20260802_195723.json`).
 
-### M5 — CI/CD Evaluation Pipeline ⏳
+### M5 — CI/CD Evaluation Pipeline ⏳ ARCHIVED (2026-11-09)
 
 - **Description**: Builds a GitHub Actions workflow that runs automated evaluation after every PR merged with label `requires-eval`. Reuses `api/scripts/run_eval.py` (built in M2). The workflow: installs dependencies, starts the API, runs the 200 golden QA pairs through DeepEval, compares against the last committed baseline, and posts a summary comment. Includes regression checker (configurable threshold, default 5 pts) and historical metrics tracking. Can run in parallel with M4 and M6 — it's infrastructure, not research.
 - **Initiative**: `initiative:ci-cd-evaluation`.
@@ -137,7 +139,7 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
   - Metrics history committed to `evaluation_results/metrics_history.json`.
   - Blog post "Behind the scenes: automated RAG evaluation with GitHub Actions" published.
 
-### M6 — Cost-Optimized Hybrid Inference ✅ (2026-08-16 — benchmark complete)
+### M6 — Cost-Optimized Hybrid Inference ✅ CLOSED (2026-11-09)
 
 - **Description**: Benchmarks 3 LLMs against M4's retrieval baseline across complexity buckets to determine the optimal generator. Generation-only metrics (retriever held constant from M4).
 - **Completed**: 2026-08-16. Benchmark executed with 75 queries (25 per complexity bucket), 3 models, gpt-5.6-luna judge.
@@ -154,7 +156,9 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
   - Ling is on the Pareto frontier of cost-quality (no model dominates it in both dimensions). Faithfulness 0.995-0.999 makes it safe against hallucination.
   - Gemini sets the latency standard (P95 ~3s, max 4.1s) — demonstrates deepseek's long tail is a service characteristic, not a physical limit.
   - Router implementation deferred — insufficient benefit given current model cost.
-- **Documentation**: Entry 4 written (ES). EN translation pending. Logs in `4/logs/` (14 files).
+- **Documentation**: Entry 4 written and committed (ES), with 6 charts, visualization notebook and logs in `4/`. EN translation pending.
+- **Closed**: 2026-11-09. Committed and pushed on the integration line `feat/agentic-rag-implementation`, together with the M4 entry recovered from `feat/search-optimization`.
+- **Outstanding**: one editorial TODO in the entry (replace a table with an EDA chart) and the EN translation — the owner reviews these by hand.
 - **Definition of Done**:
   - ✅ 3 LLMs benchmarked against M4 retrieval baseline (75 queries × 3 models).
   - ✅ Latency and cost measured per model per bucket.
@@ -165,7 +169,8 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
 ### M7 — Multi-Step Diagnosis Agent 🚧 (in progress)
 
 - **Description**: Replaces single-pass ReAct agent with a 5-node iterative LangGraph. The agent iterates on retrieval until it has sufficient information, then synthesizes with source citations. Key M4-derived feature: per-query routing between vector_only and hybrid search based on lexical-heavy signals.
-- **Status**: Implementation complete. E2E evaluation pending.
+- **Branch**: `feat/agentic-rag-implementation` (9 commits, unpushed until 2026-11-09; now the integration line).
+- **Status**: Implementation complete. E2E evaluation pending — decided on 2026-11-09 that M7 **will be finished** (evaluation + entry 5), not discarded.
 - **Associated Issues**: 3 (see `plans/M7_Agent/`).
 - **Definition of Done**:
   - ✅ `agent_app` migrated from Groq to OpenRouter (`ChatOpenAI` + OpenRouter).
@@ -178,7 +183,7 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
   - ⬜ Entry 5 EN translation pending.
   - ⬜ Entry 5 documentation of evaluation results.
 
-### M8 — Vector Backend Migration (Pinecone → MongoDB + Voyage AI) ⏳
+### M8 — Vector Backend Migration (Pinecone → MongoDB + Voyage AI) ⏳ ARCHIVED (2026-11-09)
 
 - **Description**: Migrates the vector search backend from Pinecone to MongoDB Atlas Vector Search, using `autoEmbed` with `voyage-4-lite` (1024-dim). With the embedding model already upgraded (M4) and lexical search already on MongoDB (M4), this milestone is purely a **backend consolidation**: eliminates Pinecone as an external dependency, replaces the OpenRouter embedding API with MongoDB autoEmbed (embedding generation becomes serverless and free at M0 tier), and enables native `$rankFusion` hybrid ranking. The delta measures "Pinecone vs MongoDB" in isolation — lexical search and embedding model are held constant. Depends on M4 (needs working retrieval baseline to compare against). M5 CI/CD auto-validates the migration.
 - **Initiative**: `initiative:vector-backend-migration`.
@@ -193,7 +198,7 @@ Each Milestone models an Azure DevOps **Epic** (grouping deliverable for PBIs) w
   - Pinecone account deactivated. `bm25_index.json` no longer loaded.
   - Blog post published.
 
-### M9 — Architectural Improvements ⏳
+### M9 — Architectural Improvements ⏳ ARCHIVED (2026-11-09)
 
 - **Description**: Refinements that were deferred because they're not on the critical path to a strong portfolio. Includes: RRF implementation, k-tuning, context window management for the generator (first-N chars, sliding window, LLM-summarize), and the Voyage AI tier comparison (Issue #11 from M2). With MongoDB + Voyage in place (M7), evaluates these improvements on a stable foundation. Runs last — these are optimizations, not enablers.
 - **Base branch**: `feat/architectural-improvements` (branched from `wip/architectural-improvements-stash`).

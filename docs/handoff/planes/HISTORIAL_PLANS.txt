@@ -1,3 +1,4 @@
+fe3c604 2026-11-09 docs: close M6, archive M5/M8/M9 and record M7 integration branch
 0bff8e8 2026-08-04 docs: finalize M4 results, restructure M7/M8 (agent + vector migration), and update milestone plans
 56df355 2026-08-04 docs: add M4 semantic search optimization blog entry (ES)
 7886234 2026-08-04 docs: update M4 with final P1 results (gpt-5.6-luna judge) and closure plan
