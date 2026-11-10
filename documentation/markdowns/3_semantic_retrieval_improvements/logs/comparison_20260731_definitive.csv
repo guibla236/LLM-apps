@@ -1,3 +1,0 @@
-scenario,scenario_label,golden,golden_label,correctness,faithfulness,answer_relevancy,contextual_precision,contextual_recall,notes
-baseline_vector_only,"1. Baseline (Vector Only)",golden_se_200,StackExchange 200 pairs (9 communities, first 50 shuffled),25.20%,97.30%,88.32%,0.00%,0.00%,"Stratified sample; goldens excluded from index"
-hybrid_no_rrf,"2. Hybrid (BM25 + Vector)",golden_se_200,StackExchange 200 pairs (9 communities, first 50 shuffled),25.80%,97.03%,85.52%,7.99%,5.71%,"Stratified sample; goldens excluded from index"

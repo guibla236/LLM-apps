@@ -1,588 +1,0 @@
-Loading golden QA from ../evaluation_notebooks/goldens/golden_se_200.json
-  Loaded 200 pairs
-  Limited to 50 for testing
-
-Initializing judge: deepseek/deepseek-v4-flash
-  Metrics: correctness, faithfulness, answer_relevancy, contextual_precision, contextual_recall
-  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_vector_only_golden_se_200_20260803_052745.csv
-
-============================================================
-  Running evaluation: m2_rerun_vector_only
-  Questions: 50
-  Search: vector_only, k=10
-============================================================
-Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
-
-
-
-
-Evaluating:   2%|▏         | 1/50 [03:53<3:10:30, 233.27s/q]
-
-
-
-
-Evaluating:   4%|▍         | 2/50 [07:25<2:56:47, 220.99s/q]
-
-
-
-
-Evaluating:   6%|▌         | 3/50 [10:34<2:41:42, 206.44s/q]
-
-
-
-
-Evaluating:   8%|▊         | 4/50 [12:58<2:19:21, 181.78s/q]
-
-
-
-
-Evaluating:  10%|█         | 5/50 [17:22<2:38:22, 211.17s/q]
-
-
-
-
-Evaluating:  12%|█▏        | 6/50 [20:37<2:30:59, 205.91s/q]
-
-
-
-
-Evaluating:  14%|█▍        | 7/50 [23:14<2:16:07, 189.95s/q]
-
-
-
-
-Evaluating:  16%|█▌        | 8/50 [26:17<2:11:13, 187.48s/q]
-
-
-
-
-Evaluating:  18%|█▊        | 9/50 [28:21<1:54:38, 167.76s/q]
-
-
-
-
-Evaluating:  20%|██        | 10/50 [32:50<2:12:47, 199.18s/q]
-
-
-
-
-Evaluating:  22%|██▏       | 11/50 [34:33<1:50:20, 169.75s/q]
-
-
-
-
-Evaluating:  24%|██▍       | 12/50 [39:06<2:07:23, 201.16s/q]
-
-
-
-
-Evaluating:  26%|██▌       | 13/50 [42:11<2:00:57, 196.15s/q]
-
-
-
-
-Evaluating:  28%|██▊       | 14/50 [44:20<1:45:35, 175.97s/q]
-
-
-
-
-Evaluating:  30%|███       | 15/50 [47:52<1:48:55, 186.72s/q]
-
-
-
-
-Evaluating:  32%|███▏      | 16/50 [51:56<1:55:33, 203.94s/q]
-
-
-
-
-Evaluating:  34%|███▍      | 17/50 [55:21<1:52:17, 204.17s/q]
-
-
-
-
-Evaluating:  36%|███▌      | 18/50 [58:32<1:46:46, 200.20s/q]
-
-
-
-
-Evaluating:  38%|███▊      | 19/50 [1:00:52<1:34:06, 182.15s/q]
-
-
-
-
-Evaluating:  40%|████      | 20/50 [1:04:04<1:32:38, 185.29s/q]
-
-
-
-
-Evaluating:  42%|████▏     | 21/50 [1:05:50<1:18:03, 161.48s/q]
-
-
-
-
-Evaluating:  44%|████▍     | 22/50 [1:08:35<1:15:51, 162.56s/q]
-
-
-
-
-Evaluating:  46%|████▌     | 23/50 [1:15:09<1:44:17, 231.78s/q]
-
-
-
-
-Evaluating:  48%|████▊     | 24/50 [1:19:08<1:41:27, 234.13s/q]
-
-
-
-
-Evaluating:  50%|█████     | 25/50 [1:22:35<1:34:04, 225.79s/q]
-
-
-
-
-Evaluating:  52%|█████▏    | 26/50 [1:25:37<1:25:09, 212.89s/q]
-
-
-
-
-Evaluating:  54%|█████▍    | 27/50 [1:29:01<1:20:34, 210.18s/q]
-
-
-
-
-Evaluating:  56%|█████▌    | 28/50 [1:31:21<1:09:17, 189.00s/q]
-
-
-
-
-Evaluating:  58%|█████▊    | 29/50 [1:34:56<1:08:51, 196.72s/q]
-
-
-
-
-Evaluating:  60%|██████    | 30/50 [1:38:47<1:09:05, 207.28s/q]
-
-
-
-
-Evaluating:  62%|██████▏   | 31/50 [1:40:48<57:22, 181.20s/q]  
-
-
-
-
-Evaluating:  64%|██████▍   | 32/50 [1:55:45<1:58:50, 396.13s/q]
-
-
-
-
-Evaluating:  66%|██████▌   | 33/50 [1:58:33<1:32:46, 327.43s/q]
-
-
-
-
-Evaluating:  68%|██████▊   | 34/50 [2:00:35<1:10:56, 266.00s/q]
-
-
-
-
-Evaluating:  70%|███████   | 35/50 [2:05:09<1:07:05, 268.35s/q]
-
-
-
-
-Evaluating:  72%|███████▏  | 36/50 [2:07:47<54:51, 235.12s/q]  
-
-
-
-
-Evaluating:  74%|███████▍  | 37/50 [2:13:19<57:15, 264.27s/q]
-
-
-
-
-Evaluating:  76%|███████▌  | 38/50 [2:17:46<53:02, 265.23s/q]
-
-
-
-
-Evaluating:  78%|███████▊  | 39/50 [2:22:15<48:48, 266.24s/q]
-
-
-
-
-Evaluating:  80%|████████  | 40/50 [2:24:56<39:06, 234.69s/q]
-
-
-
-
-Evaluating:  82%|████████▏ | 41/50 [2:27:34<31:45, 211.78s/q]
-
-
-
-
-Evaluating:  84%|████████▍ | 42/50 [2:38:22<45:41, 342.64s/q]
-
-
-
-
-Evaluating:  86%|████████▌ | 43/50 [2:41:21<34:13, 293.40s/q]
-
-
-
-
-Evaluating:  88%|████████▊ | 44/50 [2:45:20<27:42, 277.01s/q]
-
-
-
-
-Evaluating:  90%|█████████ | 45/50 [2:47:39<19:38, 235.63s/q]
-
-
-
-
-Evaluating:  92%|█████████▏| 46/50 [2:51:35<15:43, 235.87s/q]
-
-
-
-
-
-Evaluating:  94%|█████████▍| 47/50 [2:56:02<12:15, 245.28s/q]
-
-
-
-
-Evaluating:  96%|█████████▌| 48/50 [2:58:53<07:25, 222.98s/q]
-
-
-
-
-Evaluating:  98%|█████████▊| 49/50 [3:03:06<03:51, 231.97s/q]
-
-
-
-
-Evaluating: 100%|██████████| 50/50 [3:05:37<00:00, 207.61s/q]Evaluating: 100%|██████████| 50/50 [3:05:37<00:00, 222.75s/q]
-
-  ⚠  Augment API request failed: 422 Client Error: Unprocessable Entity for url: http://localhost:8000/api/augment_search_results
-
-  ⚠  Generation failed for question 36, using context as actual_output
-
-  ⚠  Augment API request failed: 422 Client Error: Unprocessable Entity for url: http://localhost:8000/api/augment_search_results
-
-  ⚠  Generation failed for question 41, using context as actual_output
-
-  ⚡ Retry 1/4 for ContextualRecallMetric after 2.5s: Evaluation LLM outputted an invalid JSON. Please use a better evaluation model.
-
-============================================================
-  Evaluation Complete
-============================================================
-  Questions evaluated: 50
-  Errors:              0
-  CSV:                 /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_vector_only_golden_se_200_20260803_052745.csv
-  JSON aggregate:      /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_vector_only_golden_se_200_20260803_052745_aggregate.json
-
-  Metric                    Mean       Median     Count   
-  ------------------------- ---------- ---------- --------
-  correctness               0.2200     0.0000     50      
-  faithfulness              0.9010     1.0000     50      
-  answer_relevancy          0.9301     1.0000     50      
-  contextual_precision      0.2937     0.0000     50      
-  contextual_recall         0.1386     0.0000     50      
-Loading golden QA from ../evaluation_notebooks/goldens/golden_se_200.json
-  Loaded 200 pairs
-  Limited to 50 for testing
-
-Initializing judge: deepseek/deepseek-v4-flash
-  Metrics: correctness, faithfulness, answer_relevancy, contextual_precision, contextual_recall
-  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_hybrid_golden_se_200_20260803_083327.csv
-
-============================================================
-  Running evaluation: m2_rerun_hybrid
-  Questions: 50
-  Search: hybrid, k=10
-============================================================
-Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
-
-
-
-
-Evaluating:   2%|▏         | 1/50 [02:06<1:43:10, 126.33s/q]
-
-
-
-
-Evaluating:   4%|▍         | 2/50 [04:34<1:51:12, 139.00s/q]
-
-
-
-
-Evaluating:   6%|▌         | 3/50 [08:45<2:28:59, 190.19s/q]
-
-
-
-
-Evaluating:   8%|▊         | 4/50 [11:02<2:09:45, 169.26s/q]
-
-
-
-
-Evaluating:  10%|█         | 5/50 [12:59<1:52:51, 150.48s/q]
-
-
-
-
-Evaluating:  12%|█▏        | 6/50 [19:08<2:44:47, 224.73s/q]
-
-
-
-
-Evaluating:  14%|█▍        | 7/50 [21:58<2:28:18, 206.93s/q]
-
-
-
-
-Evaluating:  16%|█▌        | 8/50 [27:32<2:53:05, 247.26s/q]
-
-
-
-
-
-Evaluating:  18%|█▊        | 9/50 [34:27<3:24:46, 299.66s/q]
-
-
-
-
-Evaluating:  20%|██        | 10/50 [42:41<3:59:49, 359.74s/q]
-
-
-
-
-Evaluating:  22%|██▏       | 11/50 [47:12<3:36:11, 332.60s/q]
-
-
-
-
-Evaluating:  24%|██▍       | 12/50 [53:40<3:41:11, 349.26s/q]
-
-
-
-
-Evaluating:  26%|██▌       | 13/50 [59:08<3:31:31, 343.00s/q]
-
-
-
-
-Evaluating:  28%|██▊       | 14/50 [1:02:01<2:55:00, 291.67s/q]
-
-
-
-
-Evaluating:  30%|███       | 15/50 [1:10:21<3:26:48, 354.52s/q]
-
-
-
-
-Evaluating:  32%|███▏      | 16/50 [1:13:57<2:57:08, 312.60s/q]
-
-
-
-
-
-Evaluating:  34%|███▍      | 17/50 [1:19:06<2:51:28, 311.78s/q]
-
-
-
-
-Evaluating:  36%|███▌      | 18/50 [1:23:36<2:39:31, 299.11s/q]
-
-
-
-
-Evaluating:  38%|███▊      | 19/50 [1:25:00<2:01:10, 234.52s/q]
-
-
-
-
-Evaluating:  40%|████      | 20/50 [1:27:03<1:40:28, 200.94s/q]
-
-
-
-
-Evaluating:  42%|████▏     | 21/50 [1:29:04<1:25:31, 176.96s/q]
-
-
-
-
-Evaluating:  44%|████▍     | 22/50 [1:32:55<1:30:12, 193.31s/q]
-
-
-
-
-Evaluating:  46%|████▌     | 23/50 [1:37:11<1:35:23, 211.96s/q]
-
-
-
-
-Evaluating:  48%|████▊     | 24/50 [1:40:12<1:27:53, 202.81s/q]
-
-
-
-
-Evaluating:  50%|█████     | 25/50 [1:42:31<1:16:26, 183.47s/q]
-
-
-
-
-Evaluating:  52%|█████▏    | 26/50 [1:44:23<1:04:54, 162.27s/q]
-
-
-
-
-Evaluating:  54%|█████▍    | 27/50 [1:47:50<1:07:16, 175.49s/q]
-
-
-
-
-Evaluating:  56%|█████▌    | 28/50 [1:50:38<1:03:31, 173.26s/q]
-
-
-
-
-Evaluating:  58%|█████▊    | 29/50 [1:53:30<1:00:29, 172.82s/q]
-
-
-
-
-Evaluating:  60%|██████    | 30/50 [1:57:44<1:05:45, 197.26s/q]
-
-
-
-
-Evaluating:  62%|██████▏   | 31/50 [2:01:07<1:02:58, 198.88s/q]
-
-
-
-
-Evaluating:  64%|██████▍   | 32/50 [2:04:54<1:02:11, 207.32s/q]
-
-
-
-
-Evaluating:  66%|██████▌   | 33/50 [2:08:40<1:00:21, 213.02s/q]
-
-
-
-
-Evaluating:  68%|██████▊   | 34/50 [2:11:08<51:35, 193.47s/q]  
-
-
-
-
-Evaluating:  70%|███████   | 35/50 [2:14:13<47:47, 191.16s/q]
-
-
-
-
-Evaluating:  72%|███████▏  | 36/50 [2:19:08<51:52, 222.31s/q]
-
-
-
-
-Evaluating:  74%|███████▍  | 37/50 [2:27:11<1:05:06, 300.50s/q]
-
-
-
-
-Evaluating:  76%|███████▌  | 38/50 [2:30:49<55:07, 275.60s/q]  
-
-
-
-
-Evaluating:  78%|███████▊  | 39/50 [2:34:43<48:14, 263.11s/q]
-
-
-
-
-
-Evaluating:  80%|████████  | 40/50 [2:39:12<44:10, 265.03s/q]
-
-
-
-
-Evaluating:  82%|████████▏ | 41/50 [2:43:39<39:49, 265.52s/q]
-
-
-
-
-Evaluating:  84%|████████▍ | 42/50 [2:48:40<36:48, 276.12s/q]
-
-
-
-
-Evaluating:  86%|████████▌ | 43/50 [2:55:21<36:35, 313.58s/q]
-
-
-
-
-Evaluating:  88%|████████▊ | 44/50 [2:58:48<28:08, 281.50s/q]
-
-
-
-
-Evaluating:  90%|█████████ | 45/50 [3:02:19<21:42, 260.42s/q]
-
-
-
-
-Evaluating:  92%|█████████▏| 46/50 [3:06:15<16:52, 253.23s/q]
-
-
-
-
-Evaluating:  94%|█████████▍| 47/50 [3:14:35<16:21, 327.30s/q]
-
-
-
-
-Evaluating:  96%|█████████▌| 48/50 [3:22:11<12:11, 365.94s/q]
-
-
-
-
-Evaluating:  98%|█████████▊| 49/50 [3:25:00<05:06, 306.76s/q]
-
-
-
-
-Evaluating: 100%|██████████| 50/50 [3:30:21<00:00, 311.06s/q]Evaluating: 100%|██████████| 50/50 [3:30:21<00:00, 252.43s/q]
-
-  ⚡ Retry 1/4 for FaithfulnessMetric after 2.2s: Evaluation LLM outputted an invalid JSON. Please use a better evaluation model.
-
-  ⚡ Retry 1/4 for ContextualRecallMetric after 2.1s: deepeval.metrics.contextual_recall.schema.ContextualRecallVerdict() argument after ** must be a mapping, not str
-
-  ⚠  Augment API request failed: 422 Client Error: Unprocessable Entity for url: http://localhost:8000/api/augment_search_results
-
-  ⚠  Generation failed for question 36, using context as actual_output
-
-  ⚡ Retry 1/4 for ContextualRecallMetric after 3.0s: Evaluation LLM outputted an invalid JSON. Please use a better evaluation model.
-
-  ⚠  Augment API request failed: 422 Client Error: Unprocessable Entity for url: http://localhost:8000/api/augment_search_results
-
-  ⚠  Generation failed for question 41, using context as actual_output
-
-============================================================
-  Evaluation Complete
-============================================================
-  Questions evaluated: 50
-  Errors:              0
-  CSV:                 /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_hybrid_golden_se_200_20260803_083327.csv
-  JSON aggregate:      /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/api/evaluation_notebooks/raw_results/m2_rerun_hybrid_golden_se_200_20260803_083327_aggregate.json
-
-  Metric                    Mean       Median     Count   
-  ------------------------- ---------- ---------- --------
-  correctness               0.2700     0.2000     50      
-  faithfulness              0.9702     1.0000     50      
-  answer_relevancy          0.9350     1.0000     50      
-  contextual_precision      0.1550     0.0000     50      
-  contextual_recall         0.1633     0.0000     50      

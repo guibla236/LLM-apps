@@ -1,0 +1,280 @@
+Loading golden QA from ../evaluation_notebooks/goldens/golden_se_200.json
+  Loaded 200 pairs
+  Limited to 50 for testing
+
+Initializing judge: openai/gpt-5.6-luna
+  Metrics: correctness, faithfulness, answer_relevancy, contextual_precision, contextual_recall
+  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m2luna_hybrid_golden_se_200_20260816_190549.csv
+
+============================================================
+  Running evaluation: m2luna_hybrid
+  Questions: 50
+  Search: hybrid, k=10
+============================================================
+Evaluating:   0%|          | 0/50 [00:00<?, ?q/s]
+
+
+
+
+Evaluating:   2%|▏         | 1/50 [00:49<40:41, 49.82s/q]
+
+
+
+
+Evaluating:   4%|▍         | 2/50 [01:51<45:21, 56.70s/q]
+
+
+
+
+Evaluating:   6%|▌         | 3/50 [02:58<47:59, 61.27s/q]
+
+
+
+
+Evaluating:   8%|▊         | 4/50 [03:50<44:25, 57.94s/q]
+
+
+
+
+Evaluating:  10%|█         | 5/50 [04:45<42:27, 56.60s/q]
+
+
+
+
+Evaluating:  12%|█▏        | 6/50 [06:18<50:39, 69.08s/q]
+
+
+
+
+Evaluating:  14%|█▍        | 7/50 [07:05<44:27, 62.03s/q]
+
+
+
+
+Evaluating:  16%|█▌        | 8/50 [08:18<45:46, 65.39s/q]
+
+
+
+
+Evaluating:  18%|█▊        | 9/50 [09:49<50:05, 73.31s/q]
+
+
+
+
+Evaluating:  20%|██        | 10/50 [11:03<49:02, 73.57s/q]
+
+
+
+
+Evaluating:  22%|██▏       | 11/50 [11:47<42:00, 64.62s/q]
+
+
+
+
+Evaluating:  24%|██▍       | 12/50 [12:58<42:05, 66.46s/q]
+
+
+
+
+Evaluating:  26%|██▌       | 13/50 [14:00<40:09, 65.12s/q]
+
+
+
+
+Evaluating:  28%|██▊       | 14/50 [14:59<37:55, 63.21s/q]
+
+
+
+
+Evaluating:  30%|███       | 15/50 [16:01<36:43, 62.95s/q]
+
+
+
+
+Evaluating:  32%|███▏      | 16/50 [17:17<37:52, 66.84s/q]
+
+
+
+
+Evaluating:  34%|███▍      | 17/50 [18:06<33:46, 61.40s/q]
+
+
+
+
+Evaluating:  36%|███▌      | 18/50 [19:11<33:20, 62.52s/q]
+
+
+
+
+Evaluating:  38%|███▊      | 19/50 [19:53<29:06, 56.35s/q]
+
+
+
+
+Evaluating:  40%|████      | 20/50 [20:51<28:27, 56.92s/q]
+
+
+
+
+Evaluating:  42%|████▏     | 21/50 [21:48<27:32, 56.99s/q]
+
+
+
+
+Evaluating:  44%|████▍     | 22/50 [22:44<26:22, 56.51s/q]
+
+
+
+
+Evaluating:  46%|████▌     | 23/50 [23:57<27:41, 61.55s/q]
+
+
+
+
+Evaluating:  48%|████▊     | 24/50 [25:03<27:13, 62.84s/q]
+
+
+
+
+Evaluating:  50%|█████     | 25/50 [25:58<25:15, 60.64s/q]
+
+
+
+
+Evaluating:  52%|█████▏    | 26/50 [27:07<25:12, 63.03s/q]
+
+
+
+
+Evaluating:  54%|█████▍    | 27/50 [28:00<23:04, 60.19s/q]
+
+
+
+
+Evaluating:  56%|█████▌    | 28/50 [28:53<21:14, 57.94s/q]
+
+
+
+
+Evaluating:  58%|█████▊    | 29/50 [30:01<21:19, 60.91s/q]
+
+
+
+
+Evaluating:  60%|██████    | 30/50 [30:56<19:45, 59.25s/q]
+
+
+
+
+Evaluating:  62%|██████▏   | 31/50 [31:56<18:47, 59.33s/q]
+
+
+
+
+Evaluating:  64%|██████▍   | 32/50 [33:17<19:48, 66.01s/q]
+
+
+
+
+Evaluating:  66%|██████▌   | 33/50 [34:16<18:02, 63.69s/q]
+
+
+
+
+Evaluating:  68%|██████▊   | 34/50 [35:14<16:34, 62.15s/q]
+
+
+
+
+Evaluating:  70%|███████   | 35/50 [36:40<17:20, 69.35s/q]
+
+
+
+
+Evaluating:  72%|███████▏  | 36/50 [37:42<15:38, 67.00s/q]
+
+
+
+
+Evaluating:  74%|███████▍  | 37/50 [38:44<14:11, 65.52s/q]
+
+
+
+
+Evaluating:  76%|███████▌  | 38/50 [39:51<13:12, 66.04s/q]
+
+
+
+
+Evaluating:  78%|███████▊  | 39/50 [41:18<13:13, 72.13s/q]
+
+
+
+
+Evaluating:  80%|████████  | 40/50 [42:15<11:17, 67.74s/q]
+
+
+
+
+Evaluating:  82%|████████▏ | 41/50 [43:22<10:06, 67.40s/q]
+
+
+
+
+Evaluating:  84%|████████▍ | 42/50 [44:46<09:38, 72.33s/q]
+
+
+
+
+Evaluating:  86%|████████▌ | 43/50 [45:35<07:37, 65.32s/q]
+
+
+
+
+Evaluating:  88%|████████▊ | 44/50 [46:59<07:06, 71.04s/q]
+
+
+
+
+Evaluating:  90%|█████████ | 45/50 [47:59<05:38, 67.76s/q]
+
+
+
+
+Evaluating:  92%|█████████▏| 46/50 [49:13<04:38, 69.64s/q]
+
+
+
+
+Evaluating:  94%|█████████▍| 47/50 [50:17<03:23, 67.89s/q]
+
+
+
+
+Evaluating:  96%|█████████▌| 48/50 [51:18<02:11, 65.83s/q]
+
+
+
+
+Evaluating:  98%|█████████▊| 49/50 [52:18<01:04, 64.24s/q]
+
+
+
+
+Evaluating: 100%|██████████| 50/50 [53:24<00:00, 64.71s/q]Evaluating: 100%|██████████| 50/50 [53:24<00:00, 64.09s/q]
+
+============================================================
+  Evaluation Complete
+============================================================
+  Questions evaluated: 50
+  Errors:              0
+  CSV:                 /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m2luna_hybrid_golden_se_200_20260816_190549.csv
+  JSON aggregate:      /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m2luna_hybrid_golden_se_200_20260816_190549_aggregate.json
+
+  Metric                    Mean       Median     Count   
+  ------------------------- ---------- ---------- --------
+  correctness               0.4680     0.4000     50      
+  faithfulness              0.9878     1.0000     50      
+  answer_relevancy          0.9677     1.0000     50      
+  contextual_precision      0.6454     0.7500     50      
+  contextual_recall         0.2220     0.1548     50      
