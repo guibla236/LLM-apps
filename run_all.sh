@@ -3,7 +3,7 @@
 # Function to handle cleanup on exit
 cleanup() {
     echo "Stopping all services..."
-    kill $(jobs -p)
+    kill $(jobs -p) 2>/dev/null
     echo "All services stopped."
 }
 
@@ -12,26 +12,30 @@ trap cleanup SIGINT
 
 # Obtener la ruta del directorio raíz del proyecto
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_ROOT"
+
+# ── Entornos ────────────────────────────────────────────────────────────────
+# Los tres servicios usan venvs aislados. Si falta alguno, se crean.
+if [ ! -x "api/tarea2/bin/python" ] \
+   || [ ! -x "agent_app/backend/backend_venv/bin/python" ] \
+   || [ ! -x "agent_app/frontend/frontend_venv/bin/python" ]; then
+    echo "Faltan entornos virtuales. Ejecutando scripts/bootstrap_envs.sh..."
+    ./scripts/bootstrap_envs.sh || { echo "No se pudieron crear los entornos."; exit 1; }
+fi
+
+API_PY="api/tarea2/bin/python"
+AGENT_PY="agent_app/backend/backend_venv/bin/python"
+FRONTEND_PY="agent_app/frontend/frontend_venv/bin/python"
+FRONTEND_STREAMLIT="agent_app/frontend/frontend_venv/bin/streamlit"
 
 echo "Starting Support Ticket System..."
 
 # Start API (Part 1)
 echo "Starting API on port 8000..."
 cd "$PROJECT_ROOT/api"
-if [ -d "venv" ]; then
-    source venv/bin/activate
-elif [ -d "tarea2" ]; then
-    source tarea2/bin/activate
-elif [ -d "../venv" ]; then
-    source ../venv/bin/activate
-fi
-
-# Conffiguration of PYTHONPATH for the API
 export PYTHONPATH="$PROJECT_ROOT/api"
 echo "PYTHONPATH set to: $PYTHONPATH"
-
-# Execute the API
-python3 main.py &
+"$PROJECT_ROOT/$API_PY" main.py &
 API_PID=$!
 cd "$PROJECT_ROOT"
 
@@ -41,13 +45,8 @@ sleep 3
 # Start Agent Backend (Part 2)
 echo "Starting Agent Backend on port 8001..."
 cd "$PROJECT_ROOT/agent_app/backend"
-if [ -d "backend_venv" ]; then
-    source "backend_venv/bin/activate"
-fi
-
-# Configuration of PYTHONPATH for the agent's backend
 export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
-python3 main.py &
+"$PROJECT_ROOT/$AGENT_PY" main.py &
 AGENT_BACKEND_PID=$!
 cd "$PROJECT_ROOT"
 
@@ -57,13 +56,8 @@ sleep 3
 # Start Streamlit Frontend (Part 2)
 echo "Starting Streamlit Frontend..."
 cd "$PROJECT_ROOT/agent_app/frontend"
-if [ -d "frontend_venv" ]; then
-    source "frontend_venv/bin/activate"
-fi
-
-# Configuration of PYTHONPATH for the agent's frontend (note: uses same backend path for imports)
 export PYTHONPATH="$PROJECT_ROOT/agent_app/backend:$PYTHONPATH"
-streamlit run app.py &
+"$PROJECT_ROOT/$FRONTEND_STREAMLIT" run app.py &
 FRONTEND_PID=$!
 cd "$PROJECT_ROOT"
 

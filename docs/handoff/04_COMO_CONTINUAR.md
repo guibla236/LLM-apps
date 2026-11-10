@@ -82,6 +82,21 @@ servir; para verificar cableado se stubea `connect_to_mongo` (ver los checks de 
 
 > Rotar credenciales: estuvieron expuestas en logs de chat (ver README, advertencia 4).
 
+### Qué NO viaja en un `git clone`
+
+Verificado con un clon limpio (`git archive HEAD`) el 2026-11-10: estos archivos están en disco pero
+**no** en el repositorio, y algunos son necesarios.
+
+| Ruta | Por qué falta | Consecuencia |
+|---|---|---|
+| `api/.env`, `agent_app/.env`, `agent_app/backend/.env`, `agent_app/frontend/.env` | `.gitignore` | nada arranca sin credenciales |
+| `api/static/mock/tickets/`, `api/static/mock/knowledge_base/` | `.gitignore` | `test_ticket_model.py::test_legacy_payload_from_mock_file` falla |
+| `plans/` | repo git anidado + `.gitignore` | no hay planificación; hay snapshot de lectura en `docs/handoff/planes/` |
+| `api/logs/`, `evaluation_notebooks/raw_results/` parcial | `.gitignore` | se pierden corridas locales |
+
+Resultado medido: un clon limpio da **`7 passed, 5 failed`**; una **copia de la carpeta** da
+**`8 passed, 4 failed`**. Por eso el traspaso se hace copiando el directorio, no clonando.
+
 ## 3. Verificación mínima de que el sistema está sano
 
 ```bash

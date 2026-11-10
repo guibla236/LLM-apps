@@ -2,6 +2,21 @@
 
 This repository houses an integrated solution for the automated management and resolution of technical support tickets. The project combines a robust API for data management with an autonomous intelligent agent capable of proposing solutions.
 
+## Quick start
+
+Requires Python 3.12 or 3.13. One command creates the three isolated environments
+(`api/tarea2`, `agent_app/backend/backend_venv`, `agent_app/frontend/frontend_venv`):
+
+```bash
+./scripts/bootstrap_envs.sh              # create missing environments
+./scripts/bootstrap_envs.sh --check      # verify without installing
+./run_all.sh                             # start API, agent backend and UI
+```
+
+Each service reads its own `.env` (not committed). See
+[`docs/handoff/04_COMO_CONTINUAR.md`](docs/handoff/04_COMO_CONTINUAR.md) for the
+variables and the full environment layout.
+
 ## Project Structure
 
 The system is divided into two main components:
