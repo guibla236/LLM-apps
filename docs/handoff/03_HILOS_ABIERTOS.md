@@ -31,6 +31,24 @@ juez, u otro alcance). El protocolo de arriba es el que estaba acordado al 2026-
 
 ---
 
+## H-12 — El agente M7 no recuperaba contexto (bug de contrato) — **RESUELTO 2026-11-10**
+
+**Estado**: corregido en `e119cfd`. La evaluación E2E sigue sin correr.
+
+**Qué pasaba**: `agent_app/backend/tools/advanced_search.py` hacía
+`data.get("results", [])`, pero `/api/raw_unified_search` devuelve una **lista** de strings ya
+renderizados, no un dict. Cada búsqueda lanzaba
+`Error executing search: 'list' object has no attribute 'get'`, el nodo `search` reportaba
+`0 new results` y el agente respondía sin contexto recuperado.
+
+**Por qué importa**: el agente nunca podía funcionar contra la API actual, y el síntoma era silencioso
+—parecía que el corpus no tenía respuestas—. Una evaluación de M7 habría medido un agente ciego.
+
+**Verificación posterior (2026-11-10, servicios reales)**: 10 eventos de traza, 3 iteraciones,
+contexto acumulado 3 → 4 → 5 documentos, respuesta de 3796 caracteres citando IDs `SE-*`.
+
+---
+
 ## H-02 — Entrada de blog M6: pendientes editoriales — **delegado al autor**
 
 **Estado**: el blog ES está escrito y es el más completo de la serie, pero el último turno de la
