@@ -86,10 +86,25 @@ async def advanced_search_tool(
             response.raise_for_status()
             data = response.json()
         
-        results = data.get("results", [])
+        # /api/raw_unified_search returns a plain list of rendered context
+        # strings. Accept the legacy {"results": [...]} envelope too, so the
+        # tool keeps working if the endpoint shape changes back.
+        if isinstance(data, dict):
+            results = data.get("results", [])
+        elif isinstance(data, list):
+            results = data
+        else:
+            return f"Unexpected search response format: {type(data).__name__}"
+
         if not results:
             return "No matching records found. Try changing the search_method to vector_only or removing technical jargon from the query."
-            
+
+        if all(isinstance(r, str) for r in results):
+            result_str = f"Found {len(results)} similar records:\n\n" + "\n\n --- \n".join(
+                r[:2000] for r in results
+            )
+            return result_str
+
         result_str = f"Found {len(results)} similar records:\n\n"
         for i, t in enumerate(results):
             content_snippet = str(t.get("content", ""))[:500]  # Limit content snippet to 500 chars
