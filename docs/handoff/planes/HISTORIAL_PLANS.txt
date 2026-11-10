@@ -1,0 +1,10 @@
+0bff8e8 2026-08-04 docs: finalize M4 results, restructure M7/M8 (agent + vector migration), and update milestone plans
+56df355 2026-08-04 docs: add M4 semantic search optimization blog entry (ES)
+7886234 2026-08-04 docs: update M4 with final P1 results (gpt-5.6-luna judge) and closure plan
+4442b98 2026-08-04 docs: record M4 decisions (P2/P3 cancelled, context expansion, gpt-5.6-luna judge) and P0/P1 results
+d85dc63 2026-08-03 docs: update M2 baseline to corrected retrieval results in M4/M6 issues
+bba7430 2026-08-02 docs: switch M4 experiment rotation to dedicated Pinecone indexes
+efff2fc 2026-08-02 docs: resolve baseline preservation strategy for M4 namespace rotation
+de6874e 2026-08-02 docs: record embedding latency benchmark results for M4
+439bf85 2026-08-02 docs: update M2 baselines to definitive results in M4 issues
+0c543d6 2026-08-02 init: track local planning docs as nested repo

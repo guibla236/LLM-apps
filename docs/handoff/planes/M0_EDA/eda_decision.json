@@ -1,0 +1,13 @@
+{
+  "decision": "ingest_all",
+  "total_pairs": 60765,
+  "mean_score_tech": 2.43,
+  "pairs_with_score_tech_ge_2": 55772,
+  "pct_tech_terms": 69.2,
+  "filter_threshold": null,
+  "pairs_after_filter": null,
+  "pinecone_namespace": "kb-se-all",
+  "keep_synthetic_legacy": true,
+  "synthetic_namespace": "kb-synthetic-legacy",
+  "decision_rationale": "Ingest all ~60K pairs as-is. Dataset is pre-filtered by authors (100-vote gap), has negligible extreme outliers, 69.2% tech term coverage, and fits within Pinecone Free Tier. Low score_tech (2.43) is driven by low error code (2.6%) and numbered steps (0.4%) rates typical of real SE conversations, not by low quality."
+}
