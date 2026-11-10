@@ -111,6 +111,22 @@ Verificado con un clon limpio (`git archive HEAD`) el 2026-11-10: estos archivos
 Resultado medido: un clon limpio da **`7 passed, 5 failed`**; una **copia de la carpeta** da
 **`8 passed, 4 failed`**. Por eso el traspaso se hace copiando el directorio, no clonando.
 
+## 2bis. Estado de los servicios externos (verificado 2026-11-10)
+
+| Servicio | Estado | Evidencia |
+|---|---|---|
+| MongoDB Atlas | online | `ping` OK; `qa_pairs` con **60.161** documentos |
+| Pinecone `kb-se-all` | online | búsqueda `vector_only` devuelve `SE-SERVERFAULT-*` |
+| Atlas Search (léxico) | online | búsqueda `hybrid` devuelve resultados |
+| OpenRouter | online | `/api/augment_search_results` genera respuesta citando IDs |
+| Cuota del usuario `test` | 2789/200 usada | el rate limiting restaurado funciona |
+
+Flujo completo probado: API en `:8000` + agente en `:8001` + `/chat/` con JWT →
+10 eventos de traza, 3 iteraciones, 5 documentos acumulados, respuesta de 3796 caracteres.
+
+> Para repetir esta prueba hay que resetear `users.daily_usage` en Mongo: la cuota está agotada y
+> bloquea `/api/raw_unified_search`. Restaurar el valor original después.
+
 ## 3. Verificación mínima de que el sistema está sano
 
 ```bash

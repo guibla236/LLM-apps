@@ -240,8 +240,13 @@ chart) and the EN translation. See `docs/handoff/PENDIENTES_BLOG.md`.
 
 **Branch**: `feat/agentic-rag-implementation` (integration line; contains M4 code + M6 tooling + M7 graph)
 **Issues**: 3 issues (see `plans/M7_Agent/`)
-**Branch**: `feat/search-optimization`
 **Depends on**: M4 ✅
+
+**Bug fixed (2026-11-10)**: `advanced_search_tool` expected a `{"results": [...]}` envelope but
+`/api/raw_unified_search` returns a plain list, so every search raised
+`'list' object has no attribute 'get'` and the node reported 0 results. The agent had never
+retrieved real context. Fixed in `e119cfd`; verified end to end against live services
+(3 iterations, 5 documents accumulated, answer citing `SE-*` IDs).
 
 ### Implementation complete
 

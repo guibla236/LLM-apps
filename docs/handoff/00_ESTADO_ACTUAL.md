@@ -34,7 +34,7 @@ Existe `backup/real-corpus-migration-pre-fix` como red de seguridad de una corre
 | M4 | Optimización de retrieval: embeddings, chunking, léxico | ✅ 2026-08-16 | `documentation/markdowns/3_semantic_retrieval_improvements/` |
 | M5 | Pipeline de evaluación en CI/CD | ⏸️ diferido | no hay workflow de GitHub Actions |
 | M6 | Benchmark de costo/latencia por complejidad | ✅ 2026-08-16 (benchmark); blog ES listo, EN pendiente | `documentation/markdowns/4_cost_optimization/` |
-| M7 | Agente de diagnóstico multi-paso (LangGraph) | 🚧 implementación lista, **evaluación E2E pendiente** | `agent_app/`, `plans/M7_Agent/`, `documentation/markdowns/5_agentic_diagnosis/` |
+| M7 | Agente de diagnóstico multi-paso (LangGraph) | 🚧 implementación lista y **con un bug de contrato corregido el 2026-11-10** (ver H-12); evaluación E2E pendiente | `agent_app/`, `plans/M7_Agent/`, `documentation/markdowns/5_agentic_diagnosis/` |
 | M8 | Migración Pinecone → MongoDB `$vectorSearch` + Voyage | ⏸️ diferido | `plans/M8_VectorMigration/` |
 | M9 | Mejoras arquitectónicas (RRF, k-tuning, MCP) | ⏸️ diferido | `plans/M9_Architectural/` |
 
