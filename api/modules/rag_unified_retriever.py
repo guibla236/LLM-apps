@@ -21,6 +21,14 @@ KBS_TO_CONSIDER = int(os.getenv("KBS_TO_CONSIDER", 3))
 # MongoDB Atlas Search index for lexical retrieval (replaces local BM25)
 ATLAS_SEARCH_INDEX = os.getenv("ATLAS_SEARCH_INDEX", "default")
 
+# Experimental: expand each retrieved chunk to a window of the full title_body
+# centered on the chunk (margin chars each side, capped at max_len). Off by
+# default — production behavior unchanged. Used to evaluate whether more
+# retrieval context reduces the chunking precision/recall trade-off.
+EXPAND_CONTEXT = os.getenv("EXPAND_CONTEXT", "false").lower() == "true"
+CONTEXT_EXPAND_MARGIN = int(os.getenv("CONTEXT_EXPAND_MARGIN", 1000))
+CONTEXT_EXPAND_MAX_LEN = int(os.getenv("CONTEXT_EXPAND_MAX_LEN", 3000))
+
 
 async def mongodb_lexical_search(query: str, k: int = 5) -> List[Document]:
     """Full-text search over qa_pairs using MongoDB Atlas Search"""
@@ -60,6 +68,51 @@ async def mongodb_lexical_search(query: str, k: int = 5) -> List[Document]:
             )
         )
     return docs
+
+async def _fetch_qa_docs_batch(ticket_ids: List[str]) -> dict:
+    """Batch-fetch title_body from MongoDB by ticketId.
+
+    Used to expand the chunk window with context around the matched chunk
+    (EXPAND_CONTEXT=1). Runtime import of db reflects connect_to_mongo() even
+    if this module was imported first.
+    """
+    from .database import get_database
+    db = get_database()
+    docs = {}
+    if not ticket_ids:
+        return docs
+    cursor = db.qa_pairs.find(
+        {"ticketId": {"$in": ticket_ids}},
+        {"ticketId": 1, "title_body": 1},
+    )
+    async for doc in cursor:
+        docs[doc.get("ticketId")] = doc.get("title_body", "")
+    return docs
+
+
+def _expand_chunk_window(
+    title_body: str, chunk_text: str, margin: int = 1000, max_len: int = 3000
+) -> str:
+    """Return a window of the full title_body centered on the matched chunk.
+
+    Gives the LLM context around the chunk without loading the whole document.
+    Falls back to the full title_body (truncated) when the chunk cannot be
+    located (e.g. overlap artifacts).
+    """
+    if not title_body:
+        return chunk_text
+    pos = title_body.find(chunk_text[:200])  # chunk may have overlap artifacts; match a prefix
+    if pos == -1:
+        return title_body[:max_len]
+    start = max(0, pos - margin)
+    end = min(len(title_body), pos + len(chunk_text) + margin)
+    window = title_body[start:end]
+    if len(window) > max_len:
+        # keep the chunk centered
+        window = title_body[max(0, pos - max_len // 2): pos + max_len // 2 + len(chunk_text)]
+        window = window[:max_len]
+    return window
+
 
 async def generate_hypothetical_ticket(query: str, model_name: str) -> str:
     """
@@ -265,9 +318,25 @@ async def context_retriever_for_unified_search(query: str,
     kb_results = [r for r in unified_search_results if r.source == "kb"]
     results_to_return = []
 
+    # Optional context expansion (EXPAND_CONTEXT=1): replace each chunk with a
+    # window of the full title_body centered on the matched chunk. Single-
+    # variable experiment: ONLY the retrieved context changes; expected_output
+    # stays untouched (metadata 500-char value).
+    qa_docs = {}
+    if EXPAND_CONTEXT and ticket_results:
+        qa_docs = await _fetch_qa_docs_batch([t.id for t in ticket_results[:TICKETS_TO_CONSIDER]])
+
     for ticket in ticket_results[:TICKETS_TO_CONSIDER]:
         expected = ticket.metadata.get('expected_output', '')
         desc = _clean_ticket_content(ticket)
+        if EXPAND_CONTEXT:
+            title_body = qa_docs.get(ticket.id, '')
+            if title_body:
+                desc = _expand_chunk_window(
+                    title_body, desc,
+                    margin=CONTEXT_EXPAND_MARGIN,
+                    max_len=CONTEXT_EXPAND_MAX_LEN,
+                )
         results_to_return.append(
             f"[Q&A] ID: {ticket.id}\n"
             f"Question: {desc}\n"
