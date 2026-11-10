@@ -1,0 +1,24 @@
+# =============================================================================
+# API EVALUATION & INGESTION — scripts under api/scripts/.
+#
+# Install on top of requirements.txt:
+#     pip install -r requirements.txt -r requirements.eval.txt
+#
+# Used by: run_eval.py, ingest_stackexchange_dataset.py,
+#          benchmark_embeddings.py, build_golden_qa.py,
+#          build_stratified_golden.py, run_scenario_matrix.py
+# =============================================================================
+
+# --- Corpus ingestion (ingest_stackexchange_dataset.py) ----------------------
+datasets==2.21.0
+pyarrow==25.0.0
+pandas==3.0.1
+numpy==2.4.3
+
+# --- Token accounting in run_eval.py -----------------------------------------
+tiktoken==0.12.0
+
+# --- Evaluation harness ------------------------------------------------------
+# deepeval is already a runtime dependency (async_rag_evaluator); listed here
+# as a reminder that the eval scripts import it directly as well.
+-r requirements.txt
