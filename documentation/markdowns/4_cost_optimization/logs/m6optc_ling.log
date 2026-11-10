@@ -1,0 +1,252 @@
+Loading golden QA from ../evaluation_notebooks/goldens/golden_se_75_estratificado.json
+  Loaded 75 pairs
+
+Initializing judge: openai/gpt-5.6-luna
+  Metrics: correctness, faithfulness, answer_relevancy
+  Output CSV: /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m6optc_ling_golden_se_75_estratificado_20260805_223558.csv
+
+============================================================
+  Running evaluation: m6optc_ling
+  Questions: 75
+  Search: vector_only, k=10
+============================================================
+Evaluating:   0%|          | 0/75 [00:00<?, ?q/s]
+
+
+Evaluating:   1%|▏         | 1/75 [00:46<56:46, 46.03s/q]
+
+
+Evaluating:   3%|▎         | 2/75 [01:54<1:12:14, 59.38s/q]
+
+
+Evaluating:   4%|▍         | 3/75 [02:35<1:00:51, 50.72s/q]
+
+
+Evaluating:   5%|▌         | 4/75 [03:28<1:01:09, 51.68s/q]
+
+
+Evaluating:   7%|▋         | 5/75 [04:09<55:48, 47.84s/q]  
+
+
+Evaluating:   8%|▊         | 6/75 [04:52<52:59, 46.08s/q]
+
+
+Evaluating:   9%|▉         | 7/75 [05:31<49:40, 43.83s/q]
+
+
+Evaluating:  11%|█         | 8/75 [06:13<48:24, 43.34s/q]
+
+
+Evaluating:  12%|█▏        | 9/75 [06:58<48:14, 43.85s/q]
+
+
+Evaluating:  13%|█▎        | 10/75 [07:29<43:10, 39.85s/q]
+
+
+Evaluating:  15%|█▍        | 11/75 [08:11<43:12, 40.51s/q]
+
+
+Evaluating:  16%|█▌        | 12/75 [08:52<42:51, 40.82s/q]
+
+
+Evaluating:  17%|█▋        | 13/75 [09:31<41:23, 40.06s/q]
+
+
+Evaluating:  19%|█▊        | 14/75 [10:41<50:07, 49.31s/q]
+
+
+Evaluating:  20%|██        | 15/75 [11:32<49:45, 49.76s/q]
+
+
+Evaluating:  21%|██▏       | 16/75 [12:14<46:34, 47.36s/q]
+
+
+Evaluating:  23%|██▎       | 17/75 [13:04<46:28, 48.08s/q]
+
+
+Evaluating:  24%|██▍       | 18/75 [14:22<54:11, 57.04s/q]
+
+
+Evaluating:  25%|██▌       | 19/75 [15:19<53:17, 57.10s/q]
+
+
+Evaluating:  27%|██▋       | 20/75 [16:14<51:46, 56.49s/q]
+
+
+Evaluating:  28%|██▊       | 21/75 [17:06<49:45, 55.29s/q]
+
+
+Evaluating:  29%|██▉       | 22/75 [17:45<44:30, 50.39s/q]
+
+
+Evaluating:  31%|███       | 23/75 [18:34<43:13, 49.88s/q]
+
+
+Evaluating:  32%|███▏      | 24/75 [19:31<44:14, 52.05s/q]
+
+
+Evaluating:  33%|███▎      | 25/75 [20:23<43:18, 51.96s/q]
+
+
+Evaluating:  35%|███▍      | 26/75 [21:01<39:00, 47.76s/q]
+
+
+Evaluating:  36%|███▌      | 27/75 [21:45<37:14, 46.55s/q]
+
+
+Evaluating:  37%|███▋      | 28/75 [22:23<34:32, 44.09s/q]
+
+
+Evaluating:  39%|███▊      | 29/75 [23:04<33:01, 43.08s/q]
+
+
+Evaluating:  40%|████      | 30/75 [23:55<34:09, 45.55s/q]
+
+
+Evaluating:  41%|████▏     | 31/75 [24:31<31:21, 42.76s/q]
+
+
+Evaluating:  43%|████▎     | 32/75 [25:34<34:59, 48.82s/q]
+
+
+Evaluating:  44%|████▍     | 33/75 [26:22<34:01, 48.61s/q]
+
+
+Evaluating:  45%|████▌     | 34/75 [27:21<35:16, 51.62s/q]
+
+
+Evaluating:  47%|████▋     | 35/75 [28:09<33:42, 50.56s/q]
+
+
+Evaluating:  48%|████▊     | 36/75 [29:12<35:13, 54.20s/q]
+
+
+Evaluating:  49%|████▉     | 37/75 [29:50<31:16, 49.38s/q]
+
+
+Evaluating:  51%|█████     | 38/75 [30:49<32:13, 52.25s/q]
+
+
+Evaluating:  52%|█████▏    | 39/75 [31:27<28:48, 48.02s/q]
+
+
+Evaluating:  53%|█████▎    | 40/75 [32:03<25:55, 44.45s/q]
+
+
+Evaluating:  55%|█████▍    | 41/75 [32:53<26:03, 45.97s/q]
+
+
+Evaluating:  56%|█████▌    | 42/75 [33:29<23:42, 43.11s/q]
+
+
+Evaluating:  57%|█████▋    | 43/75 [34:08<22:19, 41.86s/q]
+
+
+Evaluating:  59%|█████▊    | 44/75 [34:51<21:47, 42.19s/q]
+
+
+Evaluating:  60%|██████    | 45/75 [35:47<23:12, 46.40s/q]
+
+
+Evaluating:  61%|██████▏   | 46/75 [36:37<22:52, 47.33s/q]
+
+
+Evaluating:  63%|██████▎   | 47/75 [37:20<21:32, 46.16s/q]
+
+
+Evaluating:  64%|██████▍   | 48/75 [38:23<23:00, 51.13s/q]
+
+
+Evaluating:  65%|██████▌   | 49/75 [39:24<23:23, 53.99s/q]
+
+
+Evaluating:  67%|██████▋   | 50/75 [40:10<21:35, 51.83s/q]
+
+
+Evaluating:  68%|██████▊   | 51/75 [40:57<20:07, 50.31s/q]
+
+
+Evaluating:  69%|██████▉   | 52/75 [41:37<18:04, 47.17s/q]
+
+
+Evaluating:  71%|███████   | 53/75 [42:33<18:19, 49.98s/q]
+
+
+Evaluating:  72%|███████▏  | 54/75 [43:36<18:46, 53.65s/q]
+
+
+Evaluating:  73%|███████▎  | 55/75 [44:13<16:12, 48.63s/q]
+
+
+Evaluating:  75%|███████▍  | 56/75 [44:57<14:57, 47.21s/q]
+
+
+Evaluating:  76%|███████▌  | 57/75 [45:30<12:56, 43.15s/q]
+
+
+Evaluating:  77%|███████▋  | 58/75 [46:40<14:29, 51.15s/q]
+
+
+Evaluating:  79%|███████▊  | 59/75 [47:16<12:24, 46.52s/q]
+
+
+Evaluating:  80%|████████  | 60/75 [48:28<13:35, 54.35s/q]
+
+
+Evaluating:  81%|████████▏ | 61/75 [49:09<11:43, 50.28s/q]
+
+
+Evaluating:  83%|████████▎ | 62/75 [49:48<10:08, 46.78s/q]
+
+
+Evaluating:  84%|████████▍ | 63/75 [50:44<09:55, 49.64s/q]
+
+
+Evaluating:  85%|████████▌ | 64/75 [51:35<09:10, 50.03s/q]
+
+
+Evaluating:  87%|████████▋ | 65/75 [52:15<07:49, 46.93s/q]
+
+
+Evaluating:  88%|████████▊ | 66/75 [53:08<07:20, 48.97s/q]
+
+
+Evaluating:  89%|████████▉ | 67/75 [54:03<06:46, 50.76s/q]
+
+
+Evaluating:  91%|█████████ | 68/75 [55:12<06:32, 56.08s/q]
+
+
+Evaluating:  92%|█████████▏| 69/75 [55:55<05:14, 52.34s/q]
+
+
+Evaluating:  93%|█████████▎| 70/75 [56:34<04:00, 48.14s/q]
+
+
+Evaluating:  95%|█████████▍| 71/75 [57:19<03:08, 47.17s/q]
+
+
+Evaluating:  96%|█████████▌| 72/75 [58:06<02:21, 47.33s/q]
+
+
+Evaluating:  97%|█████████▋| 73/75 [59:07<01:42, 51.17s/q]
+
+
+Evaluating:  99%|█████████▊| 74/75 [59:55<00:50, 50.32s/q]
+
+
+Evaluating: 100%|██████████| 75/75 [1:00:30<00:00, 45.80s/q]Evaluating: 100%|██████████| 75/75 [1:00:30<00:00, 48.41s/q]
+
+============================================================
+  Evaluation Complete
+============================================================
+  Questions evaluated: 75
+  Errors:              0
+  CSV:                 /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m6optc_ling_golden_se_75_estratificado_20260805_223558.csv
+  JSON aggregate:      /home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2/evaluation_notebooks/raw_results/m6optc_ling_golden_se_75_estratificado_20260805_223558_aggregate.json
+
+  Metric                    Mean       Median     Count   
+  ------------------------- ---------- ---------- --------
+  correctness               0.4120     0.4000     75      
+  faithfulness              0.9974     1.0000     75      
+  answer_relevancy          0.7879     1.0000     75      
