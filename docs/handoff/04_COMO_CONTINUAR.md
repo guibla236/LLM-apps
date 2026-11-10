@@ -51,6 +51,27 @@ Los `requirements.lock.txt` se generan con `--lock` y llevan la versión de Pyth
 **son un snapshot de 3.12**. En 3.13 el bootstrap instala desde los `requirements.txt` curados (todos
 los pins tienen wheels cp313, verificado) y conviene regenerar el lock ahí.
 
+### Verificación (2026-11-10)
+
+Los tres entornos se recrearon desde cero y se verificaron así. Repetilo después de cualquier
+cambio en los requirements:
+
+| Verificación | Qué prueba | Resultado esperado |
+|---|---|---|
+| `./scripts/bootstrap_envs.sh --check` | `pip check` + `compileall` + import smoke por entorno | 9 líneas `ok`, ninguna `warn` |
+| Import de `api.app` y `app.openapi()` | rutas, dependencias y middleware de la API | 29 paths |
+| Import de los 6 scripts de `api/scripts/` y su `--help` | argparse + imports de eval/ingesta | sin error |
+| `deepeval` (4 métricas + GEval) y `datasets` | toolchain de evaluación | importan |
+| Boot de la app con `connect_to_mongo` stubbeado | arranque ASGI sin Mongo | `/` y `/docs` → 200 |
+| Endpoints de datos sin auth | que fallen por auth y no por import | 0 fallos de dependencia |
+| `agent_app/backend`: `main.app` + `agent.graph` | 5 rutas, grafo de 5 nodos, estado completo | OK |
+| `agent_app/frontend`: `streamlit run app.py` | UI levanta | HTTP 200 |
+| `pytest` de la API | suite existente | **8 passed, 4 failed** (los 4 necesitan Mongo + API vivos) |
+| Regeneración de locks | determinismo | archivos idénticos entre corridas |
+
+Nota: la app del agente y la API **exigen Mongo en el arranque**. Sin una URI válida fallan antes de
+servir; para verificar cableado se stubea `connect_to_mongo` (ver los checks de arriba).
+
 ### Variables de entorno
 
 | Archivo | Variables clave |
