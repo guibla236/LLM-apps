@@ -17,6 +17,10 @@ Environments are recreated with `./scripts/bootstrap_envs.sh` (see `--help`). Do
 ad hoc: `api/requirements.txt` is runtime only, `requirements.eval.txt` is for the eval/ingestion
 scripts and `requirements.dev.txt` for notebooks and tooling.
 
+Before running any evaluation, read [`docs/handoff/08_NOTAS_ULTIMA_SESION.md`](docs/handoff/08_NOTAS_ULTIMA_SESION.md):
+it records a fixed contract bug, an unresolved sufficiency-judge behaviour and an operational trap
+(daily quota makes search return empty results instead of an error).
+
 Do **not** ingest `docs/handoff/transcripciones/` wholesale (~2,6 MB of raw chat with terminal noise).
 Use the index there, then the digest in `docs/handoff/digests/`, then targeted `grep`.
 

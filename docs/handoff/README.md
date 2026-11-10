@@ -29,6 +29,7 @@ multi-paso sobre LangGraph.
 | 5 | [`04_COMO_CONTINUAR.md`](./04_COMO_CONTINUAR.md) | Entorno, comandos, convenciones y “primer día” |
 | 6 | [`05_MAPA_DEL_REPO.md`](./05_MAPA_DEL_REPO.md) | Dónde vive cada cosa (código, datos, índices, notebooks) |
 | 7 | [`06_RAMAS_Y_ARTEFACTOS.md`](./06_RAMAS_Y_ARTEFACTOS.md) | Topología de ramas y en qué rama vive cada artefacto (M4, M6, M7) |
+| 8 | [`08_NOTAS_ULTIMA_SESION.md`](./08_NOTAS_ULTIMA_SESION.md) | **Leer antes de correr la evaluación de M7**: bug corregido, juez que no converge, cuota que bloquea |
 | — | [`EXECUTIVE_SUMMARY_EN.md`](./EXECUTIVE_SUMMARY_EN.md) | Resumen ejecutivo en inglés |
 
 Si necesitás **detalle fino o el razonamiento original**, no leas las transcripciones enteras:
