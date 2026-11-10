@@ -6,6 +6,7 @@
 venv/
 ENV/
 .venv/
+.deepeval
 tarea2/
 *_venv/
 
@@ -18,3 +19,32 @@ tarea2/
 /api/static/mock/tickets
 /api/static/mock/knowledge_base
 
+# Jupyter Notebook
+/.agent
+
+# Old prompts
+/prompts_synthetic
+
+# Plans
+# plans/*  (uncomment to ignore — we're tracking plans/ for this initiative)
+
+# Evaluation results from original RAG
+/api/evaluation_results
+**/evaluation_notebooks
+/analysis_outputs_eval_290326
+/local_evaluation_pipeline
+/blogposts
+
+# Tests
+*/backend/tests
+*/*/tests
+
+kaggle.json
+
+plans/
+
+/api/static/bm25_index.json
+Apuntes_CURSO.md
+# Temp artifacts
+api/scripts/.golden_excluded_ids.tmp
+PR_description.md
