@@ -106,3 +106,41 @@ renombres de logs `m2_*`).
 | `feat/eval_pipeline` | su contenido está en la línea M7 salvo la sección del evaluador independiente; decidir si se mergea o se descarta |
 | Stashes `2026-08-02` y `2026-08-17` (2) | trabajo de `feat/eval_pipeline`/`search-optimization` ya superado; revisar antes de dropear |
 | ~25 branches de tareas viejas del curso | sin relación con la serie |
+
+---
+
+## Estado tras la consolidación (2026-11-09)
+
+Línea de integración: **`feat/agentic-rag-implementation`**, pusheada a `origin`.
+
+Qué se hizo:
+
+1. Se revirtió el workaround de seguridad (`api/app.py`, `api/modules/security.py`) antes de commitear.
+2. Se commitearon los entregables del working tree: entrada 4 (M6) con gráficos y logs, borrador de la
+   entrada 5, `ROADMAP.md`, plan de migración, runners de evaluación, logs de ingesta y el paquete
+   `docs/handoff/`.
+3. `git merge feat/search-optimization` → entrada 3 (M4) y logs finales, sin conflictos.
+4. La entrada 2 final (con la sección del juez independiente) se trajo **quirúrgicamente** desde
+   `feat/eval_pipeline` (`git checkout feat/eval_pipeline -- documentation/markdowns/2_post_migration_eval`),
+   en vez de mergear esa rama: su código es anterior a M4 y habría generado conflictos inútiles en
+   `rag_unified_retriever.py` y `agent_app/`.
+5. M6 quedó marcado como cerrado en `ROADMAP.md` y en `plans/MILESTONES.md`.
+
+Estado de cada rama:
+
+| Rama | Estado |
+|---|---|
+| `feat/agentic-rag-implementation` | **activa**, contiene M4 (código+blog), M6 y M7 |
+| `feat/search-optimization` | mergeada; se conserva como referencia |
+| `feat/eval_pipeline` | su documentación ya está en la línea activa; archivada |
+| `feat/cost-optimization-benchmark` | contenida en la línea activa; archivada |
+| `backup/real-corpus-migration-pre-fix` | archivada |
+| `refactor/real-corpus-migration` | mergeada y pusheada; se conserva |
+
+Archivo: se crearon tags anotados `archive/<rama>` para las ramas archivadas (no se borró ninguna).
+Los tres stashes se conservan; el `stash@{0}` era equivalente al workaround ya revertido.
+
+## Próximo paso
+
+**M7 se termina** (decisión 2026-11-09): correr la evaluación E2E, escribir los resultados en la
+entrada 5 y traducirla. Protocolo en `plans/M7_Agent/02_Agent_Evaluation.md`.

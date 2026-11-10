@@ -5,7 +5,7 @@ Ordenados por prioridad de retomada.
 
 ---
 
-## H-01 — Evaluación E2E del agente M7 (lo más importante que falta)
+## H-01 — Evaluación E2E del agente M7 (lo más importante que falta) — **DECIDIDO: terminar**
 
 **Estado**: implementación completa, **sin números**. El borrador del blog
 (`documentation/markdowns/5_agentic_diagnosis/agentic_diagnosis_es.md`) tiene secciones de motivación
@@ -31,7 +31,7 @@ juez, u otro alcance). El protocolo de arriba es el que estaba acordado al 2026-
 
 ---
 
-## H-02 — Entrada de blog M6: 9 FIXMEs sin resolver
+## H-02 — Entrada de blog M6: pendientes editoriales — **delegado al autor**
 
 **Estado**: el blog ES está escrito y es el más completo de la serie, pero el último turno de la
 conversación se interrumpió cuando el usuario respondía los FIXMEs. Quedaron planteados:
@@ -70,7 +70,7 @@ logs y a notebooks; agregar el proyecto al portfolio personal.
 
 ---
 
-## H-04 — Cambios sin commitear que rompen seguridad ⚠️
+## H-04 — Cambios sin commitear que rompen seguridad — **RESUELTO 2026-11-09**
 
 **Estado**: en el working tree, `api/app.py` tiene **todos los `@limiter.limit` comentados** y
 `api/modules/security.py` tiene **comentadas las cuotas por IP y por usuario**. Fue un workaround para
@@ -82,7 +82,7 @@ error si se quiere) y re-correr un smoke test. Nunca commitear como está.
 
 ---
 
-## H-05 — 57 commits sin remoto
+## H-05 — 57 commits sin remoto — **RESUELTO 2026-11-09**
 
 **Estado**: `feat/cost-optimization-benchmark` no tiene upstream y no existe en `origin`.
 **Próximo paso**: `git push -u origin feat/cost-optimization-benchmark` (o merge a una branch
@@ -91,7 +91,7 @@ publicada), antes de cualquier migración de harness.
 
 ---
 
-## H-11 — El blog de M4 no está en la rama actual ⚠️
+## H-11 — El blog de M4 no está en la rama actual — **RESUELTO 2026-11-09**
 
 **Estado**: `documentation/markdowns/3_semantic_retrieval_improvements/semantic_search_optimization_es.md`
 y `_en.md` **no existen** en `feat/cost-optimization-benchmark`. Fueron commiteados el 2026-08-17 en

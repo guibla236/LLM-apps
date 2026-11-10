@@ -11,10 +11,10 @@ Resumen factual. Los números están tomados de `ROADMAP.md`, `plans/MILESTONES.
 |---|---|
 | Repo | `guibla236/LLM-apps` (GitHub) |
 | Ruta local | `/home/guillermo/Documentos/Courses/GenAI_E2_bootcamp/Tarea_2` |
-| Rama actual | `feat/cost-optimization-benchmark` |
-| Upstream | **ninguno** (no existe en `origin`) |
-| Divergencia vs `main` | 57 commits adelante, 0 atrás |
-| Working tree | 5 archivos modificados + ~20 rutas sin trackear |
+| Rama actual | `feat/agentic-rag-implementation` (línea de integración, desde 2026-11-09) |
+| Upstream | `origin/feat/agentic-rag-implementation` |
+| Divergencia vs `main` | 70+ commits adelante, 0 atrás (incluye M4 + M6 + M7) |
+| Working tree | limpio |
 | Stashes | 3 (`2026-08-02`, `2026-08-17`, `2026-08-17`) |
 | Repo anidado | `plans/` (ignorado por el principal; 3 archivos modificados sin commitear) |
 
@@ -92,7 +92,7 @@ el beneficio no justifica la complejidad con los precios actuales.
 | MongoDB Atlas Search | índice léxico `default` sobre `qa_pairs` (reemplaza BM25 local) |
 | Goldens | `golden_se_200.json` (200 estratificados), `golden_se_75_estratificado.json` (M6) |
 
-## 5. Working tree sin commitear (⚠️)
+## 5. Working tree (histórico del corte 2026-08-19)
 
 **Modificados**
 

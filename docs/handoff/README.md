@@ -53,20 +53,19 @@ docs/handoff/
 
 ## Advertencias críticas (leer antes de tocar código)
 
-1. **Rama actual sin upstream.** `feat/cost-optimization-benchmark` tiene 57 commits que **no
-   existen en `origin`**. Si se pierde el disco, se pierde la etapa M4–M7. Primer paso: pushear.
-2. **Hay cambios sin commitear que rompen seguridad**: `api/app.py` y `api/modules/security.py`
-   tienen los rate limits y las cuotas **comentados a mano** (workaround de benchmark). No deben
-   llegar a producción. Ver [hilos abiertos H-06](./03_HILOS_ABIERTOS.md).
+1. ~~Rama actual sin upstream~~ → **resuelto 2026-11-09**: las líneas de M4, M6 y M7 se consolidaron en
+   `feat/agentic-rag-implementation` y se pushearon. Ver [`06_RAMAS_Y_ARTEFACTOS.md`](./06_RAMAS_Y_ARTEFACTOS.md).
+2. ~~Cambios sin commitear que rompen seguridad~~ → **resuelto 2026-11-09**: el workaround de rate
+   limits y cuotas se revirtió antes de commitear. Verificalo igual antes de deployar.
 3. **`plans/` es un repo git anidado e ignorado** por el repo principal (`.gitignore:44`). En un
    clone limpio no existe. Acá quedó el snapshot en [`planes/`](./planes/), pero su historial vive
    solo en tu disco.
 4. **Secretos.** Los `.env` están fuera de git, pero aparecieron claves reales en los logs de chat
    (Groq, OpenRouter, `JWT_SECRET`, `APP_API_KEY`, host de MongoDB). Las transcripciones de este
    paquete están **redactadas**; aun así, rotá esas credenciales.
-5. **La rama actual no tiene el blog de M4.** `semantic_search_optimization_{es,en}.md` vive solo en
-   `feat/search-optimization`, 4 commits por delante. Mergear antes de migrar de harness
-   ([H-11](./03_HILOS_ABIERTOS.md)).
+5. ~~La rama actual no tiene el blog de M4~~ → **resuelto 2026-11-09**: `feat/search-optimization` se
+   mergeó y la entrada 3 ya está en la línea de integración ([H-11](./03_HILOS_ABIERTOS.md)).
+   Quedan pendientes editoriales menores en [`PENDIENTES_BLOG.md`](./PENDIENTES_BLOG.md).
 6. **El estado tiene ~3 meses de antigüedad** (corte 2026-08-19). Precios de modelos, modelos
    disponibles y versiones de librerías pueden haber cambiado: reverificá antes de citar.
 

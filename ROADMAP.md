@@ -180,7 +180,7 @@ Comunidades OK:      12/12
 ## M4 — Search Optimization: Embedding, Chunking & Lexical Search ✅ (2026-08-16)
 
 **Issues**: 4 issues (see `plans/M4_SearchOptimization/`)
-**Branch**: `feat/search-optimization`
+**Branch**: `feat/search-optimization` (merged into the integration line on 2026-11-09)
 **Winner**: P1 (voyage-4-lite, chunk 1000/100) with gpt-5.6-luna judge
 
 ### Final results (gpt-5.6-luna, vector_only)
@@ -210,11 +210,15 @@ Comunidades OK:      12/12
 
 ---
 
-## M6 — Cost-Optimized Hybrid Inference ✅ (2026-08-16 — benchmark complete)
+## M6 — Cost-Optimized Hybrid Inference ✅ CLOSED (2026-11-09)
 
-**Issues**: #20 (benchmark), #21 (blog — ES written, EN pending)
+**Issues**: #20 (benchmark) ✅, #21 (blog — ES published, EN pending)
 **Depends on**: M4 ✅
 **Scope**: Benchmark only. No router implementation (deferred — not justified by results).
+**Artifacts**: `documentation/markdowns/4_cost_optimization/` (entry ES, 6 charts, `m6_visualization.ipynb`,
+logs), `api/scripts/run_m6_benchmark.sh`, `evaluation_notebooks/goldens/golden_se_75_estratificado.json`.
+**Outstanding (editorial, owner reviews by hand)**: one TODO in the entry (replace a table with an EDA
+chart) and the EN translation. See `docs/handoff/PENDIENTES_BLOG.md`.
 
 ### Final results (gpt-5.6-luna, 75 queries, 25 per complexity bucket)
 
@@ -228,10 +232,13 @@ Comunidades OK:      12/12
 - Ling on Pareto frontier (cost-quality). Gemini sets latency standard (P95 ~3s).
 - Router deferred — insufficient benefit given current model cost.
 
+**Closed**: 2026-11-09. Entry 4 (ES) committed and pushed with the integration line.
+
 **Next**: M7 (Agent) — portfolio closer
 
 ## M7 — Multi-Step Diagnosis Agent 🚧 (in progress)
 
+**Branch**: `feat/agentic-rag-implementation` (integration line; contains M4 code + M6 tooling + M7 graph)
 **Issues**: 3 issues (see `plans/M7_Agent/`)
 **Branch**: `feat/search-optimization`
 **Depends on**: M4 ✅
