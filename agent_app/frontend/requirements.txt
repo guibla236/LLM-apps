@@ -1,9 +1,13 @@
-# Frontend requirements for Ticket Resolution Agent
+# =============================================================================
+# AGENT FRONTEND RUNTIME — Streamlit UI (agent_app/frontend).
+#
+# Scope: what app.py imports. Streamlit pulls altair, pandas, numpy, pyarrow,
+# protobuf, tornado, etc. transitively; they are not declared here.
+#
+# Python: 3.12 (local venv) and 3.13 (target device).
+# =============================================================================
+
 streamlit==1.52.1
+extra-streamlit-components==0.1.81
 requests==2.32.5
-httpx==0.28.1
-python-dotenv==1.2.1
-pandas==2.3.3
-numpy==2.3.5
-pydantic==2.12.5
-extra_streamlit_components==0.1.81
+python-dotenv==1.2.2
