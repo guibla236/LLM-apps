@@ -10,6 +10,22 @@ _APP_API_KEY = get_env_var("APP_API_KEY")
 _VALID_SEARCH_TYPES = ("both", "tickets_only", "kb_only")
 _VALID_SEARCH_METHODS = ("hybrid", "vector_only", "bm25_only")
 
+DEFAULT_SEARCH_K = 3
+
+
+def _search_k() -> int:
+    """Top-k for the RAG call.
+
+    Defaults to 3 for production brevity. Set AGENT_SEARCH_K=10 to match the
+    M4/M6 evaluation protocol when benchmarking the agent against the RAG.
+    """
+    raw = get_env_var("AGENT_SEARCH_K")
+    try:
+        value = int(raw) if raw is not None else DEFAULT_SEARCH_K
+    except (TypeError, ValueError):
+        return DEFAULT_SEARCH_K
+    return value if value > 0 else DEFAULT_SEARCH_K
+
 @tool
 async def advanced_search_tool(
     query: str,
@@ -59,7 +75,7 @@ async def advanced_search_tool(
         "query": query,
         "search_type": search_type,
         "search_method": search_method,
-        "k": 3,  # Limit to top 3 results for brevity
+        "k": _search_k(),
         "use_hyde": use_hyde,
         "model_name": model_name
     }

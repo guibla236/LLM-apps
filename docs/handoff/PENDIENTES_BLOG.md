@@ -51,3 +51,25 @@ Lo que falta:
 
 Solo tiene motivación, comparación de arquitecturas y referencias. No se puede cerrar hasta correr
 la evaluación E2E del agente. Decisión del 2026-11-09: **M7 se termina**, no se descarta.
+
+---
+
+## Nota para la migración a Databricks (2026-11-09)
+
+El autor decidió **no correr la evaluación de M7 en este entorno** y mover las evaluaciones a
+Databricks. Consecuencias para quien retome:
+
+1. La evaluación de M7 **no se ejecutó**. No hay números, y la entrada 5 sigue siendo un borrador
+   sin resultados.
+2. El harness de evaluación del agente **no existe todavía**: `api/scripts/run_eval.py` habla con
+   `/api/raw_unified_search` + `/api/augment_search_results`, no con `/chat/`. Cualquier driver nuevo
+   (local, Databricks o CI) tiene que:
+   - autenticarse con **JWT Bearer** contra `/api/me` (el agente no acepta `X-API-KEY`);
+   - abrir **una sesión por pregunta** (el checkpointer persiste por `thread_id`);
+   - fijar **`AGENT_SEARCH_K=10`** para igualar el protocolo de M4/M6;
+   - medir latencia del lado del cliente (el servicio la calcula pero solo la loguea en Mongo);
+   - extraer iteraciones y documentos acumulados del `trace` (hoy son strings de UI).
+3. `AGENT_SEARCH_K` es la parametrización nueva del `k` del tool: default **3** (producción),
+   `10` para evaluar. Implementada en `agent_app/backend/tools/advanced_search.py`.
+4. Trampa conocida: crear sesión dispara `generate_session_title` (llamada LLM extra) que no entra
+   en la latencia medida por el servicio pero sí en la del cliente.
