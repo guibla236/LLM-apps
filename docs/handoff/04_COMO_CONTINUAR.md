@@ -21,27 +21,42 @@ git -C plans log --oneline -3   # repo anidado, si existe en el disco
 
 ## 2. Entorno
 
-```bash
-# API — Python 3.12, venv ya existente en api/tarea2
-cd api
-python -m venv tarea2                 # si hay que recrearlo
-source tarea2/bin/activate
-pip install -r requirements.txt -r requirements.dev.txt
-uvicorn app:app --reload --port 8000
+Un solo comando, desde la raíz del repo:
 
-# Agente — venv propio
-cd agent_app/backend
-python -m venv backend_venv && source backend_venv/bin/activate
-pip install -r requirements.txt
-python main.py                        # o uvicorn según README del módulo
+```bash
+./scripts/bootstrap_envs.sh                      # crea los venvs que falten
+./scripts/bootstrap_envs.sh --recreate           # borra y rehace los tres
+./scripts/bootstrap_envs.sh --only api --with-dev --lock   # API + eval + notebooks
+./scripts/bootstrap_envs.sh --check              # verifica sin instalar nada
 ```
 
-Variables de entorno necesarias (archivos `.env`, **no versionados**):
+Crea tres entornos aislados con Python 3.12 o 3.13 (auto-detecta):
+
+| Target | Venv | Requirements |
+|---|---|---|
+| `api` | `api/tarea2` | `api/requirements.txt` (+ `eval` / `dev` opcionales) |
+| `backend` | `agent_app/backend/backend_venv` | `agent_app/backend/requirements.txt` |
+| `frontend` | `agent_app/frontend/frontend_venv` | `agent_app/frontend/requirements.txt` |
+
+### Cómo está partido `api/`
+
+| Archivo | Para qué | Quién lo usa |
+|---|---|---|
+| `api/requirements.txt` | **runtime**: lo que se despliega en Vercel | producción, `uvicorn` |
+| `api/requirements.eval.txt` | evaluación e ingesta | `run_eval.py`, `ingest_stackexchange_dataset.py`, `benchmark_embeddings.py` |
+| `api/requirements.dev.txt` | tooling y notebooks | desarrollo local: pytest, ruff, jupyter, matplotlib |
+| `api/requirements.lock.txt` | freeze exacto (incluye transitivos) | reproducir bit a bit en Python 3.12 |
+
+Los `requirements.lock.txt` se generan con `--lock` y llevan la versión de Python en la cabecera:
+**son un snapshot de 3.12**. En 3.13 el bootstrap instala desde los `requirements.txt` curados (todos
+los pins tienen wheels cp313, verificado) y conviene regenerar el lock ahí.
+
+### Variables de entorno
 
 | Archivo | Variables clave |
 |---|---|
 | `api/.env` | `OPENROUTER_API_KEY`, `PINECONE_API_KEY`, `MONGODB_URI`, `MONGODB_DB_NAME`, `APP_API_KEY`, `JWT_SECRET`, `ATLAS_SEARCH_INDEX`, `TICKETS_TO_CONSIDER`, `KBS_TO_CONSIDER` |
-| `agent_app/backend/.env` | `APP_API_KEY`, `API_BASE_URL`, `MONGODB_URI`, `AGENT_MODEL`, `LANGSMITH_*` |
+| `agent_app/backend/.env` | `APP_API_KEY`, `API_BASE_URL`, `MONGODB_URI`, `AGENT_MODEL`, `AGENT_SEARCH_K` (opcional), `LANGSMITH_*` |
 | `agent_app/frontend/.env` | URL del backend / API |
 
 > Rotar credenciales: estuvieron expuestas en logs de chat (ver README, advertencia 4).

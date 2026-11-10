@@ -13,6 +13,10 @@ Entry point for any AI agent (any harness) working on this repository.
 4. [`docs/handoff/02_DECISIONES.md`](docs/handoff/02_DECISIONES.md) — decisions already made (do not re-litigate)
 5. [`docs/handoff/04_COMO_CONTINUAR.md`](docs/handoff/04_COMO_CONTINUAR.md) — environment and commands
 
+Environments are recreated with `./scripts/bootstrap_envs.sh` (see `--help`). Do not `pip install`
+ad hoc: `api/requirements.txt` is runtime only, `requirements.eval.txt` is for the eval/ingestion
+scripts and `requirements.dev.txt` for notebooks and tooling.
+
 Do **not** ingest `docs/handoff/transcripciones/` wholesale (~2,6 MB of raw chat with terminal noise).
 Use the index there, then the digest in `docs/handoff/digests/`, then targeted `grep`.
 

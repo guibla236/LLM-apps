@@ -16,6 +16,8 @@ Tarea_2/
 │   └── notebooks/           # notebooks publicables (EDA, visualización de resultados)
 ├── plans/                   # repo git ANIDADO con los planes M0–M9 (ignorado por el principal)
 ├── docs/handoff/            # este paquete
+├── scripts/
+│   └── bootstrap_envs.sh    # recrea los 3 venvs, verifica y genera locks
 ├── ROADMAP.md               # estado por milestone (sin commitear al corte)
 ├── RAG_DATASET_MIGRATION_PLAN.md  # plan base de la migración
 ├── README.md                # desactualizado (marzo): no menciona la serie
@@ -36,6 +38,8 @@ Tarea_2/
 | `models/` | Pydantic (`TicketModel` con campos SE opcionales) |
 | `prompts/rag_system_prompt.md`, `hyde_ticket.md` | prompts de producción (EN, paradigma Q&A) |
 | `scripts/` | **todo el tooling de datos/eval** (ver abajo) |
+| `requirements.eval.txt` | eval + ingesta (datasets, pandas, tiktoken) |
+| `requirements.lock.txt` | freeze exacto de Python 3.12 |
 | `tests/` | 8 tests de compatibilidad del modelo |
 | `tarea2/` | venv del proyecto (no versionado) |
 | `logs/` | logs de ingesta (sin commitear) |
