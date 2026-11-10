@@ -85,6 +85,24 @@ case "$PYVER" in
   *) warn "probado en 3.12 y 3.13; '$PYVER' puede fallar" ;;
 esac
 
+# ── Preflight: arquitectura y glibc ──────────────────────────────────────────
+# pyarrow, numpy y tiktoken sólo publican wheels manylinux_2_28_aarch64 (o
+# superiores) para ARM, así que en una Raspberry Pi hace falta glibc >= 2.28.
+ARCH="$(uname -m)"
+if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+  GLIBC="$(ldd --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+$' || echo "")"
+  if [ -n "$GLIBC" ]; then
+    MAJ="${GLIBC%%.*}"; MIN="${GLIBC#*.}"
+    if [ "$MAJ" -lt 2 ] || { [ "$MAJ" -eq 2 ] && [ "$MIN" -lt 28 ]; }; then
+      warn "glibc $GLIBC en $ARCH: pyarrow/numpy requieren >= 2.28. La instalación puede fallar."
+    else
+      ok "ARM con glibc $GLIBC (>= 2.28)"
+    fi
+  else
+    warn "no pude detectar glibc en $ARCH"
+  fi
+fi
+
 # ── Target table ─────────────────────────────────────────────────────────────
 venv_for()   { case "$1" in api) echo "api/tarea2";; backend) echo "agent_app/backend/backend_venv";; frontend) echo "agent_app/frontend/frontend_venv";; esac; }
 reqs_for()   { case "$1" in api) echo "api/requirements.txt";; backend) echo "agent_app/backend/requirements.txt";; frontend) echo "agent_app/frontend/requirements.txt";; esac; }

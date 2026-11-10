@@ -82,6 +82,20 @@ servir; para verificar cableado se stubea `connect_to_mongo` (ver los checks de 
 
 > Rotar credenciales: estuvieron expuestas en logs de chat (ver README, advertencia 4).
 
+### Raspberry Pi / ARM64
+
+Verificado el 2026-11-10: todos los pins resuelven en `aarch64` para Python 3.12 y 3.13, pero con una
+condición — **glibc >= 2.28**, porque `pyarrow`, `numpy` y `tiktoken` sólo publican
+`manylinux_2_28_aarch64`.
+
+| Requisito | Valor |
+|---|---|
+| Arquitectura | `aarch64` / `arm64` (64 bits; una Pi con SO de 32 bits no sirve) |
+| glibc | >= 2.28 — Raspberry Pi OS Bullseye (2.31) y Bookworm (2.36) cumplen |
+| Comprobación | `ldd --version` y `uname -m`; `bootstrap_envs.sh` avisa si no cumple |
+
+No hay que compilar nada: existen wheels para todas las dependencias con extensión C.
+
 ### Qué NO viaja en un `git clone`
 
 Verificado con un clon limpio (`git archive HEAD`) el 2026-11-10: estos archivos están en disco pero
